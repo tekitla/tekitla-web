@@ -14,6 +14,7 @@ const ISSUE_STATES: readonly IssueState[] = [
   'ISSUE_STATE_TODO',
   'ISSUE_STATE_IN_PROGRESS',
   'ISSUE_STATE_DONE',
+  'ISSUE_STATE_CANCELED',
 ];
 
 const PRIORITY_VALUES: readonly Priority[] = [
@@ -52,6 +53,7 @@ export function toIssue(raw: RawIssue = {}): Issue {
     priority: oneOf(raw.priority, PRIORITY_VALUES, 'PRIORITY_UNSPECIFIED'),
     createdAt: raw.createdAt ?? '',
     updatedAt: raw.updatedAt ?? '',
+    rank: raw.rank ?? '',
   };
 }
 

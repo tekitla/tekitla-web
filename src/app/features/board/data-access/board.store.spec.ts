@@ -24,6 +24,7 @@ const issue = (number: number, patch: Partial<Issue> = {}): Issue => ({
   priority: 'PRIORITY_MEDIUM',
   createdAt: `2026-10-0${number}T00:00:00Z`,
   updatedAt: '',
+  rank: `0|a${number}`,
   ...patch,
 });
 
@@ -61,7 +62,7 @@ describe('BoardStore', () => {
 
   it('carga proyecto e issues agrupados en columnas', () => {
     expect(store.project()?.key).toBe('TK');
-    expect(numbersIn('ISSUE_STATE_TODO')).toEqual([3, 1]);
+    expect(numbersIn('ISSUE_STATE_TODO')).toEqual([1, 3]);
     expect(numbersIn('ISSUE_STATE_IN_PROGRESS')).toEqual([2]);
     expect(store.loading()).toBe(false);
   });
@@ -107,11 +108,11 @@ describe('BoardStore', () => {
       client.moveIssue.mockReturnValue(response);
 
       store.move(1, 'ISSUE_STATE_IN_PROGRESS');
-      expect(numbersIn('ISSUE_STATE_IN_PROGRESS')).toEqual([2, 1]);
+      expect(numbersIn('ISSUE_STATE_IN_PROGRESS')).toEqual([1, 2]);
 
       response.error(apiError(500));
 
-      expect(numbersIn('ISSUE_STATE_TODO')).toEqual([3, 1]);
+      expect(numbersIn('ISSUE_STATE_TODO')).toEqual([1, 3]);
       expect(numbersIn('ISSUE_STATE_IN_PROGRESS')).toEqual([2]);
       expect(store.isPending(1)).toBe(false);
       expect(store.notice()).toMatchObject({
@@ -152,6 +153,57 @@ describe('BoardStore', () => {
       expect(store.isPending(1)).toBe(false);
     });
 
+    it('si fallan dos movimientos seguidos, vuelve al estado que tiene el servidor', () => {
+      const first = new Subject<Issue>();
+      const second = new Subject<Issue>();
+      client.moveIssue.mockReturnValueOnce(first).mockReturnValueOnce(second);
+
+      store.move(1, 'ISSUE_STATE_IN_PROGRESS');
+      store.move(1, 'ISSUE_STATE_DONE');
+      first.error(apiError(500));
+      second.error(apiError(500));
+
+      expect(numbersIn('ISSUE_STATE_TODO')).toEqual([1, 3]);
+      expect(numbersIn('ISSUE_STATE_IN_PROGRESS')).toEqual([2]);
+      expect(store.notice()).toMatchObject({ kind: 'error', state: 'ISSUE_STATE_TODO' });
+    });
+
+    it('si el primero se aplicó y falla el último, vuelve a lo que confirmó el primero', () => {
+      const first = new Subject<Issue>();
+      const second = new Subject<Issue>();
+      client.moveIssue.mockReturnValueOnce(first).mockReturnValueOnce(second);
+
+      store.move(1, 'ISSUE_STATE_IN_PROGRESS');
+      store.move(1, 'ISSUE_STATE_DONE');
+      first.next(issue(1, { state: 'ISSUE_STATE_IN_PROGRESS' }));
+      second.error(apiError(500));
+
+      expect(numbersIn('ISSUE_STATE_IN_PROGRESS')).toEqual([1, 2]);
+      expect(store.isPending(1)).toBe(false);
+      expect(store.notice()).toMatchObject({ kind: 'error', state: 'ISSUE_STATE_IN_PROGRESS' });
+    });
+
+    it('la respuesta de un movimiento no toca el tablero de otro proyecto', () => {
+      const ok = new Subject<Issue>();
+      const ko = new Subject<Issue>();
+      client.moveIssue.mockReturnValueOnce(ok).mockReturnValueOnce(ko);
+      store.move(3, 'ISSUE_STATE_DONE');
+      store.move(1, 'ISSUE_STATE_DONE');
+
+      const other = (n: number) => issue(n, { id: `w${n}`, projectId: 'p2', title: `WEB ${n}` });
+      client.listAllProjects.mockReturnValue(of([project, { ...project, id: 'p2', key: 'WEB' }]));
+      client.listAllIssues.mockReturnValue(of([other(1), other(3)]));
+      store.load('p2');
+
+      ok.next(issue(3, { state: 'ISSUE_STATE_DONE' }));
+      ko.error(apiError(500));
+
+      expect(store.issues()).toEqual([other(1), other(3)]);
+      expect(store.isPending(1)).toBe(false);
+      expect(store.isPending(3)).toBe(false);
+      expect(store.notice()).toBeNull();
+    });
+
     it('mover a la misma columna no llama al API', () => {
       store.move(1, 'ISSUE_STATE_TODO');
       expect(client.moveIssue).not.toHaveBeenCalled();
@@ -172,7 +224,7 @@ describe('BoardStore', () => {
 
     store.create({ title: 'Nuevo', description: '', priority: 'PRIORITY_URGENT' }).subscribe();
 
-    expect(numbersIn('ISSUE_STATE_TODO')).toEqual([4, 3, 1]);
+    expect(numbersIn('ISSUE_STATE_TODO')).toEqual([1, 3, 4]); // el backend lo pone al final
     expect(store.activeColumn()).toBe('ISSUE_STATE_TODO');
     expect(store.notice()).toMatchObject({ message: 'board.notice.created', issue: 'TK-4' });
   });

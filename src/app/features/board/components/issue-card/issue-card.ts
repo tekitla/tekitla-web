@@ -56,7 +56,8 @@ export class IssueCard {
     const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
     if (direction === 0) return;
     event.preventDefault();
-    const to = adjacentState(this.column(), direction);
+    const column = this.column();
+    const to = column && adjacentState(column, direction);
     if (to && !this.pending()) this.move.emit({ number: this.issue().number, to, via: 'keyboard' });
   }
 }
