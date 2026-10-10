@@ -1,0 +1,3 @@
+# Falsos positivos revisados a mano (huella = commit:archivo:regla:línea).
+# issue-card.html:15 es el atributo aria de atajos de teclado, no una clave.
+a6f43bdd0f72390ae153331197e6f760f626e19b:src/app/features/board/components/issue-card/issue-card.html:generic-api-key:15
