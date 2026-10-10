@@ -33,7 +33,7 @@ test('valida la key y muestra el error de key repetida (409)', async ({ page }) 
   await page.getByLabel('Nombre').fill('Otro Tequio');
   await page.getByRole('button', { name: 'Crear proyecto' }).click();
 
-  await expect(page.getByText('Ya tenés un proyecto con la clave TQ. Elegí otra.')).toBeVisible();
+  await expect(page.getByText('Ya tienes un proyecto con la clave TQ. Elige otra.')).toBeVisible();
   await expect(key).toHaveAttribute('aria-invalid', 'true');
   await expect(key).toBeFocused();
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/proyectos-409.png`, fullPage: true });

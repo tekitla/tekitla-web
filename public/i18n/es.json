@@ -24,16 +24,16 @@
   "auth": {
     "login": {
       "title": "Iniciar sesión",
-      "lead": "Entrá con tu cuenta de Google para ver tus proyectos e issues.",
+      "lead": "Entra con tu cuenta de Google para ver tus proyectos e issues.",
       "google": "Entrar con Google",
-      "error": "No pudimos iniciar sesión con Google. Probá de nuevo.",
+      "error": "No pudimos iniciar sesión con Google. Intenta de nuevo.",
       "notConfigured": "Falta la configuración web de Firebase en este ambiente (src/environments). Avisale a quien administra Tequio."
     },
     "noAccess": {
       "title": "Tu cuenta no tiene acceso",
       "text": "Iniciaste sesión, pero tu cuenta no está habilitada para usar Tequio.",
       "withEmail": "Iniciaste sesión como {{email}}, pero esa cuenta no está habilitada para usar Tequio.",
-      "hint": "Si debería tener acceso, pedí que la agreguen a la lista de cuentas permitidas, o entrá con otra cuenta.",
+      "hint": "Si debería tener acceso, pide que la agreguen a la lista de cuentas permitidas, o entra con otra cuenta.",
       "switch": "Entrar con otra cuenta"
     }
   },
@@ -41,7 +41,7 @@
     "list": {
       "title": "Proyectos",
       "new": "Nuevo proyecto",
-      "empty": "Todavía no tenés proyectos. Creá el primero con el formulario de arriba.",
+      "empty": "Todavía no tienes proyectos. Crea el primero con el formulario de arriba.",
       "loadError": "No pudimos cargar los proyectos."
     },
     "form": {
@@ -52,12 +52,12 @@
       "description": "Descripción",
       "submit": "Crear proyecto",
       "errors": {
-        "keyRequired": "Escribí una clave.",
+        "keyRequired": "Escribe una clave.",
         "keyStart": "La clave tiene que empezar con una letra.",
         "keyChars": "Sólo letras de la A a la Z (sin ñ ni acentos) y dígitos.",
         "keyLength": "La clave tiene que tener entre 2 y 10 caracteres.",
-        "keyTaken": "Ya tenés un proyecto con la clave {{key}}. Elegí otra.",
-        "nameRequired": "Escribí un nombre.",
+        "keyTaken": "Ya tienes un proyecto con la clave {{key}}. Elige otra.",
+        "nameRequired": "Escribe un nombre.",
         "generic": "No pudimos crear el proyecto."
       }
     }
@@ -67,8 +67,8 @@
     "back": "Proyectos",
     "newIssue": "Nuevo issue",
     "columnsLabel": "Columnas del tablero",
-    "hintDesktop": "Arrastrá las tarjetas entre columnas, o usá «Mover». Con el teclado: Shift + ← / → mueve la tarjeta enfocada.",
-    "hintMobile": "Usá «Mover» en cada tarjeta para cambiarla de columna.",
+    "hintDesktop": "Arrastra las tarjetas entre columnas, o usa «Mover». Con el teclado: Shift + ← / → mueve la tarjeta enfocada.",
+    "hintMobile": "Usa «Mover» en cada tarjeta para cambiarla de columna.",
     "emptyColumn": "Sin issues",
     "notFound": "No encontramos este proyecto.",
     "loadError": "No pudimos cargar el tablero.",
@@ -84,7 +84,7 @@
     },
     "notice": {
       "moved": "{{issue}} pasó a {{column}}.",
-      "moveFailed": "No se pudo mover {{issue}}: volvió a {{column}}. Probá de nuevo.",
+      "moveFailed": "No se pudo mover {{issue}}: volvió a {{column}}. Intenta de nuevo.",
       "created": "{{issue}} creado en Por hacer."
     }
   },
@@ -116,7 +116,7 @@
     "markdownHint": "Admite Markdown: **negrita**, listas, `código`, enlaces.",
     "submit": "Crear issue",
     "errors": {
-      "titleRequired": "Escribí un título.",
+      "titleRequired": "Escribe un título.",
       "generic": "No pudimos crear el issue."
     }
   },
