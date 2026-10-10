@@ -1,0 +1,77 @@
+// Bloque BEM: .ui-markdown (ver la excepción documentada en markdown.ts).
+.ui-markdown {
+  overflow-wrap: anywhere;
+
+  > :first-child {
+    margin-top: 0;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+
+  :is(h1, h2, h3, h4, h5, h6) {
+    margin: var(--space-4) 0 var(--space-2);
+    font-size: var(--text-body);
+    line-height: 1.3;
+  }
+
+  :is(h1, h2) {
+    font-size: var(--text-h2);
+  }
+
+  :is(p, ul, ol, blockquote, pre, table) {
+    margin: 0 0 var(--space-3);
+  }
+
+  :is(ul, ol) {
+    padding-left: var(--space-6);
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  code {
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-sm);
+    background: var(--surface-muted);
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+
+  pre {
+    overflow-x: auto;
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--surface-muted);
+
+    code {
+      padding: 0;
+      background: none;
+    }
+  }
+
+  blockquote {
+    padding-left: var(--space-3);
+    border-left: 3px solid var(--border-subtle);
+    color: var(--text-muted);
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+
+  :is(th, td) {
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--border-subtle);
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}

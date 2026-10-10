@@ -13,3 +13,40 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
 }
+
+// Breakpoint único de la app: < 768px es móvil (mobile first: los estilos base
+// son los del celular y esto agrega lo de tablet/desktop). Las media queries no
+// aceptan var(), por eso vive como variable SCSS. Mantener en sync con
+// MOBILE_QUERY (src/app/core/layout/viewport.ts).
+$tablet-min: 768px;
+
+@mixin from-tablet {
+  @media (min-width: $tablet-min) {
+    @content;
+  }
+}
+
+@mixin reduced-motion {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
+
+// Oculto a la vista, visible para lectores de pantalla.
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@mixin visually-hidden-reset {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}

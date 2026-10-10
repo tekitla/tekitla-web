@@ -1,0 +1,306 @@
+@use 'mixins' as m;
+
+// Bloque BEM: .board — mobile first: la base es el celular (pestañas, una
+// columna); `from-tablet` agrega las 3 columnas lado a lado.
+.board {
+  display: grid;
+  gap: var(--space-3);
+
+  &__header {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  &__back {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: var(--touch-target);
+    color: var(--color-primary);
+    font-size: var(--text-small);
+    text-decoration: none;
+    @include m.focus-visible;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--text-h2);
+    overflow-wrap: anywhere;
+
+    @include m.from-tablet {
+      font-size: var(--text-h1);
+    }
+  }
+
+  &__key {
+    color: var(--color-primary);
+    font-family: var(--font-mono);
+  }
+
+  &__new {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: var(--touch-target);
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-pill);
+    background: var(--color-primary);
+    color: var(--text-on-primary);
+    font-weight: 500;
+    text-decoration: none;
+    @include m.focus-visible;
+
+    &:hover {
+      background: var(--color-primary-dark);
+    }
+  }
+
+  &__hint {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--text-small);
+  }
+
+  &__status {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-2);
+    margin: 0;
+    color: var(--text-muted);
+
+    &--error {
+      color: var(--system-error);
+    }
+  }
+
+  // ── Pestañas (sólo móvil) ────────────────────────────────────────────────
+  &__tabs {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin: 0 calc(-1 * var(--space-4));
+    padding: 0 var(--space-2);
+    background: var(--surface-canvas);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  &__tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-height: var(--touch-target);
+    padding: var(--space-2) var(--space-1);
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: var(--text-small);
+    font-weight: 500;
+    cursor: pointer;
+    @include m.focus-visible;
+
+    &--active {
+      border-bottom-color: var(--color-primary);
+      color: var(--color-primary-dark);
+      font-weight: 600;
+    }
+  }
+
+  &__tab-label {
+    white-space: nowrap;
+  }
+
+  &__count {
+    min-width: 1.5em;
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-pill);
+    background: var(--surface-muted);
+    color: var(--text-primary);
+    font-size: var(--text-small);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  // ── Columnas ─────────────────────────────────────────────────────────────
+  &__columns {
+    display: grid;
+    gap: var(--space-3);
+
+    @include m.from-tablet {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+    }
+  }
+
+  &__column {
+    display: grid;
+    gap: var(--space-2);
+
+    &[hidden] {
+      display: none;
+    }
+
+    @include m.from-tablet {
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      background: var(--surface-column);
+    }
+
+    &--todo {
+      --column-accent: var(--state-todo);
+    }
+
+    &--in-progress {
+      --column-accent: var(--state-in-progress);
+    }
+
+    &--done {
+      --column-accent: var(--state-done);
+    }
+  }
+
+  // En móvil la pestaña ya dice qué columna es: el título sólo para lectores.
+  &__column-title {
+    @include m.visually-hidden;
+
+    @include m.from-tablet {
+      @include m.visually-hidden-reset;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin: 0;
+      font-size: var(--text-body);
+    }
+  }
+
+  &__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-pill);
+    background: var(--column-accent);
+  }
+
+  &__list {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    @include m.from-tablet {
+      min-height: 120px; // zona donde soltar aunque la columna esté vacía
+      border-radius: var(--radius-sm);
+      transition: background-color var(--duration-sm) ease;
+
+      // Clase de @angular/cdk: la columna sobre la que se está arrastrando.
+      &.cdk-drop-list-receiving {
+        background: var(--color-primary-soft);
+        outline: 2px dashed var(--color-primary);
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  &__item {
+    @include m.from-tablet {
+      cursor: grab;
+    }
+
+    // Clases de @angular/cdk durante el arrastre.
+    &.cdk-drag-placeholder {
+      opacity: 0.35;
+    }
+
+    &.cdk-drag-preview {
+      box-shadow: var(--shadow-drag);
+      border-radius: var(--radius-md);
+      cursor: grabbing;
+    }
+
+    &.cdk-drag-animating {
+      transition: transform var(--duration-sm) ease;
+
+      @include m.reduced-motion {
+        transition: none;
+      }
+    }
+  }
+
+  &__empty {
+    padding: var(--space-6) var(--space-3);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    font-size: var(--text-small);
+    text-align: center;
+  }
+
+  // ── Avisos (live region) ─────────────────────────────────────────────────
+  &__notices {
+    position: fixed;
+    right: var(--space-4);
+    bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+    left: var(--space-4);
+    z-index: 10;
+    display: grid;
+    justify-items: center;
+    pointer-events: none;
+  }
+
+  &__notice {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    max-width: 480px;
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--text-primary);
+    color: var(--surface-canvas);
+    box-shadow: var(--shadow-drag);
+    pointer-events: auto;
+
+    &--error {
+      background: var(--system-error);
+      color: var(--text-on-primary);
+    }
+  }
+
+  &__notice-text {
+    flex: 1;
+    margin: 0;
+    font-size: var(--text-small);
+  }
+
+  &__notice-close {
+    display: grid;
+    place-items: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: inherit;
+    font-size: var(--text-h2);
+    line-height: 1;
+    cursor: pointer;
+    @include m.focus-visible;
+  }
+}
