@@ -12,12 +12,19 @@
  *   en `issues.mappers.ts`.
  */
 
-/** Columnas del tablero. */
+/** Categoría del estado. CANCELED = descartado (cerrado sin hacerse). */
 export type IssueState =
-  'ISSUE_STATE_UNSPECIFIED' | 'ISSUE_STATE_TODO' | 'ISSUE_STATE_IN_PROGRESS' | 'ISSUE_STATE_DONE';
+  | 'ISSUE_STATE_UNSPECIFIED'
+  | 'ISSUE_STATE_TODO'
+  | 'ISSUE_STATE_IN_PROGRESS'
+  | 'ISSUE_STATE_DONE'
+  | 'ISSUE_STATE_CANCELED';
 
-/** Estados que se pueden asignar (UNSPECIFIED es INVALID_ARGUMENT en MoveIssue). */
-export type BoardState = Exclude<IssueState, 'ISSUE_STATE_UNSPECIFIED'>;
+/**
+ * Columnas del tablero (UNSPECIFIED es INVALID_ARGUMENT en MoveIssue; los
+ * descartados no se muestran en el tablero).
+ */
+export type BoardState = Exclude<IssueState, 'ISSUE_STATE_UNSPECIFIED' | 'ISSUE_STATE_CANCELED'>;
 
 export const BOARD_STATES: readonly BoardState[] = [
   'ISSUE_STATE_TODO',
@@ -59,6 +66,8 @@ export interface Issue {
   priority: Priority;
   createdAt: string;
   updatedAt: string;
+  /** Posición en el orden manual, opaca: se compara como string; vacío si no vino. */
+  rank: string;
 }
 
 /** Paginación por cursor opaco. `limit <= 0` usa el default del servicio. */
