@@ -1,0 +1,27 @@
+@use 'mixins' as m;
+
+// Bloque BEM: .no-access
+.no-access {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--space-4);
+
+  &__card {
+    @include m.card;
+    display: grid;
+    gap: var(--space-4);
+    width: 100%;
+    max-width: 420px;
+    padding: var(--space-6);
+  }
+
+  &__title {
+    margin: 0;
+  }
+
+  &__text {
+    margin: 0;
+    color: var(--text-muted);
+  }
+}
