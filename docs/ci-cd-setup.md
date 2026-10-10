@@ -77,9 +77,19 @@ opcionalmente, *Deployment branches and tags* = sólo `main`.
 - Cada proyecto GCP tiene que tener Firebase habilitado y el sitio de Hosting por
   defecto (`<proyecto>.web.app`). Los alias `production`/`qa` están en `.firebaserc`.
 - Dominio propio: *Firebase Console › Hosting › Agregar dominio personalizado*.
-- Auth: habilitar el proveedor *Email/Password* (u otros) y agregar el dominio de la app
-  en *Authentication › Settings › Authorized domains*. Completar el bloque `firebase`
-  de `src/environments/environment*.ts` con la config web de cada proyecto (no es secreta).
+- Auth: habilitar el proveedor **Google** (*Authentication › Sign-in method*) y agregar
+  en *Authentication › Settings › Authorized domains*: `localhost`,
+  `tequio.victorrb1015.com` y el dominio de QA (y `<proyecto>.web.app` si se usa).
+- Config web: *Configuración del proyecto › General › Tus apps* → registrar una app web
+  (si no existe) y copiar `apiKey` y `appId` (y verificar `authDomain`/`projectId`) al bloque
+  `firebase` de `src/environments/environment*.ts`. No es secreta (termina en el bundle).
+- El login usa **popup** (también en el celular) y sólo cae a redirect si el popup está
+  bloqueado. El redirect, con `authDomain` en otro dominio que la app, falla en navegadores
+  que bloquean storage de terceros; si algún día se usa siempre redirect, poner como
+  `authDomain` el dominio propio servido por Firebase Hosting.
+- El gateway valida el ID token de Firebase y aplica la allowlist (403 → pantalla
+  «Tu cuenta no tiene acceso»). El CORS del gateway tiene que permitir el origen del front
+  (`http://localhost:4200` en dev).
 
 ## 5. Probar
 

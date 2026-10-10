@@ -8,8 +8,10 @@ plataforma están en los `CLAUDE.md` de las carpetas padre; acá sólo lo propio
 - Angular 21 standalone, zoneless, control flow (`@if`/`@for`), signal inputs
 - Estado: signals + stores propios por feature (sin NgRx)
 - SCSS + BEM, tokens CSS en `src/styles/_tokens.scss`
-- Auth: Firebase Auth (sólo para obtener el ID token) → JWT propio del backend
-  (access token en memoria, refresh token en localStorage)
+- Auth: Firebase Auth con Google. El gateway valida el **ID token de Firebase**
+  directo (`Authorization: Bearer <idToken>`): no hay JWT propio ni refresh de la app;
+  Firebase persiste la sesión y renueva el token. 401 → token nuevo y un reintento;
+  403 → pantalla «sin acceso» (cuenta fuera de la allowlist del gateway)
 - Textos: @ngx-translate, `public/i18n/es.json` (idioma por defecto `es`)
 - Tests: vitest (unit) + Playwright (e2e) · Formato: prettier
 
@@ -17,8 +19,8 @@ plataforma están en los `CLAUDE.md` de las carpetas padre; acá sólo lo propio
 
 | Carpeta | Qué va |
 |---|---|
-| `api/` | Cliente HTTP base (`RestClient`), errores (`DomainError`), interceptores, `SKIP_AUTH` |
-| `core/` | Singletons de infraestructura (auth: SessionStore, AuthService, guard), i18n |
+| `api/` | Cliente HTTP base (`RestClient`), errores (`DomainError`), interceptores, `SKIP_AUTH`, y el cliente tipado del `IssueService` (`clients/issues/`, compartido por varias features) |
+| `core/` | Singletons de infraestructura (auth: FirebaseAuthGateway, SessionStore, AuthService, guards), i18n, `Viewport` |
 | `features/<x>/` | Una carpeta por feature: `<x>.routes.ts`, `data-access/` (client, contracts, store, specs), `pages/` |
 | `layout/` | Marco de la app: `shell` (header, nav, outlet) |
 | `ui/` | Componentes visuales reutilizables, sin lógica de negocio (selector `ui-*`) |
@@ -32,8 +34,12 @@ Otros: `src/environments` (dev/qa/prod), `src/styles` (base global), `src/types`
 - **Flujo de datos**: página → store → client → `RestClient`. Las páginas no llaman HTTP;
   los clients no guardan estado; los stores exponen sólo lectura (`asReadonly`, `computed`).
 - **Store**: `@Injectable()` provisto en la ruta de la feature; protege contra respuestas
-  viejas con un requestId (ver `features/items/data-access/items.store.ts`).
-- **Contratos** en `<x>.contracts.ts`, copiados del contrato del backend.
+  viejas con un requestId (ver `features/board/data-access/board.store.ts`).
+- **Contratos** en `<x>.contracts.ts`, copiados del contrato del backend. Los de Tequio
+  (`api/clients/issues/issues.contracts.ts`) salen de `tequio-protos/proto/issues/v1/issues.proto`;
+  grpc-gateway omite campos con valor por defecto, por eso se normalizan en `issues.mappers.ts`.
+- **Mobile first**: estilos base = celular; `@include m.from-tablet` (≥ 768px) agrega lo de desktop.
+  Lo que se toca mide al menos `var(--touch-target)`.
 - **Errores**: todo error HTTP llega como `DomainError` (`isNotFound()`, `isValidation()`, …).
 - **BEM**: un bloque por componente (`.item-list`, `.item-list__row`, `.item-list__row--active`),
   sólo `var(--token)` para colores/espacios. Detalle en `docs/estilos-bem.md`.
@@ -47,7 +53,7 @@ Otros: `src/environments` (dev/qa/prod), `src/styles` (base global), `src/types`
 ## Comandos
 
 ```bash
-npm start              # dev server en http://localhost:4200 (backend de QA)
+npm start              # dev server en http://localhost:4200 (gateway local en :8080)
 npm run build          # build de producción (= build:prod); build:qa para QA
 npm run test:unit      # vitest
 npm run test:e2e       # Playwright (1ra vez: npx playwright install chromium)
