@@ -25,6 +25,7 @@
     "deploy:prod": "npm run build:prod && npx firebase-tools@15 deploy --only hosting --project production"
   },
   "dependencies": {
+    "@angular/cdk": "^21.2.14",
     "@angular/common": "^21.2.0",
     "@angular/compiler": "^21.2.0",
     "@angular/core": "^21.2.0",
@@ -33,6 +34,7 @@
     "@angular/router": "^21.2.0",
     "@ngx-translate/core": "^17.0.0",
     "firebase": "^12.9.0",
+    "marked": "^16.4.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
