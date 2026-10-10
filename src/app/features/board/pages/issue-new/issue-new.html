@@ -1,0 +1,107 @@
+<section class="issue-new" aria-labelledby="issue-new-title">
+  <a class="issue-new__back" [routerLink]="['/proyectos', projectId()]">
+    <span aria-hidden="true">←</span> {{ 'issueNew.back' | translate }}
+  </a>
+
+  <h1 id="issue-new-title" class="issue-new__title">
+    {{ 'issueNew.title' | translate }}
+    @if (store.project(); as project) {
+      <span class="issue-new__project">· {{ project.key }}</span>
+    }
+  </h1>
+
+  <form class="issue-new__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="issue-new__field">
+      <label class="issue-new__label" for="issue-title">{{
+        'issueNew.fields.title' | translate
+      }}</label>
+      <input
+        #titleInput
+        id="issue-title"
+        class="issue-new__input"
+        formControlName="title"
+        autocomplete="off"
+        [maxLength]="titleMax"
+        required
+        [attr.aria-invalid]="showTitleError()"
+        aria-describedby="issue-title-error"
+      />
+      <p id="issue-title-error" class="issue-new__error" aria-live="polite">
+        @if (showTitleError()) {
+          {{ 'issueNew.errors.titleRequired' | translate }}
+        }
+      </p>
+    </div>
+
+    <div class="issue-new__field">
+      <label class="issue-new__label" for="issue-priority">
+        {{ 'issueNew.fields.priority' | translate }}
+      </label>
+      <select
+        id="issue-priority"
+        class="issue-new__input issue-new__input--select"
+        formControlName="priority"
+      >
+        @for (priority of priorities; track priority) {
+          <option [value]="priority">{{ 'issue.priorityByEnum.' + priority | translate }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="issue-new__field">
+      <div class="issue-new__description-head">
+        <label class="issue-new__label" for="issue-description">
+          {{ 'issueNew.fields.description' | translate }}
+          <span class="issue-new__optional">{{ 'common.optional' | translate }}</span>
+        </label>
+        <button
+          type="button"
+          class="issue-new__toggle"
+          [attr.aria-pressed]="preview()"
+          (click)="preview.set(!preview())"
+        >
+          {{ 'issueNew.preview' | translate }}
+        </button>
+      </div>
+      <textarea
+        id="issue-description"
+        class="issue-new__input issue-new__input--textarea"
+        formControlName="description"
+        rows="8"
+        aria-describedby="issue-description-hint"
+        [hidden]="preview()"
+      ></textarea>
+      @if (preview()) {
+        <div
+          class="issue-new__preview"
+          [attr.aria-label]="'issueNew.preview' | translate"
+          role="region"
+        >
+          @if (form.controls.description.value.trim()) {
+            <ui-markdown [source]="form.controls.description.value" />
+          } @else {
+            <p class="issue-new__hint">{{ 'issueNew.previewEmpty' | translate }}</p>
+          }
+        </div>
+      }
+      <p id="issue-description-hint" class="issue-new__hint">
+        {{ 'issueNew.markdownHint' | translate }}
+      </p>
+    </div>
+
+    @if (submitError(); as error) {
+      <p class="issue-new__error" role="alert">
+        {{ 'issueNew.errors.generic' | translate }} ({{ error }})
+      </p>
+    }
+
+    <div class="issue-new__actions">
+      <ui-button type="submit" [loading]="saving()">
+        {{ 'issueNew.submit' | translate }}
+      </ui-button>
+      <a class="issue-new__cancel" [routerLink]="['/proyectos', projectId()]">
+        {{ 'common.cancel' | translate }}
+      </a>
+    </div>
+  </form>
+</section>

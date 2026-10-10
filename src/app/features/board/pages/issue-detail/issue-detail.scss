@@ -1,0 +1,119 @@
+@use 'mixins' as m;
+
+// Bloque BEM: .issue-detail
+.issue-detail {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 820px;
+
+  &__back {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: var(--touch-target);
+    color: var(--color-primary);
+    font-size: var(--text-small);
+    text-decoration: none;
+    @include m.focus-visible;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__header {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  &__key {
+    margin: 0;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-weight: 600;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--text-h2);
+    overflow-wrap: anywhere;
+
+    @include m.from-tablet {
+      font-size: var(--text-h1);
+    }
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    color: var(--text-muted);
+    font-size: var(--text-small);
+  }
+
+  &__states {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+
+    @include m.from-tablet {
+      max-width: 480px;
+    }
+  }
+
+  &__legend {
+    @include m.visually-hidden;
+  }
+
+  &__state {
+    min-height: var(--touch-target);
+    padding: 0 var(--space-2);
+    border: 0;
+    background: var(--surface-canvas);
+    color: var(--text-primary);
+    font-size: var(--text-small);
+    font-weight: 500;
+    cursor: pointer;
+    @include m.focus-visible;
+
+    & + & {
+      border-left: 1px solid var(--border-strong);
+    }
+
+    &:disabled {
+      cursor: progress;
+    }
+
+    &--active {
+      background: var(--color-primary);
+      color: var(--text-on-primary);
+    }
+  }
+
+  &__body {
+    @include m.card;
+    padding: var(--space-4);
+
+    @include m.from-tablet {
+      padding: var(--space-6);
+    }
+  }
+
+  &__empty,
+  &__status {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  &__error {
+    margin: 0;
+    color: var(--system-error);
+  }
+}

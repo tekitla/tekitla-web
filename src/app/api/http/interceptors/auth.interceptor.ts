@@ -1,43 +1,56 @@
 import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, of, switchMap, throwError } from 'rxjs';
+import { catchError, defer, from, switchMap, throwError } from 'rxjs';
 
 import { AuthService } from '@/app/core/auth/auth.service';
-import { SessionStore } from '@/app/core/auth/session.store';
+import { API_BASE_URL } from '../../clients/rest/rest.endpoints';
 import { SKIP_AUTH } from '../tokens';
 
 /**
- * Agrega `Authorization: Bearer <accessToken>` y mantiene viva la sesión:
+ * Agrega `Authorization: Bearer <ID token de Firebase>` a las requests al API.
+ * El gateway valida ese token directamente; Firebase lo renueva solo, así que
+ * acá no hay lógica de refresh propia.
  *
- * 1. Sin access token pero con refresh token (caso post-F5), o token vencido →
- *    refresca ANTES de mandar la request.
- * 2. Si el backend responde 401 → refresca y reintenta UNA vez.
+ * - 401: el token pudo haber sido revocado/rotado → se pide uno NUEVO a Firebase
+ *   (`getIdToken(true)`) y se reintenta UNA vez. Si vuelve a dar 401, la sesión
+ *   no sirve: logout.
+ * - 403: la cuenta no está en la allowlist → pantalla «sin acceso».
  *
- * El refresh en sí (compartido entre requests concurrentes, y qué hacer si
- * falla) vive en AuthService. Las requests con SKIP_AUTH pasan intactas.
+ * Sólo toca requests al API propio (nunca manda el token a otros hosts) y no
+ * las marcadas con SKIP_AUTH.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  if (req.context.get(SKIP_AUTH)) return next(req);
+  if (req.context.get(SKIP_AUTH) || !isApiRequest(req.url)) return next(req);
 
-  const session = inject(SessionStore);
   const auth = inject(AuthService);
+  const send = (force: boolean) =>
+    defer(() => from(auth.idToken(force))).pipe(switchMap((token) => next(withBearer(req, token))));
 
-  const mustRefreshFirst =
-    session.refreshToken() !== null && (!session.isAuthenticated() || session.isTokenExpired());
-  const token$ = mustRefreshFirst ? auth.refresh() : of(session.accessToken());
-
-  return token$.pipe(
-    switchMap((token) =>
-      next(withBearer(req, token)).pipe(
-        catchError((err: unknown) => {
-          const isUnauthorized = err instanceof HttpErrorResponse && err.status === 401;
-          if (!isUnauthorized || session.refreshToken() === null) return throwError(() => err);
-          return auth.refresh().pipe(switchMap((fresh) => next(withBearer(req, fresh))));
-        }),
-      ),
+  return send(false).pipe(
+    catchError((err: unknown) =>
+      statusOf(err) === 401
+        ? send(true).pipe(
+            catchError((retryErr: unknown) => {
+              if (statusOf(retryErr) === 401) auth.sessionExpired();
+              return throwError(() => retryErr);
+            }),
+          )
+        : throwError(() => err),
     ),
+    catchError((err: unknown) => {
+      if (statusOf(err) === 403) auth.accessDenied();
+      return throwError(() => err);
+    }),
   );
 };
+
+function isApiRequest(url: string): boolean {
+  return url.startsWith(`${API_BASE_URL.replace(/\/+$/, '')}/`);
+}
+
+function statusOf(err: unknown): number | null {
+  return err instanceof HttpErrorResponse ? err.status : null;
+}
 
 function withBearer<T>(req: HttpRequest<T>, token: string | null): HttpRequest<T> {
   return token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;

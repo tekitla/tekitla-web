@@ -1,28 +1,25 @@
 <main class="login">
-  <form class="login__card" [formGroup]="form" (ngSubmit)="submit()">
-    <h1 class="login__title">{{ 'auth.login.title' | translate }}</h1>
+  <section class="login__card" aria-labelledby="login-title">
+    <p class="login__brand" aria-hidden="true">Tequio</p>
+    <h1 id="login-title" class="login__title">{{ 'auth.login.title' | translate }}</h1>
+    <p class="login__lead">{{ 'auth.login.lead' | translate }}</p>
 
-    <label class="login__field">
-      <span class="login__label">{{ 'auth.login.email' | translate }}</span>
-      <input class="login__input" type="email" formControlName="email" autocomplete="email" />
-    </label>
-
-    <label class="login__field">
-      <span class="login__label">{{ 'auth.login.password' | translate }}</span>
-      <input
-        class="login__input"
-        type="password"
-        formControlName="password"
-        autocomplete="current-password"
-      />
-    </label>
+    @if (!configured) {
+      <p class="login__error" role="alert">{{ 'auth.login.notConfigured' | translate }}</p>
+    }
 
     @if (failed()) {
       <p class="login__error" role="alert">{{ 'auth.login.error' | translate }}</p>
     }
 
-    <ui-button type="submit" [loading]="loading()" [disabled]="form.invalid" [fullWidth]="true">
-      {{ 'auth.login.submit' | translate }}
+    <ui-button
+      [loading]="loading()"
+      [disabled]="!configured"
+      [fullWidth]="true"
+      (pressed)="signIn()"
+    >
+      <span class="login__google" aria-hidden="true">G</span>
+      {{ 'auth.login.google' | translate }}
     </ui-button>
-  </form>
+  </section>
 </main>

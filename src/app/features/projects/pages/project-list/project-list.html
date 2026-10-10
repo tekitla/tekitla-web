@@ -1,0 +1,143 @@
+<section class="project-list" aria-labelledby="projects-title">
+  <header class="project-list__header">
+    <h1 id="projects-title" class="project-list__title">{{ 'projects.list.title' | translate }}</h1>
+    @if (!formOpen()) {
+      <ui-button size="sm" (pressed)="openForm()">
+        {{ 'projects.list.new' | translate }}
+      </ui-button>
+    }
+  </header>
+
+  @if (formOpen() || store.isEmpty()) {
+    <form
+      class="project-list__form"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      novalidate
+      aria-labelledby="project-form-title"
+    >
+      <h2 id="project-form-title" class="project-list__form-title">
+        {{ 'projects.form.title' | translate }}
+      </h2>
+
+      <div class="project-list__field">
+        <label class="project-list__label" for="project-key">
+          {{ 'projects.form.key' | translate }}
+        </label>
+        <input
+          #keyInput
+          id="project-key"
+          class="project-list__input project-list__input--key"
+          formControlName="key"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          maxlength="10"
+          inputmode="text"
+          required
+          [attr.aria-invalid]="showErrors('key')"
+          aria-describedby="project-key-hint project-key-error"
+          (input)="normalizeKey()"
+        />
+        <p id="project-key-hint" class="project-list__hint">
+          {{ 'projects.form.keyHint' | translate }}
+        </p>
+        <p id="project-key-error" class="project-list__error" aria-live="polite">
+          @if (showErrors('key')) {
+            @let errors = form.controls.key.errors;
+            @if (errors?.['required']) {
+              {{ 'projects.form.errors.keyRequired' | translate }}
+            } @else if (errors?.['projectKeyStart']) {
+              {{ 'projects.form.errors.keyStart' | translate }}
+            } @else if (errors?.['projectKeyChars']) {
+              {{ 'projects.form.errors.keyChars' | translate }}
+            } @else if (errors?.['projectKeyLength']) {
+              {{ 'projects.form.errors.keyLength' | translate }}
+            } @else if (errors?.['taken']) {
+              {{ 'projects.form.errors.keyTaken' | translate: { key: takenKey() } }}
+            }
+          }
+        </p>
+      </div>
+
+      <div class="project-list__field">
+        <label class="project-list__label" for="project-name">
+          {{ 'projects.form.name' | translate }}
+        </label>
+        <input
+          id="project-name"
+          class="project-list__input"
+          formControlName="name"
+          autocomplete="off"
+          maxlength="100"
+          required
+          [attr.aria-invalid]="showErrors('name')"
+          aria-describedby="project-name-error"
+        />
+        <p id="project-name-error" class="project-list__error" aria-live="polite">
+          @if (showErrors('name')) {
+            {{ 'projects.form.errors.nameRequired' | translate }}
+          }
+        </p>
+      </div>
+
+      <div class="project-list__field">
+        <label class="project-list__label" for="project-description">
+          {{ 'projects.form.description' | translate }}
+          <span class="project-list__optional">{{ 'common.optional' | translate }}</span>
+        </label>
+        <textarea
+          id="project-description"
+          class="project-list__input project-list__input--textarea"
+          formControlName="description"
+          rows="3"
+          maxlength="2000"
+        ></textarea>
+      </div>
+
+      @if (submitError(); as error) {
+        <p class="project-list__error" role="alert">
+          {{ 'projects.form.errors.generic' | translate }} ({{ error }})
+        </p>
+      }
+
+      <div class="project-list__actions">
+        <ui-button type="submit" [loading]="saving()">
+          {{ 'projects.form.submit' | translate }}
+        </ui-button>
+        @if (!store.isEmpty()) {
+          <ui-button variant="ghost" (pressed)="closeForm()">
+            {{ 'common.cancel' | translate }}
+          </ui-button>
+        }
+      </div>
+    </form>
+  }
+
+  @if (store.loading()) {
+    <p class="project-list__status" role="status">{{ 'common.loading' | translate }}</p>
+  } @else if (store.error(); as error) {
+    <div class="project-list__status project-list__status--error" role="alert">
+      <p>{{ 'projects.list.loadError' | translate }} ({{ error }})</p>
+      <ui-button variant="secondary" size="sm" (pressed)="store.load()">
+        {{ 'common.retry' | translate }}
+      </ui-button>
+    </div>
+  } @else if (store.isEmpty()) {
+    <p class="project-list__status">{{ 'projects.list.empty' | translate }}</p>
+  } @else {
+    <ul class="project-list__items">
+      @for (project of store.projects(); track project.id) {
+        <li class="project-list__item">
+          <a class="project-list__link" [routerLink]="['/proyectos', project.id]">
+            <span class="project-list__key">{{ project.key }}</span>
+            <span class="project-list__name">{{ project.name }}</span>
+            @if (project.description) {
+              <span class="project-list__description">{{ project.description }}</span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</section>

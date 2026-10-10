@@ -11,6 +11,11 @@ body {
   padding: 0;
 }
 
+// Sin el recuadro azul al tocar en móviles: el foco se ve con :focus-visible.
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 img,
 svg {
   display: block;

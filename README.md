@@ -7,7 +7,7 @@ App frontend Angular (`tequio-web`). Generada desde la plantilla
 
 ```bash
 npm install
-npm start            # http://localhost:4200 contra el backend de QA
+npm start            # http://localhost:4200 contra el gateway local (http://localhost:8080)
 ```
 
 ## Scripts
@@ -26,9 +26,16 @@ npm start            # http://localhost:4200 contra el backend de QA
 
 | Ambiente | Archivo | API |
 |---|---|---|
-| dev (`npm start`) | `src/environments/environment.ts` | https://api-qa.tequio.victorrb1015.com |
+| dev (`npm start`) | `src/environments/environment.ts` | http://localhost:8080 (tequio-gateway local) |
 | qa | `src/environments/environment.qa.ts` | https://api-qa.tequio.victorrb1015.com |
 | production | `src/environments/environment.prod.ts` | https://api.tequio.victorrb1015.com |
+
+## Firebase (login con Google)
+
+El bloque `firebase` de cada `src/environments/environment*.ts` trae placeholders
+(`REEMPLAZAR_*`). Se copian de *Consola de Firebase › Configuración del proyecto ›
+General › Tus apps › app web* (`tequio-app-435b4`). No son secretos. Mientras falten,
+la pantalla de login lo avisa. Detalle en [docs/ci-cd-setup.md](docs/ci-cd-setup.md#4-firebase).
 
 ## Deploy
 

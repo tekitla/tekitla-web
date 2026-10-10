@@ -10,7 +10,10 @@
   // Color · superficies y texto
   --surface-canvas: #ffffff;
   --surface-muted: #f4f5f7;
+  --surface-column: #e9ebef;
   --border-subtle: #dfe1e6;
+  // Bordes de controles (inputs): ≥ 3:1 contra el fondo (WCAG 1.4.11).
+  --border-strong: #7d8590;
   --text-primary: #1f2328;
   --text-muted: #5f6670;
   --text-on-primary: #ffffff;
@@ -18,9 +21,26 @@
   // Color · sistema
   --system-error: #b3261e;
   --system-success: #2e7d32;
+  --system-error-soft: #fbe1df;
+
+  // Color · prioridad de issues (texto ≥ 4.5:1 sobre su fondo suave)
+  --priority-low: #4a5059;
+  --priority-low-soft: #eceef1;
+  --priority-medium: #1d3d5c;
+  --priority-medium-soft: #dbe7f3;
+  --priority-high: #8a4b00;
+  --priority-high-soft: #fdebd3;
+  --priority-urgent: #9b1c14;
+  --priority-urgent-soft: #fbe1df;
+
+  // Color · estado (columnas del tablero)
+  --state-todo: #7d8590;
+  --state-in-progress: #2f5d8a;
+  --state-done: #2e7d32;
 
   // Tipografía
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace;
   --text-h1: 1.75rem;
   --text-h2: 1.375rem;
   --text-body: 1rem;
@@ -44,7 +64,10 @@
   // Layout
   --header-h: 56px;
   --container-max: 1200px;
+  // Alto/ancho mínimo de lo que se toca con el dedo (WCAG 2.5.5 / guías móviles).
+  --touch-target: 44px;
 
   // Animación
   --duration-sm: 160ms;
+  --shadow-drag: 0 8px 24px rgba(0, 0, 0, 0.18);
 }

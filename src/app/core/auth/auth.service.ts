@@ -1,84 +1,83 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import {
-  Observable,
-  catchError,
-  finalize,
-  firstValueFrom,
-  map,
-  shareReplay,
-  throwError,
-} from 'rxjs';
 
-import { DomainError, toDomainError } from '@/app/api';
-import { AuthClient } from './auth.client';
-import { signInWithFirebase, signOutFirebase } from './firebase';
-import { SessionStore } from './session.store';
+import { FirebaseAuthGateway, type FirebaseUserInfo } from './firebase';
+import { type AuthUser, SessionStore } from './session.store';
+
+/** Ruta pública a la que se manda a quien no está en la allowlist del gateway. */
+export const NO_ACCESS_PATH = '/sin-acceso';
 
 /**
- * Orquesta el ciclo de vida de la sesión: login (Firebase → JWT propio),
- * refresh y logout. Es lo único que escribe en SessionStore.
+ * Orquesta la sesión: login con Google (Firebase), ID token para el API,
+ * logout y las reacciones a 401/403 del gateway. Es lo único que escribe en
+ * SessionStore.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly session = inject(SessionStore);
-  private readonly client = inject(AuthClient);
+  private readonly firebase = inject(FirebaseAuthGateway);
   private readonly router = inject(Router);
 
-  /**
-   * Refresh en vuelo compartido: N requests concurrentes con el token vencido
-   * esperan el MISMO refresh. Si cada una refrescara por su cuenta, el backend
-   * (que rota el refresh token en cada uso) revocaría los tokens entre sí.
-   */
-  private refreshInFlight$: Observable<string> | null = null;
+  private readyPromise: Promise<boolean> | null = null;
 
-  async loginWithEmail(email: string, password: string): Promise<void> {
-    const idToken = await signInWithFirebase(email, password);
-    const res = await firstValueFrom(this.client.login({ idToken }));
-    this.session.setSession(res.session, res.user);
+  /** `false` si faltan los valores de la config web de Firebase en los environments. */
+  isConfigured(): boolean {
+    return this.firebase.isConfigured();
   }
 
-  /** Pide un access token nuevo. Emite el token y completa. */
-  refresh(): Observable<string> {
-    const refreshToken = this.session.refreshToken();
-    if (!refreshToken) {
-      return throwError(
-        () => new DomainError({ status: 401, message: 'Sin sesión', details: [], traceId: null }),
-      );
-    }
+  /**
+   * Resuelve cuando Firebase restauró la sesión (una sola vez por carga) y
+   * devuelve si hay usuario. Además deja escuchando cambios posteriores (p. ej.
+   * sesión revocada en otra pestaña).
+   */
+  ready(): Promise<boolean> {
+    this.readyPromise ??= (async () => {
+      try {
+        const user = await this.firebase.currentUser();
+        this.session.setUser(user && toAuthUser(user));
+        void this.firebase
+          .onUserChanged((u) => this.session.setUser(u && toAuthUser(u)))
+          .catch(() => undefined);
+      } catch (err) {
+        console.error('[AUTH] no se pudo inicializar Firebase', err);
+        this.session.clear();
+      }
+      return this.session.isAuthenticated();
+    })();
+    return this.readyPromise;
+  }
 
-    this.refreshInFlight$ ??= this.client.refresh({ refreshToken }).pipe(
-      map((res) => {
-        this.session.setSession(res.session);
-        return res.session.accessToken;
-      }),
-      catchError((err: unknown) => {
-        const error = toDomainError(err);
-        // 4xx: el backend RECHAZÓ la credencial → la sesión murió.
-        // 5xx / 0: el backend no pudo atender ahora → se conserva la sesión
-        // para que la próxima acción pueda reintentar (no convertir una caída
-        // de segundos en un logout).
-        if (error.status >= 400 && error.status < 500) this.endSession();
-        return throwError(() => error);
-      }),
-      finalize(() => (this.refreshInFlight$ = null)),
-      shareReplay({ bufferSize: 1, refCount: false }),
-    );
-    return this.refreshInFlight$;
+  /** `true` si quedó logueado; `false` si canceló o se fue por redirect. */
+  async loginWithGoogle(): Promise<boolean> {
+    const user = await this.firebase.signInWithGoogle();
+    if (!user) return false;
+    this.session.setUser(toAuthUser(user));
+    return true;
+  }
+
+  /** ID token para `Authorization: Bearer`. Firebase lo renueva solo; `force` lo pide nuevo. */
+  idToken(force = false): Promise<string | null> {
+    return this.firebase.getIdToken(force);
   }
 
   async logout(): Promise<void> {
-    const refreshToken = this.session.refreshToken();
-    if (refreshToken) {
-      // Best effort: si falla la revocación, igual se cierra la sesión local.
-      await firstValueFrom(this.client.logout({ refreshToken })).catch(() => undefined);
-    }
-    await signOutFirebase().catch(() => undefined);
-    this.endSession();
+    await this.firebase.signOut().catch(() => undefined);
+    this.session.clear();
+    await this.router.navigate(['/login']);
   }
 
-  private endSession(): void {
-    this.session.clear();
-    void this.router.navigate(['/login']);
+  /** El gateway rechazó el token aun renovado (401): la sesión no sirve más. */
+  sessionExpired(): void {
+    void this.logout();
   }
+
+  /** El gateway respondió 403: la cuenta no está en la allowlist. */
+  accessDenied(): void {
+    if (this.router.url.startsWith(NO_ACCESS_PATH)) return;
+    void this.router.navigateByUrl(NO_ACCESS_PATH);
+  }
+}
+
+function toAuthUser(user: FirebaseUserInfo): AuthUser {
+  return { uid: user.uid, email: user.email, displayName: user.displayName };
 }

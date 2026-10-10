@@ -1,0 +1,49 @@
+<article
+  class="issue-card"
+  [class.issue-card--pending]="pending()"
+  [attr.aria-busy]="pending() || null"
+>
+  <div class="issue-card__meta">
+    <span class="issue-card__key">{{ key() }}</span>
+    <app-priority-badge [priority]="issue().priority" />
+  </div>
+
+  <a
+    class="issue-card__link"
+    [id]="'issue-link-' + issue().number"
+    [routerLink]="link()"
+    aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight"
+    aria-describedby="board-shortcut-hint"
+    (keydown)="onKeydown($event)"
+  >
+    <span class="u-visually-hidden">{{ key() }}: </span>{{ issue().title }}
+  </a>
+
+  <button
+    type="button"
+    class="issue-card__move"
+    [cdkMenuTriggerFor]="moveMenu"
+    [disabled]="pending()"
+    [attr.aria-label]="'board.card.moveLabel' | translate: { issue: key() }"
+  >
+    <svg class="issue-card__move-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M2 5h10M9 2l3 3-3 3M14 11H4M7 8l-3 3 3 3" />
+    </svg>
+    <span aria-hidden="true">{{ 'board.card.move' | translate }}</span>
+  </button>
+</article>
+
+<ng-template #moveMenu>
+  <div class="issue-card__menu" cdkMenu>
+    @for (state of targets(); track state) {
+      <button
+        type="button"
+        class="issue-card__menu-item"
+        cdkMenuItem
+        (cdkMenuItemTriggered)="moveTo(state)"
+      >
+        {{ 'board.card.moveTo' | translate: { column: ('board.columns.' + state | translate) } }}
+      </button>
+    }
+  </div>
+</ng-template>

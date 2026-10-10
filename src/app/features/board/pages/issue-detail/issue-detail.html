@@ -1,0 +1,68 @@
+<article class="issue-detail" aria-labelledby="issue-detail-title">
+  <a class="issue-detail__back" [routerLink]="['/proyectos', projectId()]">
+    <span aria-hidden="true">←</span> {{ 'issueDetail.back' | translate }}
+  </a>
+
+  @if (store.selected(); as issue) {
+    <header class="issue-detail__header">
+      <p class="issue-detail__key">{{ key() }}</p>
+      <h1 id="issue-detail-title" class="issue-detail__title">{{ issue.title }}</h1>
+      <div class="issue-detail__meta">
+        <app-priority-badge [priority]="issue.priority" />
+        @if (issue.createdAt) {
+          <span>
+            {{ 'issueDetail.created' | translate }}
+            <time [attr.datetime]="issue.createdAt">{{
+              issue.createdAt | date: 'mediumDate'
+            }}</time>
+          </span>
+        }
+        @if (issue.updatedAt) {
+          <span>
+            {{ 'issueDetail.updated' | translate }}
+            <time [attr.datetime]="issue.updatedAt">{{ issue.updatedAt | date: 'short' }}</time>
+          </span>
+        }
+      </div>
+    </header>
+
+    <fieldset class="issue-detail__states" [attr.aria-busy]="pending() || null">
+      <legend class="issue-detail__legend">{{ 'issueDetail.state' | translate }}</legend>
+      @for (state of states; track state) {
+        <button
+          type="button"
+          class="issue-detail__state"
+          [class.issue-detail__state--active]="column() === state"
+          [attr.aria-pressed]="column() === state"
+          [disabled]="pending()"
+          (click)="move(state)"
+        >
+          {{ 'board.columns.' + state | translate }}
+        </button>
+      }
+    </fieldset>
+    @if (store.notice(); as notice) {
+      @if (notice.kind === 'error') {
+        <p class="issue-detail__error" role="alert">
+          {{ notice.message | translate: { issue: notice.issue } }}
+        </p>
+      }
+    }
+
+    <section class="issue-detail__body" [attr.aria-label]="'issueDetail.description' | translate">
+      @if (issue.description.trim()) {
+        <ui-markdown [source]="issue.description" />
+      } @else {
+        <p class="issue-detail__empty">{{ 'issueDetail.noDescription' | translate }}</p>
+      }
+    </section>
+  } @else if (store.selectedLoading()) {
+    <p class="issue-detail__status" role="status">{{ 'common.loading' | translate }}</p>
+  } @else if (store.selectedNotFound()) {
+    <p class="issue-detail__error" role="alert">{{ 'issueDetail.notFound' | translate }}</p>
+  } @else if (store.selectedError(); as error) {
+    <p class="issue-detail__error" role="alert">
+      {{ 'issueDetail.loadError' | translate }} ({{ error }})
+    </p>
+  }
+</article>

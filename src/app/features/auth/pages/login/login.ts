@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { AuthService } from '@/app/core/auth/auth.service';
 import { Button } from '@/app/ui/components/button/button';
 
+/** Login con Google (Firebase Auth). Sin formulario: Google es el único proveedor. */
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, Button, TranslatePipe],
+  imports: [Button, TranslatePipe],
   templateUrl: './login.html',
   styleUrl: './login.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -18,26 +18,30 @@ export class Login {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  protected readonly form = inject(FormBuilder).nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required],
-  });
+  protected readonly configured = this.auth.isConfigured();
   protected readonly loading = signal(false);
   protected readonly failed = signal(false);
 
-  protected async submit(): Promise<void> {
-    if (this.form.invalid || this.loading()) return;
+  protected async signIn(): Promise<void> {
+    if (this.loading()) return;
     this.loading.set(true);
     this.failed.set(false);
     try {
-      const { email, password } = this.form.getRawValue();
-      await this.auth.loginWithEmail(email, password);
-      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/';
-      await this.router.navigateByUrl(returnUrl);
-    } catch {
+      const loggedIn = await this.auth.loginWithGoogle();
+      if (!loggedIn) return;
+      await this.router.navigateByUrl(
+        safeReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl')),
+      );
+    } catch (err) {
+      console.error('[AUTH] login con Google falló', err);
       this.failed.set(true);
     } finally {
       this.loading.set(false);
     }
   }
+}
+
+/** Sólo rutas internas: evita usar el login como redirector abierto. */
+function safeReturnUrl(url: string | null): string {
+  return url && url.startsWith('/') && !url.startsWith('//') ? url : '/';
 }
