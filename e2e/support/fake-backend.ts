@@ -3,7 +3,7 @@ import type { Page, Route } from '@playwright/test';
 import { environment } from '../../src/environments/environment';
 
 /**
- * Backend falso para los e2e: sesión de Firebase + API de Tequio, todo con
+ * Backend falso para los e2e: sesión de Firebase + API de Tekitla, todo con
  * `page.route`. Los tests no dependen de Firebase real ni del gateway.
  */
 
@@ -36,16 +36,16 @@ export interface FakeBackendOptions {
 }
 
 export const PROJECT: FakeProject = {
-  id: 'p-tq',
-  key: 'TQ',
-  name: 'Tequio',
+  id: 'p-tk',
+  key: 'TK',
+  name: 'Tekitla',
   description: 'El tracker',
 };
 
 export const ISSUES: FakeIssue[] = [
   {
     id: 'i1',
-    projectId: 'p-tq',
+    projectId: 'p-tk',
     number: 1,
     title: 'Diseñar el tablero',
     description: '## Objetivo\n\nTablero **mobile first**.\n\n<script>window.__xss = 1</script>',
@@ -56,7 +56,7 @@ export const ISSUES: FakeIssue[] = [
   },
   {
     id: 'i2',
-    projectId: 'p-tq',
+    projectId: 'p-tk',
     number: 2,
     title: 'Login con Google',
     state: 'ISSUE_STATE_IN_PROGRESS',
@@ -66,14 +66,14 @@ export const ISSUES: FakeIssue[] = [
   {
     // Sin state ni priority: grpc-gateway omite los valores por defecto.
     id: 'i3',
-    projectId: 'p-tq',
+    projectId: 'p-tk',
     number: 3,
     title: 'Importar issues desde docs',
     createdAt: '2026-10-03T10:00:00Z',
   },
   {
     id: 'i4',
-    projectId: 'p-tq',
+    projectId: 'p-tk',
     number: 4,
     title: 'Deploy en QA',
     state: 'ISSUE_STATE_DONE',
@@ -137,7 +137,7 @@ export async function signIn(page: Page): Promise<void> {
   );
 }
 
-/** Mockea el API de Tequio con estado en memoria. Devuelve los requests recibidos. */
+/** Mockea el API de Tekitla con estado en memoria. Devuelve los requests recibidos. */
 export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
   const projects = structuredClone(options.projects ?? [PROJECT]);
   const issues = structuredClone(options.issues ?? ISSUES);

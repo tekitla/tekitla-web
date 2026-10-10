@@ -11,8 +11,8 @@ test('lista los proyectos y entra al tablero', async ({ page }) => {
   await page.goto('/');
 
   await expect(page).toHaveURL(/\/proyectos$/);
-  await page.getByRole('link', { name: /TQ\s+Tequio/ }).click();
-  await expect(page).toHaveURL(/\/proyectos\/p-tq$/);
+  await page.getByRole('link', { name: /TK\s+Tekitla/ }).click();
+  await expect(page).toHaveURL(/\/proyectos\/p-tk$/);
 });
 
 test('valida la key y muestra el error de key repetida (409)', async ({ page }) => {
@@ -28,12 +28,12 @@ test('valida la key y muestra el error de key repetida (409)', async ({ page }) 
   await key.blur();
   await expect(page.getByText('La clave tiene que empezar con una letra.')).toBeVisible();
 
-  await key.fill('tq'); // se normaliza a mayúsculas
-  await expect(key).toHaveValue('TQ');
-  await page.getByLabel('Nombre').fill('Otro Tequio');
+  await key.fill('tk'); // se normaliza a mayúsculas
+  await expect(key).toHaveValue('TK');
+  await page.getByLabel('Nombre').fill('Otro Tekitla');
   await page.getByRole('button', { name: 'Crear proyecto' }).click();
 
-  await expect(page.getByText('Ya tienes un proyecto con la clave TQ. Elige otra.')).toBeVisible();
+  await expect(page.getByText('Ya tienes un proyecto con la clave TK. Elige otra.')).toBeVisible();
   await expect(key).toHaveAttribute('aria-invalid', 'true');
   await expect(key).toBeFocused();
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/proyectos-409.png`, fullPage: true });
@@ -55,8 +55,8 @@ test('una cuenta fuera de la allowlist (403) ve «Tu cuenta no tiene acceso»', 
 });
 
 test('sin sesión redirige al login', async ({ page }) => {
-  await page.goto('/proyectos/p-tq');
-  await expect(page).toHaveURL(/\/login\?returnUrl=%2Fproyectos%2Fp-tq/);
+  await page.goto('/proyectos/p-tk');
+  await expect(page).toHaveURL(/\/login\?returnUrl=%2Fproyectos%2Fp-tk/);
   await expect(page.getByRole('button', { name: 'Entrar con Google' })).toBeVisible();
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/login.png` });
 });

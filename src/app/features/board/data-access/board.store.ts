@@ -17,7 +17,7 @@ export interface BoardNotice {
   kind: 'info' | 'error';
   /** Clave de traducción (`board.notice.*`). */
   message: string;
-  /** `TQ-42` */
+  /** `TK-42` */
   issue: string;
   state?: BoardState;
   id: number;

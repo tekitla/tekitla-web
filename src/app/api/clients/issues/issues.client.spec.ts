@@ -38,10 +38,10 @@ describe('IssuesClient', () => {
     expect(req.request.params.get('page.cursor')).toBe('c1');
     expect(req.request.params.get('page.limit')).toBe('10');
     // grpc-gateway omite `description` vacía y no manda `page` en la última.
-    req.flush({ projects: [{ id: 'p1', key: 'TQ', name: 'Tequio' }] });
+    req.flush({ projects: [{ id: 'p1', key: 'TK', name: 'Tekitla' }] });
 
     expect(projects).toEqual([
-      { id: 'p1', key: 'TQ', name: 'Tequio', description: '', createdAt: '', updatedAt: '' },
+      { id: 'p1', key: 'TK', name: 'Tekitla', description: '', createdAt: '', updatedAt: '' },
     ]);
   });
 
@@ -107,13 +107,13 @@ describe('IssuesClient', () => {
     let project: Project | undefined;
 
     client
-      .createProject({ key: 'TQ', name: 'Tequio', description: '' })
+      .createProject({ key: 'TK', name: 'Tekitla', description: '' })
       .subscribe((res) => (project = res));
 
     const req = httpMock.expectOne(url('/v1/projects'));
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ key: 'TQ', name: 'Tequio', description: '' });
-    req.flush({ project: { id: 'p1', key: 'TQ', name: 'Tequio' } });
+    expect(req.request.body).toEqual({ key: 'TK', name: 'Tekitla', description: '' });
+    req.flush({ project: { id: 'p1', key: 'TK', name: 'Tekitla' } });
     expect(project?.id).toBe('p1');
   });
 
@@ -121,7 +121,7 @@ describe('IssuesClient', () => {
     let error: unknown;
 
     client
-      .createProject({ key: 'TQ', name: 'x', description: '' })
+      .createProject({ key: 'TK', name: 'x', description: '' })
       .subscribe({ error: (e: unknown) => (error = e) });
 
     httpMock

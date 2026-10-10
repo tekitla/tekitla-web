@@ -1,6 +1,6 @@
 /**
- * Contratos del `IssueService` de Tequio tal como los expone el gateway
- * (grpc-gateway) en JSON. Copiados de `tequio-protos/proto/issues/v1/issues.proto`:
+ * Contratos del `IssueService` de Tekitla tal como los expone el gateway
+ * (grpc-gateway) en JSON. Copiados de `tekitla-protos/proto/issues/v1/issues.proto`:
  * si el proto cambia, se actualiza acá (y nunca se inventan campos).
  *
  * Reglas del JSON de grpc-gateway:
@@ -38,7 +38,7 @@ export const PRIORITIES: readonly Exclude<Priority, 'PRIORITY_UNSPECIFIED'>[] = 
 
 export interface Project {
   id: string;
-  /** 2 a 10 mayúsculas/dígitos, empieza con letra (p. ej. `TQ`). */
+  /** 2 a 10 mayúsculas/dígitos, empieza con letra (p. ej. `TK`). */
   key: string;
   name: string;
   description: string;
@@ -50,7 +50,7 @@ export interface Project {
 export interface Issue {
   id: string;
   projectId: string;
-  /** Correlativo dentro del proyecto, desde 1 (`TQ-42`). */
+  /** Correlativo dentro del proyecto, desde 1 (`TK-42`). */
   number: number;
   title: string;
   /** Markdown. */

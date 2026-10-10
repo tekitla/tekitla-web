@@ -1,6 +1,6 @@
 import type { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
-/** Regla del proto: 2 a 10 mayúsculas o dígitos, empieza con letra (p. ej. `TQ`, `WEB2`). */
+/** Regla del proto: 2 a 10 mayúsculas o dígitos, empieza con letra (p. ej. `TK`, `WEB2`). */
 export const PROJECT_KEY_PATTERN = /^[A-Z][A-Z0-9]{1,9}$/;
 
 /** Lo que el usuario tipea → candidato a key: mayúsculas y sin espacios. */

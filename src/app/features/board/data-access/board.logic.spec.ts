@@ -59,8 +59,8 @@ describe('board.logic', () => {
     expect(adjacentState('ISSUE_STATE_DONE', -1)).toBe('ISSUE_STATE_IN_PROGRESS');
   });
 
-  it('issueKey arma TQ-42', () => {
-    expect(issueKey('TQ', 42)).toBe('TQ-42');
+  it('issueKey arma TK-42', () => {
+    expect(issueKey('TK', 42)).toBe('TK-42');
     expect(issueKey('', 42)).toBe('#42');
   });
 });

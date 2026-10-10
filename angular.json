@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "tequio-web": {
+    "tekitla-web": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -79,13 +79,13 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "tequio-web:build:production"
+              "buildTarget": "tekitla-web:build:production"
             },
             "qa": {
-              "buildTarget": "tequio-web:build:qa"
+              "buildTarget": "tekitla-web:build:qa"
             },
             "development": {
-              "buildTarget": "tequio-web:build:development"
+              "buildTarget": "tekitla-web:build:development"
             }
           },
           "defaultConfiguration": "development"

@@ -1,6 +1,6 @@
-# Tequio
+# Tekitla
 
-App frontend Angular (`tequio-web`). Generada desde la plantilla
+App frontend Angular (`tekitla-web`). Generada desde la plantilla
 `dev-plantillas/templates/angular-app` (ver `.copier-answers.yml`).
 
 ## Arrancar
@@ -15,7 +15,7 @@ npm start            # http://localhost:4200 contra el gateway local (http://loc
 | Script | Qué hace |
 |---|---|
 | `npm start` | Dev server |
-| `npm run build` / `build:prod` | Build de producción → `dist/tequio-web/browser` |
+| `npm run build` / `build:prod` | Build de producción → `dist/tekitla-web/browser` |
 | `npm run build:qa` | Build con `environment.qa.ts` |
 | `npm run test:unit` | Unit tests (vitest) |
 | `npm run test:e2e` | E2E (Playwright; 1ra vez `npx playwright install chromium`) |
@@ -26,15 +26,15 @@ npm start            # http://localhost:4200 contra el gateway local (http://loc
 
 | Ambiente | Archivo | API |
 |---|---|---|
-| dev (`npm start`) | `src/environments/environment.ts` | http://localhost:8080 (tequio-gateway local) |
-| qa | `src/environments/environment.qa.ts` | https://api-qa.tequio.victorrb1015.com |
-| production | `src/environments/environment.prod.ts` | https://api.tequio.victorrb1015.com |
+| dev (`npm start`) | `src/environments/environment.ts` | http://localhost:8080 (tekitla-gateway local) |
+| qa | `src/environments/environment.qa.ts` | https://api-qa.tekitla.victorrb1015.com |
+| production | `src/environments/environment.prod.ts` | https://api.tekitla.victorrb1015.com |
 
 ## Firebase (login con Google)
 
 El bloque `firebase` de cada `src/environments/environment*.ts` trae placeholders
 (`REEMPLAZAR_*`). Se copian de *Consola de Firebase › Configuración del proyecto ›
-General › Tus apps › app web* (`tequio-app-435b4`). No son secretos. Mientras falten,
+General › Tus apps › app web* (`tekitla-app`). No son secretos. Mientras falten,
 la pantalla de login lo avisa. Detalle en [docs/ci-cd-setup.md](docs/ci-cd-setup.md#4-firebase).
 
 ## Deploy

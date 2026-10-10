@@ -7,8 +7,8 @@ import { BoardStore } from './board.store';
 
 const project: Project = {
   id: 'p1',
-  key: 'TQ',
-  name: 'Tequio',
+  key: 'TK',
+  name: 'Tekitla',
   description: '',
   createdAt: '',
   updatedAt: '',
@@ -60,7 +60,7 @@ describe('BoardStore', () => {
   });
 
   it('carga proyecto e issues agrupados en columnas', () => {
-    expect(store.project()?.key).toBe('TQ');
+    expect(store.project()?.key).toBe('TK');
     expect(numbersIn('ISSUE_STATE_TODO')).toEqual([3, 1]);
     expect(numbersIn('ISSUE_STATE_IN_PROGRESS')).toEqual([2]);
     expect(store.loading()).toBe(false);
@@ -97,7 +97,7 @@ describe('BoardStore', () => {
       expect(store.notice()).toMatchObject({
         kind: 'info',
         message: 'board.notice.moved',
-        issue: 'TQ-1',
+        issue: 'TK-1',
         state: 'ISSUE_STATE_DONE',
       });
     });
@@ -117,7 +117,7 @@ describe('BoardStore', () => {
       expect(store.notice()).toMatchObject({
         kind: 'error',
         message: 'board.notice.moveFailed',
-        issue: 'TQ-1',
+        issue: 'TK-1',
         state: 'ISSUE_STATE_TODO',
       });
     });
@@ -174,7 +174,7 @@ describe('BoardStore', () => {
 
     expect(numbersIn('ISSUE_STATE_TODO')).toEqual([4, 3, 1]);
     expect(store.activeColumn()).toBe('ISSUE_STATE_TODO');
-    expect(store.notice()).toMatchObject({ message: 'board.notice.created', issue: 'TQ-4' });
+    expect(store.notice()).toMatchObject({ message: 'board.notice.created', issue: 'TK-4' });
   });
 
   it('select refresca el issue desde el servidor y el detalle refleja los movimientos', () => {

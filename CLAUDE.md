@@ -1,6 +1,6 @@
-# tequio-web — contexto para Claude
+# tekitla-web — contexto para Claude
 
-Tequio: app frontend Angular. Las reglas comunes del front y de la
+Tekitla: app frontend Angular. Las reglas comunes del front y de la
 plataforma están en los `CLAUDE.md` de las carpetas padre; acá sólo lo propio.
 
 ## Stack
@@ -35,8 +35,8 @@ Otros: `src/environments` (dev/qa/prod), `src/styles` (base global), `src/types`
   los clients no guardan estado; los stores exponen sólo lectura (`asReadonly`, `computed`).
 - **Store**: `@Injectable()` provisto en la ruta de la feature; protege contra respuestas
   viejas con un requestId (ver `features/board/data-access/board.store.ts`).
-- **Contratos** en `<x>.contracts.ts`, copiados del contrato del backend. Los de Tequio
-  (`api/clients/issues/issues.contracts.ts`) salen de `tequio-protos/proto/issues/v1/issues.proto`;
+- **Contratos** en `<x>.contracts.ts`, copiados del contrato del backend. Los de Tekitla
+  (`api/clients/issues/issues.contracts.ts`) salen de `tekitla-protos/proto/issues/v1/issues.proto`;
   grpc-gateway omite campos con valor por defecto, por eso se normalizan en `issues.mappers.ts`.
 - **Mobile first**: estilos base = celular; `@include m.from-tablet` (≥ 768px) agrega lo de desktop.
   Lo que se toca mide al menos `var(--touch-target)`.
@@ -65,8 +65,8 @@ npx ng generate component features/<x>/pages/<nombre>
 ## Deploy
 
 - Firebase Hosting, desde CI (GitHub Actions), **sin claves** (Workload Identity Federation).
-- Push/merge a `main` → **producción** (`tequio-app-435b4`).
-- Tag `qa-vX.Y.Z` → **QA** (`tequio-app-435b4`).
+- Push/merge a `main` → **producción** (`tekitla-app`).
+- Tag `qa-vX.Y.Z` → **QA** (`tekitla-app`).
 - **No desplegar a mano** (`npm run deploy:*` es sólo fallback de emergencia).
 - Setup y variables de CI: `docs/ci-cd-setup.md`.
 

@@ -27,20 +27,20 @@ test.describe('desktop', () => {
     await signIn(page);
     const api = await fakeApi(page);
 
-    await page.goto('/proyectos/p-tq');
+    await page.goto('/proyectos/p-tk');
 
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Tequio');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Tekitla');
     const todo = column(page, 'Por hacer');
     const doing = column(page, 'En curso');
-    await expect(card(todo, 'TQ-1')).toBeVisible();
-    await expect(card(todo, 'TQ-3')).toBeVisible(); // sin state en el JSON → Por hacer
-    await expect(card(doing, 'TQ-2')).toBeVisible();
-    await expect(card(column(page, 'Hecho'), 'TQ-4')).toBeVisible();
-    await expect(card(todo, 'TQ-1')).toContainText('Alta');
+    await expect(card(todo, 'TK-1')).toBeVisible();
+    await expect(card(todo, 'TK-3')).toBeVisible(); // sin state en el JSON → Por hacer
+    await expect(card(doing, 'TK-2')).toBeVisible();
+    await expect(card(column(page, 'Hecho'), 'TK-4')).toBeVisible();
+    await expect(card(todo, 'TK-1')).toContainText('Alta');
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/tablero-1280.png`, fullPage: true });
 
     // Drag & drop del CDK: hace falta mover el puntero en pasos.
-    const from = await card(todo, 'TQ-1').boundingBox();
+    const from = await card(todo, 'TK-1').boundingBox();
     const to = await doing.locator('.board__list').boundingBox();
     await page.mouse.move(from!.x + 20, from!.y + 20);
     await page.mouse.down();
@@ -48,15 +48,15 @@ test.describe('desktop', () => {
     await page.mouse.move(to!.x + to!.width / 2, to!.y + to!.height - 10, { steps: 15 });
     await page.mouse.up();
 
-    await expect(card(doing, 'TQ-1')).toBeVisible();
-    await expect(card(todo, 'TQ-1')).toHaveCount(0);
+    await expect(card(doing, 'TK-1')).toBeVisible();
+    await expect(card(todo, 'TK-1')).toHaveCount(0);
     await expect(
-      page.getByRole('status').filter({ hasText: 'TQ-1 pasó a En curso' }),
+      page.getByRole('status').filter({ hasText: 'TK-1 pasó a En curso' }),
     ).toBeVisible();
     const move = api.calls.find((c) => c.path.endsWith(':move'));
     expect(move).toMatchObject({
       method: 'POST',
-      path: '/v1/projects/p-tq/issues/1:move',
+      path: '/v1/projects/p-tk/issues/1:move',
       body: { state: 'ISSUE_STATE_IN_PROGRESS' },
     });
     expect(move?.auth).toMatch(/^Bearer .+/);
@@ -65,39 +65,39 @@ test.describe('desktop', () => {
   test('mover con el teclado (Shift+→) y con el menú', async ({ page }) => {
     await signIn(page);
     await fakeApi(page);
-    await page.goto('/proyectos/p-tq');
+    await page.goto('/proyectos/p-tk');
 
-    const link = card(column(page, 'Por hacer'), 'TQ-1').getByRole('link');
+    const link = card(column(page, 'Por hacer'), 'TK-1').getByRole('link');
     await link.focus();
     await page.keyboard.press('Shift+ArrowRight');
-    await expect(card(column(page, 'En curso'), 'TQ-1')).toBeVisible();
+    await expect(card(column(page, 'En curso'), 'TK-1')).toBeVisible();
     // El foco sigue a la tarjeta.
-    await expect(card(column(page, 'En curso'), 'TQ-1').getByRole('link')).toBeFocused();
+    await expect(card(column(page, 'En curso'), 'TK-1').getByRole('link')).toBeFocused();
 
-    await card(page, 'TQ-1').getByRole('button', { name: 'Mover TQ-1 a otra columna' }).click();
+    await card(page, 'TK-1').getByRole('button', { name: 'Mover TK-1 a otra columna' }).click();
     await page.getByRole('menuitem', { name: 'Mover a Hecho' }).click();
-    await expect(card(column(page, 'Hecho'), 'TQ-1')).toBeVisible();
+    await expect(card(column(page, 'Hecho'), 'TK-1')).toBeVisible();
   });
 
   test('si el backend falla, la tarjeta vuelve y se avisa', async ({ page }) => {
     await signIn(page);
     await fakeApi(page, { moveStatus: 500 });
-    await page.goto('/proyectos/p-tq');
+    await page.goto('/proyectos/p-tk');
 
-    await card(page, 'TQ-1')
-      .getByRole('button', { name: /Mover TQ-1/ })
+    await card(page, 'TK-1')
+      .getByRole('button', { name: /Mover TK-1/ })
       .click();
     await page.getByRole('menuitem', { name: 'Mover a Hecho' }).click();
 
-    await expect(page.getByRole('alert')).toContainText('No se pudo mover TQ-1');
-    await expect(card(column(page, 'Por hacer'), 'TQ-1')).toBeVisible();
-    await expect(card(column(page, 'Hecho'), 'TQ-1')).toHaveCount(0);
+    await expect(page.getByRole('alert')).toContainText('No se pudo mover TK-1');
+    await expect(card(column(page, 'Por hacer'), 'TK-1')).toBeVisible();
+    await expect(card(column(page, 'Hecho'), 'TK-1')).toHaveCount(0);
   });
 
   test('crea un issue y aparece en «Por hacer»', async ({ page }) => {
     await signIn(page);
     const api = await fakeApi(page);
-    await page.goto('/proyectos/p-tq');
+    await page.goto('/proyectos/p-tk');
 
     await page.getByRole('link', { name: 'Nuevo issue' }).click();
     await page.getByLabel('Título').fill('Probar en el celular');
@@ -105,8 +105,8 @@ test.describe('desktop', () => {
     await page.getByLabel('Descripción').fill('Con **markdown**');
     await page.getByRole('button', { name: 'Crear issue' }).click();
 
-    await expect(page).toHaveURL(/\/proyectos\/p-tq$/);
-    await expect(card(column(page, 'Por hacer'), 'TQ-5')).toContainText('Probar en el celular');
+    await expect(page).toHaveURL(/\/proyectos\/p-tk$/);
+    await expect(card(column(page, 'Por hacer'), 'TK-5')).toContainText('Probar en el celular');
     expect(api.calls.find((c) => c.method === 'POST' && c.path.endsWith('/issues'))?.body).toEqual({
       title: 'Probar en el celular',
       description: 'Con **markdown**',
@@ -117,7 +117,7 @@ test.describe('desktop', () => {
   test('el detalle renderiza el Markdown sanitizado', async ({ page }) => {
     await signIn(page);
     await fakeApi(page);
-    await page.goto('/proyectos/p-tq/issues/1');
+    await page.goto('/proyectos/p-tk/issues/1');
 
     await expect(page.getByRole('heading', { name: 'Diseñar el tablero' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Objetivo' })).toBeVisible();
@@ -141,7 +141,7 @@ test.describe('móvil', () => {
   test('pestañas por columna y mover con «Mover a…»', async ({ page }) => {
     await signIn(page);
     await fakeApi(page);
-    await page.goto('/proyectos/p-tq');
+    await page.goto('/proyectos/p-tk');
 
     const tabs = page.getByRole('tab');
     await expect(tabs).toHaveCount(3);
@@ -152,35 +152,35 @@ test.describe('móvil', () => {
     await expect(page.getByRole('tab', { name: /Por hacer/ })).toContainText('2');
     const panel = page.getByRole('tabpanel');
     await expect(panel).toHaveCount(1);
-    await expect(card(panel, 'TQ-1')).toBeVisible();
-    await expect(card(panel, 'TQ-2')).toHaveCount(0); // está en «En curso»
+    await expect(card(panel, 'TK-1')).toBeVisible();
+    await expect(card(panel, 'TK-2')).toHaveCount(0); // está en «En curso»
     // Sin scroll horizontal a 375px.
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       MOBILE.width,
     );
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/tablero-375.png`, fullPage: true });
 
-    await card(panel, 'TQ-1')
-      .getByRole('button', { name: /Mover TQ-1/ })
+    await card(panel, 'TK-1')
+      .getByRole('button', { name: /Mover TK-1/ })
       .tap();
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/tablero-375-menu.png` });
     await page.getByRole('menuitem', { name: 'Mover a En curso' }).tap();
 
-    await expect(card(page.getByRole('tabpanel'), 'TQ-1')).toHaveCount(0);
+    await expect(card(page.getByRole('tabpanel'), 'TK-1')).toHaveCount(0);
     await expect(
-      page.getByRole('status').filter({ hasText: 'TQ-1 pasó a En curso' }),
+      page.getByRole('status').filter({ hasText: 'TK-1 pasó a En curso' }),
     ).toBeVisible();
     await expect(page.getByRole('tab', { name: /En curso/ })).toContainText('2');
 
     await page.getByRole('tab', { name: /En curso/ }).tap();
-    await expect(card(page.getByRole('tabpanel'), 'TQ-1')).toBeVisible();
+    await expect(card(page.getByRole('tabpanel'), 'TK-1')).toBeVisible();
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/tablero-375-en-curso.png`, fullPage: true });
   });
 
   test('las pestañas se recorren con las flechas', async ({ page }) => {
     await signIn(page);
     await fakeApi(page);
-    await page.goto('/proyectos/p-tq');
+    await page.goto('/proyectos/p-tk');
 
     await page.getByRole('tab', { name: /Por hacer/ }).focus();
     await page.keyboard.press('ArrowRight');

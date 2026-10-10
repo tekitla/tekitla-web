@@ -6,7 +6,7 @@ export type { ApiError } from './http/http-errors';
 export { DomainError, isDomainError, toDomainError } from './http/http-errors';
 export { SKIP_AUTH } from './http/tokens';
 
-// IssueService de Tequio (proyectos e issues), compartido por varias features.
+// IssueService de Tekitla (proyectos e issues), compartido por varias features.
 export { IssuesClient } from './clients/issues/issues.client';
 export { BOARD_STATES, PRIORITIES } from './clients/issues/issues.contracts';
 export type {
