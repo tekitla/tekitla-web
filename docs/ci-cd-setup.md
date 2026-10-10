@@ -5,8 +5,8 @@ Pipeline en GitHub Actions (`.github/workflows/`):
 | Evento | Qué corre |
 |---|---|
 | PR | `npm ci` → `lint` → `test:unit` → `build:prod` |
-| Push a `main` | lo anterior + deploy a **producción** (`tequio-app-435b4`) |
-| Tag `qa-vX.Y.Z` | `build:qa` + deploy a **QA** (`tequio-app-435b4`) |
+| Push a `main` | lo anterior + deploy a **producción** (`tekitla-app`) |
+| Tag `qa-vX.Y.Z` | `build:qa` + deploy a **QA** (`tekitla-app`) |
 
 El deploy es **keyless**: el CI pide un token OIDC de corta duración, GCP lo valida
 con Workload Identity Federation (WIF) y deja impersonar a un service account de
@@ -20,8 +20,8 @@ Requiere `gcloud` autenticado con permisos de IAM en el proyecto (`roles/owner`,
 Los comandos son PowerShell; en bash cambiá `$VAR = "x"` por `VAR="x"`.
 
 ```powershell
-$PROJECT  = "tequio-app-435b4"        # luego repetir con "tequio-app-435b4"
-$REPO     = "<org>/tequio-web"                # owner/repo en GitHub
+$PROJECT  = "tekitla-app"        # luego repetir con "tekitla-app"
+$REPO     = "tekitla/tekitla-web"                # owner/repo en GitHub
 $ISSUER   = "https://token.actions.githubusercontent.com"
 $POOL     = "github-pool"
 $PROVIDER = "github-provider"
@@ -37,7 +37,7 @@ gcloud iam workload-identity-pools providers create-oidc $PROVIDER --project=$PR
   --attribute-mapping="google.subject=assertion.sub,attribute.$ATTR=assertion.$ATTR,attribute.ref=assertion.ref" `
   --attribute-condition="assertion.$ATTR == '$REPO'"
 
-gcloud iam service-accounts create $SA_NAME --project=$PROJECT --display-name="CI deployer (tequio-web)"
+gcloud iam service-accounts create $SA_NAME --project=$PROJECT --display-name="CI deployer (tekitla-web)"
 $SA     = "$SA_NAME@$PROJECT.iam.gserviceaccount.com"
 $NUMBER = gcloud projects describe $PROJECT --format="value(projectNumber)"
 
@@ -79,7 +79,7 @@ opcionalmente, *Deployment branches and tags* = sólo `main`.
 - Dominio propio: *Firebase Console › Hosting › Agregar dominio personalizado*.
 - Auth: habilitar el proveedor **Google** (*Authentication › Sign-in method*) y agregar
   en *Authentication › Settings › Authorized domains*: `localhost`,
-  `tequio.victorrb1015.com` y el dominio de QA (y `<proyecto>.web.app` si se usa).
+  `tekitla.victorrb1015.com` y el dominio de QA (y `<proyecto>.web.app` si se usa).
 - Config web: *Configuración del proyecto › General › Tus apps* → registrar una app web
   (si no existe) y copiar `apiKey` y `appId` (y verificar `authDomain`/`projectId`) al bloque
   `firebase` de `src/environments/environment*.ts`. No es secreta (termina en el bundle).

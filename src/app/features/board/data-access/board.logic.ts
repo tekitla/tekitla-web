@@ -56,7 +56,7 @@ export function adjacentState(state: BoardState, direction: -1 | 1): BoardState 
   return BOARD_STATES[index] ?? null;
 }
 
-/** `TQ-42`. */
+/** `TK-42`. */
 export function issueKey(projectKey: string, number: number): string {
   return projectKey ? `${projectKey}-${number}` : `#${number}`;
 }

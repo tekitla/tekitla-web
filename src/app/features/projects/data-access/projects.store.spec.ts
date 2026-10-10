@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DomainError, IssuesClient, type Project } from '@/app/api';
 import { ProjectsStore } from './projects.store';
 
-const project = (id: string, name: string, key = 'TQ'): Project => ({
+const project = (id: string, name: string, key = 'TK'): Project => ({
   id,
   key,
   name,
@@ -30,9 +30,9 @@ describe('ProjectsStore', () => {
   });
 
   it('carga los proyectos', () => {
-    client.listAllProjects.mockReturnValue(of([project('1', 'Tequio')]));
+    client.listAllProjects.mockReturnValue(of([project('1', 'Tekitla')]));
     store.load();
-    expect(store.projects().map((p) => p.name)).toEqual(['Tequio']);
+    expect(store.projects().map((p) => p.name)).toEqual(['Tekitla']);
     expect(store.loading()).toBe(false);
     expect(store.isEmpty()).toBe(false);
   });
@@ -48,7 +48,7 @@ describe('ProjectsStore', () => {
   });
 
   it('create con key repetida propaga el 409 y no toca la lista', () => {
-    client.listAllProjects.mockReturnValue(of([project('1', 'Tequio')]));
+    client.listAllProjects.mockReturnValue(of([project('1', 'Tekitla')]));
     client.createProject.mockReturnValue(
       throwError(
         () => new DomainError({ status: 409, message: 'exists', details: [], traceId: null }),
@@ -58,7 +58,7 @@ describe('ProjectsStore', () => {
     let error: DomainError | undefined;
 
     store
-      .create({ key: 'TQ', name: 'Otro', description: '' })
+      .create({ key: 'TK', name: 'Otro', description: '' })
       .subscribe({ error: (e: DomainError) => (error = e) });
 
     expect(error?.isConflict()).toBe(true);

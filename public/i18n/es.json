@@ -1,10 +1,10 @@
 {
   "titles": {
-    "app": "Tequio",
-    "login": "Iniciar sesión · Tequio",
-    "noAccess": "Sin acceso · Tequio",
-    "projects": "Proyectos · Tequio",
-    "board": "Tablero · Tequio"
+    "app": "Tekitla",
+    "login": "Iniciar sesión · Tekitla",
+    "noAccess": "Sin acceso · Tekitla",
+    "projects": "Proyectos · Tekitla",
+    "board": "Tablero · Tekitla"
   },
   "common": {
     "loading": "Cargando…",
@@ -27,12 +27,12 @@
       "lead": "Entra con tu cuenta de Google para ver tus proyectos e issues.",
       "google": "Entrar con Google",
       "error": "No pudimos iniciar sesión con Google. Intenta de nuevo.",
-      "notConfigured": "Falta la configuración web de Firebase en este ambiente (src/environments). Avisale a quien administra Tequio."
+      "notConfigured": "Falta la configuración web de Firebase en este ambiente (src/environments). Avisale a quien administra Tekitla."
     },
     "noAccess": {
       "title": "Tu cuenta no tiene acceso",
-      "text": "Iniciaste sesión, pero tu cuenta no está habilitada para usar Tequio.",
-      "withEmail": "Iniciaste sesión como {{email}}, pero esa cuenta no está habilitada para usar Tequio.",
+      "text": "Iniciaste sesión, pero tu cuenta no está habilitada para usar Tekitla.",
+      "withEmail": "Iniciaste sesión como {{email}}, pero esa cuenta no está habilitada para usar Tekitla.",
       "hint": "Si debería tener acceso, pide que la agreguen a la lista de cuentas permitidas, o entra con otra cuenta.",
       "switch": "Entrar con otra cuenta"
     }
@@ -47,7 +47,7 @@
     "form": {
       "title": "Nuevo proyecto",
       "key": "Clave",
-      "keyHint": "De 2 a 10 letras mayúsculas o dígitos, empezando con letra. Da nombre a los issues: TQ-42.",
+      "keyHint": "De 2 a 10 letras mayúsculas o dígitos, empezando con letra. Da nombre a los issues: TK-42.",
       "name": "Nombre",
       "description": "Descripción",
       "submit": "Crear proyecto",

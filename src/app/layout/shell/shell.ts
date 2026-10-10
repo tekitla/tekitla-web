@@ -19,7 +19,7 @@ import { Button } from '@/app/ui/components/button/button';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Shell {
-  protected readonly title = 'Tequio';
+  protected readonly title = 'Tekitla';
   protected readonly session = inject(SessionStore);
   private readonly auth = inject(AuthService);
 

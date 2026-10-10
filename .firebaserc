@@ -1,7 +1,7 @@
 {
   "projects": {
-    "default": "tequio-app-435b4",
-    "production": "tequio-app-435b4",
-    "qa": "tequio-app-435b4"
+    "default": "tekitla-app",
+    "production": "tekitla-app",
+    "qa": "tekitla-app"
   }
 }

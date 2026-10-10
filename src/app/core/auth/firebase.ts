@@ -20,7 +20,7 @@ const POPUP_UNAVAILABLE_CODES = new Set([
 ]);
 
 /**
- * Envoltorio fino del SDK de Firebase Auth. El gateway de Tequio valida
+ * Envoltorio fino del SDK de Firebase Auth. El gateway de Tekitla valida
  * directamente el ID token de Firebase (`Authorization: Bearer <idToken>`):
  * no hay JWT propio ni refresh token de la app. Firebase persiste la sesión
  * (IndexedDB) y renueva el ID token solo; `getIdToken()` siempre devuelve uno

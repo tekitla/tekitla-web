@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dist/tequio-web/browser",
+    "public": "dist/tekitla-web/browser",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
