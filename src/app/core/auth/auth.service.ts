@@ -18,7 +18,7 @@ export class AuthService {
   private readonly firebase = inject(FirebaseAuthGateway);
   private readonly router = inject(Router);
 
-  private readyPromise: Promise<boolean> | null = null;
+  private initPromise: Promise<void> | null = null;
 
   /** `false` si faltan los valores de la config web de Firebase en los environments. */
   isConfigured(): boolean {
@@ -26,12 +26,13 @@ export class AuthService {
   }
 
   /**
-   * Resuelve cuando Firebase restauró la sesión (una sola vez por carga) y
-   * devuelve si hay usuario. Además deja escuchando cambios posteriores (p. ej.
-   * sesión revocada en otra pestaña).
+   * Resuelve cuando Firebase restauró la sesión (eso, una sola vez por carga) y
+   * devuelve si hay usuario AHORA: después de un login o logout el resultado
+   * cambia. Además deja escuchando cambios posteriores (p. ej. sesión revocada
+   * en otra pestaña).
    */
-  ready(): Promise<boolean> {
-    this.readyPromise ??= (async () => {
+  async ready(): Promise<boolean> {
+    this.initPromise ??= (async () => {
       try {
         const user = await this.firebase.currentUser();
         this.session.setUser(user && toAuthUser(user));
@@ -42,9 +43,9 @@ export class AuthService {
         console.error('[AUTH] no se pudo inicializar Firebase', err);
         this.session.clear();
       }
-      return this.session.isAuthenticated();
     })();
-    return this.readyPromise;
+    await this.initPromise;
+    return this.session.isAuthenticated();
   }
 
   /** `true` si quedó logueado; `false` si canceló o se fue por redirect. */
