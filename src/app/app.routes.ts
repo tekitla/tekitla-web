@@ -1,25 +1,43 @@
 import { Routes } from '@angular/router';
 
-import { authGuard } from './core/auth/auth.guard';
+import { authGuard, guestGuard } from './core/auth/auth.guard';
 import { Shell } from './layout/shell/shell';
 
+// `title` es una clave de i18n (ver core/i18n/translated-title.strategy.ts).
 export const routes: Routes = [
-  // Pública
+  // Públicas (sin el layout principal).
   {
     path: 'login',
-    loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
+    canActivate: [guestGuard],
+    title: 'titles.login',
+    loadComponent: () => import('./features/auth/pages/login/login').then((m) => m.Login),
+  },
+  {
+    // El gateway respondió 403: logueado pero fuera de la allowlist.
+    path: 'sin-acceso',
+    canActivate: [authGuard],
+    title: 'titles.noAccess',
+    loadComponent: () =>
+      import('./features/auth/pages/no-access/no-access').then((m) => m.NoAccess),
   },
 
-  // Privada: todo lo que va dentro del layout principal.
+  // Privadas: todo lo que va dentro del layout principal.
   {
     path: '',
     component: Shell,
     canActivate: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'items' },
+      { path: '', pathMatch: 'full', redirectTo: 'proyectos' },
       {
-        path: 'items',
-        loadChildren: () => import('./features/items/items.routes').then((m) => m.ITEMS_ROUTES),
+        path: 'proyectos',
+        title: 'titles.projects',
+        loadChildren: () =>
+          import('./features/projects/projects.routes').then((m) => m.PROJECTS_ROUTES),
+      },
+      {
+        path: 'proyectos/:projectId',
+        title: 'titles.board',
+        loadChildren: () => import('./features/board/board.routes').then((m) => m.BOARD_ROUTES),
       },
     ],
   },

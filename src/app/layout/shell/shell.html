@@ -1,9 +1,16 @@
+<a class="shell__skip" href="#contenido">{{ 'shell.skip' | translate }}</a>
+
 <header class="shell__header">
   <a class="shell__brand" routerLink="/">{{ title }}</a>
 
-  <nav class="shell__nav">
-    <a class="shell__nav-link" routerLink="/items" routerLinkActive="shell__nav-link--active">
-      {{ 'shell.nav.items' | translate }}
+  <nav class="shell__nav" [attr.aria-label]="'shell.nav.label' | translate">
+    <a
+      class="shell__nav-link"
+      routerLink="/proyectos"
+      routerLinkActive="shell__nav-link--active"
+      ariaCurrentWhenActive="page"
+    >
+      {{ 'shell.nav.projects' | translate }}
     </a>
   </nav>
 
@@ -17,6 +24,6 @@
   </div>
 </header>
 
-<main class="shell__main">
+<main id="contenido" class="shell__main" tabindex="-1">
   <router-outlet />
 </main>

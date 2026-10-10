@@ -1,35 +1,133 @@
 {
+  "titles": {
+    "app": "Tequio",
+    "login": "Iniciar sesión · Tequio",
+    "noAccess": "Sin acceso · Tequio",
+    "projects": "Proyectos · Tequio",
+    "board": "Tablero · Tequio"
+  },
   "common": {
     "loading": "Cargando…",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "optional": "(opcional)"
   },
   "shell": {
+    "skip": "Saltar al contenido",
     "nav": {
-      "items": "Ítems"
+      "label": "Principal",
+      "projects": "Proyectos"
     },
     "logout": "Cerrar sesión"
   },
   "auth": {
     "login": {
       "title": "Iniciar sesión",
-      "email": "Email",
-      "password": "Contraseña",
-      "submit": "Entrar",
-      "error": "No pudimos iniciar sesión. Revisá tus datos."
+      "lead": "Entrá con tu cuenta de Google para ver tus proyectos e issues.",
+      "google": "Entrar con Google",
+      "error": "No pudimos iniciar sesión con Google. Probá de nuevo.",
+      "notConfigured": "Falta la configuración web de Firebase en este ambiente (src/environments). Avisale a quien administra Tequio."
+    },
+    "noAccess": {
+      "title": "Tu cuenta no tiene acceso",
+      "text": "Iniciaste sesión, pero tu cuenta no está habilitada para usar Tequio.",
+      "withEmail": "Iniciaste sesión como {{email}}, pero esa cuenta no está habilitada para usar Tequio.",
+      "hint": "Si debería tener acceso, pedí que la agreguen a la lista de cuentas permitidas, o entrá con otra cuenta.",
+      "switch": "Entrar con otra cuenta"
     }
   },
-  "items": {
+  "projects": {
     "list": {
-      "title": "Ítems",
-      "empty": "No hay ítems todavía."
+      "title": "Proyectos",
+      "new": "Nuevo proyecto",
+      "empty": "Todavía no tenés proyectos. Creá el primero con el formulario de arriba.",
+      "loadError": "No pudimos cargar los proyectos."
     },
-    "detail": {
-      "back": "Volver al listado",
-      "notFound": "No encontramos este ítem."
-    },
-    "status": {
-      "active": "Activo",
-      "archived": "Archivado"
+    "form": {
+      "title": "Nuevo proyecto",
+      "key": "Clave",
+      "keyHint": "De 2 a 10 letras mayúsculas o dígitos, empezando con letra. Da nombre a los issues: TQ-42.",
+      "name": "Nombre",
+      "description": "Descripción",
+      "submit": "Crear proyecto",
+      "errors": {
+        "keyRequired": "Escribí una clave.",
+        "keyStart": "La clave tiene que empezar con una letra.",
+        "keyChars": "Sólo letras de la A a la Z (sin ñ ni acentos) y dígitos.",
+        "keyLength": "La clave tiene que tener entre 2 y 10 caracteres.",
+        "keyTaken": "Ya tenés un proyecto con la clave {{key}}. Elegí otra.",
+        "nameRequired": "Escribí un nombre.",
+        "generic": "No pudimos crear el proyecto."
+      }
     }
+  },
+  "board": {
+    "title": "Tablero",
+    "back": "Proyectos",
+    "newIssue": "Nuevo issue",
+    "columnsLabel": "Columnas del tablero",
+    "hintDesktop": "Arrastrá las tarjetas entre columnas, o usá «Mover». Con el teclado: Shift + ← / → mueve la tarjeta enfocada.",
+    "hintMobile": "Usá «Mover» en cada tarjeta para cambiarla de columna.",
+    "emptyColumn": "Sin issues",
+    "notFound": "No encontramos este proyecto.",
+    "loadError": "No pudimos cargar el tablero.",
+    "columns": {
+      "ISSUE_STATE_TODO": "Por hacer",
+      "ISSUE_STATE_IN_PROGRESS": "En curso",
+      "ISSUE_STATE_DONE": "Hecho"
+    },
+    "card": {
+      "move": "Mover",
+      "moveLabel": "Mover {{issue}} a otra columna",
+      "moveTo": "Mover a {{column}}"
+    },
+    "notice": {
+      "moved": "{{issue}} pasó a {{column}}.",
+      "moveFailed": "No se pudo mover {{issue}}: volvió a {{column}}. Probá de nuevo.",
+      "created": "{{issue}} creado en Por hacer."
+    }
+  },
+  "issue": {
+    "priorityLabel": "Prioridad",
+    "priority": {
+      "low": "Baja",
+      "medium": "Media",
+      "high": "Alta",
+      "urgent": "Urgente"
+    },
+    "priorityByEnum": {
+      "PRIORITY_LOW": "Baja",
+      "PRIORITY_MEDIUM": "Media",
+      "PRIORITY_HIGH": "Alta",
+      "PRIORITY_URGENT": "Urgente"
+    }
+  },
+  "issueNew": {
+    "title": "Nuevo issue",
+    "back": "Volver al tablero",
+    "fields": {
+      "title": "Título",
+      "priority": "Prioridad",
+      "description": "Descripción"
+    },
+    "preview": "Vista previa",
+    "previewEmpty": "Nada para previsualizar todavía.",
+    "markdownHint": "Admite Markdown: **negrita**, listas, `código`, enlaces.",
+    "submit": "Crear issue",
+    "errors": {
+      "titleRequired": "Escribí un título.",
+      "generic": "No pudimos crear el issue."
+    }
+  },
+  "issueDetail": {
+    "back": "Volver al tablero",
+    "created": "Creado",
+    "updated": "Actualizado",
+    "state": "Estado",
+    "description": "Descripción",
+    "noDescription": "Sin descripción.",
+    "notFound": "No encontramos este issue.",
+    "loadError": "No pudimos cargar el issue."
   }
 }
