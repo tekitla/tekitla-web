@@ -1,0 +1,16 @@
+# Generado por Copier: NO editar a mano. Sirve para `copier update`.
+_commit: v0.3.0
+_src_path: gh:vrojas1015/template-angular-app
+api_base_url_prod: https://api.tequio.victorrb1015.com
+api_base_url_qa: https://api-qa.tequio.victorrb1015.com
+app_name: tequio-web
+app_title: Tequio
+ci_provider: github
+default_lang: es
+deploy_target: firebase-hosting
+docs_repo: ''
+dueño: '@vrojas1015'
+firebase_project_prod: tequio-app-435b4
+firebase_project_qa: tequio-app-435b4
+i18n: true
+use_firebase_auth: true

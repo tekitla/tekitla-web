@@ -1,0 +1,22 @@
+<header class="shell__header">
+  <a class="shell__brand" routerLink="/">{{ title }}</a>
+
+  <nav class="shell__nav">
+    <a class="shell__nav-link" routerLink="/items" routerLinkActive="shell__nav-link--active">
+      {{ 'shell.nav.items' | translate }}
+    </a>
+  </nav>
+
+  <div class="shell__user">
+    @if (session.user(); as user) {
+      <span class="shell__user-email">{{ user.email }}</span>
+    }
+    <ui-button variant="ghost" size="sm" (pressed)="logout()">
+      {{ 'shell.logout' | translate }}
+    </ui-button>
+  </div>
+</header>
+
+<main class="shell__main">
+  <router-outlet />
+</main>

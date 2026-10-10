@@ -1,0 +1,75 @@
+# tequio-web — contexto para Claude
+
+Tequio: app frontend Angular. Las reglas comunes del front y de la
+plataforma están en los `CLAUDE.md` de las carpetas padre; acá sólo lo propio.
+
+## Stack
+
+- Angular 21 standalone, zoneless, control flow (`@if`/`@for`), signal inputs
+- Estado: signals + stores propios por feature (sin NgRx)
+- SCSS + BEM, tokens CSS en `src/styles/_tokens.scss`
+- Auth: Firebase Auth (sólo para obtener el ID token) → JWT propio del backend
+  (access token en memoria, refresh token en localStorage)
+- Textos: @ngx-translate, `public/i18n/es.json` (idioma por defecto `es`)
+- Tests: vitest (unit) + Playwright (e2e) · Formato: prettier
+
+## Estructura (`src/app`)
+
+| Carpeta | Qué va |
+|---|---|
+| `api/` | Cliente HTTP base (`RestClient`), errores (`DomainError`), interceptores, `SKIP_AUTH` |
+| `core/` | Singletons de infraestructura (auth: SessionStore, AuthService, guard), i18n |
+| `features/<x>/` | Una carpeta por feature: `<x>.routes.ts`, `data-access/` (client, contracts, store, specs), `pages/` |
+| `layout/` | Marco de la app: `shell` (header, nav, outlet) |
+| `ui/` | Componentes visuales reutilizables, sin lógica de negocio (selector `ui-*`) |
+
+Otros: `src/environments` (dev/qa/prod), `src/styles` (base global), `src/types` (`.d.ts`), `e2e/`.
+
+## Convenciones
+
+- **Standalone** siempre; `ChangeDetectionStrategy.OnPush`; `inject()` en vez de constructor.
+- **Inputs/outputs** con `input()`, `input.required()`, `output()`.
+- **Flujo de datos**: página → store → client → `RestClient`. Las páginas no llaman HTTP;
+  los clients no guardan estado; los stores exponen sólo lectura (`asReadonly`, `computed`).
+- **Store**: `@Injectable()` provisto en la ruta de la feature; protege contra respuestas
+  viejas con un requestId (ver `features/items/data-access/items.store.ts`).
+- **Contratos** en `<x>.contracts.ts`, copiados del contrato del backend.
+- **Errores**: todo error HTTP llega como `DomainError` (`isNotFound()`, `isValidation()`, …).
+- **BEM**: un bloque por componente (`.item-list`, `.item-list__row`, `.item-list__row--active`),
+  sólo `var(--token)` para colores/espacios. Detalle en `docs/estilos-bem.md`.
+- **Nombres**: archivos kebab-case sin sufijo (`item-list.ts`, clase `ItemList`); prefijo `app-` en
+  features/layout y `ui-` en `ui/`.
+- **Imports** absolutos con `@/` (`@/app/api`, `@/environments/environment`).
+- **Secretos**: nunca al repo (`.env*`, claves, cuentas de servicio); gitleaks los busca en cada commit (`pre-commit install`) y en el CI, y uno filtrado se rota primero (`SECURITY.md`). Título del MR/PR: `feat(issue-<n>): …` (salvo `chore(deps)`).
+- **Textos de UI** siempre con `translate`; nunca strings sueltos en templates.
+- Cada store/función con lógica lleva su `*.spec.ts` al lado (vitest).
+
+## Comandos
+
+```bash
+npm start              # dev server en http://localhost:4200 (backend de QA)
+npm run build          # build de producción (= build:prod); build:qa para QA
+npm run test:unit      # vitest
+npm run test:e2e       # Playwright (1ra vez: npx playwright install chromium)
+npm run lint           # prettier --check + typecheck
+npm run format         # prettier --write
+npx ng generate component features/<x>/pages/<nombre>
+```
+
+## Deploy
+
+- Firebase Hosting, desde CI (GitHub Actions), **sin claves** (Workload Identity Federation).
+- Push/merge a `main` → **producción** (`tequio-app-435b4`).
+- Tag `qa-vX.Y.Z` → **QA** (`tequio-app-435b4`).
+- **No desplegar a mano** (`npm run deploy:*` es sólo fallback de emergencia).
+- Setup y variables de CI: `docs/ci-cd-setup.md`.
+
+## Backend: si falta un endpoint
+
+**No inventarlo** ni mockearlo en el código productivo. Si la pantalla necesita datos
+que el API no expone:
+
+1. Confirmar en la documentación del API que la ruta no existe.
+2. Abrir un issue en el repo de documentación (`docs`) con: qué endpoint, request/response
+   esperados, para qué pantalla, y quién lo implementa.
+3. Seguir con el front sólo cuando el contrato esté acordado; referenciar el issue en el MR.
