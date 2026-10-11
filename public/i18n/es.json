@@ -38,7 +38,8 @@
       "tagline": "Proyectos, tableros e issues en un solo lugar.",
       "by": "// un proyecto de",
       "credit": "Herramientas que uso para construir software, hechas con mi propio design system.",
-      "allowlist": "Solo las cuentas permitidas pueden entrar."
+      "allowlist": "Solo las cuentas permitidas pueden entrar.",
+      "logoAlt": "victor rb"
     },
     "noAccess": {
       "title": "Tu cuenta no tiene acceso",
@@ -101,7 +102,8 @@
       "moveFailed": "No se pudo mover {{issue}}: volvió a {{column}}. Intenta de nuevo.",
       "created": "{{issue}} creado en Por hacer."
     },
-    "canceledHidden": "Descartados ocultos: {{count}}"
+    "canceledHidden": "Descartados ocultos: {{count}}",
+    "canceled": "Descartado"
   },
   "issue": {
     "priorityLabel": "Prioridad",
@@ -147,6 +149,7 @@
     "noDescription": "Sin descripción.",
     "notFound": "No encontramos este issue.",
     "loadError": "No pudimos cargar el issue.",
-    "project": "Proyecto"
+    "project": "Proyecto",
+    "canceledHint": "Este issue está descartado. Elegir un estado lo reabre."
   }
 }

@@ -5,8 +5,12 @@
       <h1 id="issue-detail-title" class="vrb-page-header__title">{{ issue.title }}</h1>
       <div class="vrb-page-header__description vrb-cluster vrb-cluster--sm">
         @if (column(); as state) {
-          <span [class]="'vrb-badge vrb-badge--dot ' + stateTone[state]">
+          <span [class]="'vrb-badge vrb-badge--dot vrb-badge--' + tone[state]">
             {{ 'board.columns.' + state | translate }}
+          </span>
+        } @else if (canceled()) {
+          <span class="vrb-badge vrb-badge--dot vrb-badge--neutral">
+            {{ 'board.canceled' | translate }}
           </span>
         }
         <app-priority-badge [priority]="issue.priority" />
@@ -55,13 +59,14 @@
                     [checked]="column() === state"
                     (change)="move(state)"
                   />
-                  <span
-                    [class]="'vrb-segmented__dot vrb-segmented__dot--' + stateDot[state]"
-                  ></span>
+                  <span [class]="'vrb-segmented__dot vrb-segmented__dot--' + tone[state]"></span>
                   {{ 'board.columns.' + state | translate }}
                 </label>
               }
             </fieldset>
+            @if (canceled()) {
+              <p class="vrb-field__hint">{{ 'issueDetail.canceledHint' | translate }}</p>
+            }
             @if (store.notice(); as notice) {
               @if (notice.kind === 'error') {
                 <p class="vrb-field__error" role="alert">
@@ -72,7 +77,7 @@
                             issue: notice.issue,
                             column: notice.state
                               ? ('board.columns.' + notice.state | translate)
-                              : '',
+                              : ('board.canceled' | translate),
                           }
                   }}
                 </p>

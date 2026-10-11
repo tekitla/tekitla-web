@@ -5,6 +5,16 @@ import { BOARD_STATES, type BoardState, type Issue } from '@/app/api';
 export type BoardColumns = Record<BoardState, Issue[]>;
 
 /**
+ * Tono de vrb por columna (`vrb-kanban__column--*`, `vrb-badge--*`,
+ * `vrb-segmented__dot--*`).
+ */
+export const STATE_TONE: Record<BoardState, 'neutral' | 'info' | 'success'> = {
+  ISSUE_STATE_TODO: 'neutral',
+  ISSUE_STATE_IN_PROGRESS: 'info',
+  ISSUE_STATE_DONE: 'success',
+};
+
+/**
  * Columna en la que se muestra un issue, o `null` si no va en el tablero
  * (descartado). Un estado desconocido cae en «Por hacer».
  */

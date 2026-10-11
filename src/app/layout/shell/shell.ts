@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -7,6 +14,7 @@ import { filter } from 'rxjs';
 import { AuthService } from '@/app/core/auth/auth.service';
 import { SessionStore } from '@/app/core/auth/session.store';
 import { Icon } from '@/app/ui/components/icon/icon';
+import { initialsOf } from './initials';
 import { ShellNav } from './shell-nav';
 
 /**
@@ -38,6 +46,7 @@ export class Shell {
         takeUntilDestroyed(),
       )
       .subscribe(() => this.closeMenu());
+    inject(DestroyRef).onDestroy(() => this.nav.clear());
   }
 
   protected toggleMenu(): void {
@@ -51,11 +60,4 @@ export class Shell {
   protected logout(): void {
     void this.auth.logout();
   }
-}
-
-function initialsOf(user: { displayName: string | null; email: string | null } | null): string {
-  const source = user?.displayName?.trim() || user?.email?.split('@')[0] || '';
-  const words = source.split(/[\s._-]+/).filter(Boolean);
-  const letters = words.length > 1 ? words[0]![0]! + words[1]![0]! : source.slice(0, 2);
-  return letters.toUpperCase();
 }

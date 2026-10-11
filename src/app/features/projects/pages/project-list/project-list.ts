@@ -71,8 +71,15 @@ export class ProjectList implements OnInit {
     this.keyInput()?.nativeElement.focus();
   }
 
+  /** Mientras se crea no se cierra: la respuesta todavía tiene que mostrarse o navegar. */
   protected closeForm(): void {
+    if (this.saving()) return;
     this.dialog().nativeElement.close();
+  }
+
+  /** Escape dispara `cancel`: se ignora mientras se crea el proyecto. */
+  protected onDialogCancel(event: Event): void {
+    if (this.saving()) event.preventDefault();
   }
 
   /** Al cerrar (botón, Cancelar o Escape) el formulario vuelve a empezar. */

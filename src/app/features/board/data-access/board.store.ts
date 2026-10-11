@@ -24,6 +24,20 @@ export interface BoardNotice {
   id: number;
 }
 
+/** Movimientos en vuelo de un issue. */
+interface MovesInFlight {
+  /** `seq` del último movimiento pedido: el único que decide el resultado. */
+  latest: number;
+  /** Cuántas respuestas faltan. */
+  count: number;
+  /** Último estado que el servidor confirmó: a ése se vuelve si falla el último. */
+  confirmed: IssueState;
+  /** Resultado del último movimiento, cuando ya respondió. */
+  outcome: MoveOutcome | null;
+}
+
+type MoveOutcome = { ok: true; issue: Issue | null; to: BoardState } | { ok: false };
+
 /**
  * Store del tablero de UN proyecto: proyecto, issues, mover (optimista),
  * crear y detalle. Provisto en la ruta `proyectos/:projectId` (board.routes.ts):
@@ -76,13 +90,8 @@ export class BoardStore {
   private detailRequestId = 0;
   private moveSeq = 0;
   private noticeSeq = 0;
-  /** Último movimiento pedido por issue: sólo ése puede confirmar o deshacer. */
-  private readonly latestMove = new Map<number, number>();
-  /**
-   * Último estado que el servidor confirmó para cada issue con movimientos en
-   * vuelo: a ése vuelve si falla el último (no a un estado optimista intermedio).
-   */
-  private readonly confirmedState = new Map<number, IssueState>();
+  /** Movimientos en vuelo por issue: el último pedido y cuántos faltan responder. */
+  private readonly inFlight = new Map<number, MovesInFlight>();
 
   isPending(number: number): boolean {
     return this._pending().has(number);
@@ -105,8 +114,7 @@ export class BoardStore {
       this._loading.set(true);
       // Lo que esté en vuelo es del proyecto anterior: sus respuestas se ignoran.
       this._pending.set(new Set());
-      this.latestMove.clear();
-      this.confirmedState.clear();
+      this.inFlight.clear();
       this.detailRequestId++;
     }
     this._error.set(null);
@@ -150,23 +158,32 @@ export class BoardStore {
   /**
    * Mueve un issue de columna con actualización OPTIMISTA: la tarjeta cambia de
    * columna al instante y, si el backend falla, vuelve a donde estaba y se avisa.
-   * Si el mismo issue se mueve de nuevo antes de que responda el primero, sólo
-   * cuenta la respuesta del último movimiento.
+   * Si el mismo issue se mueve de nuevo antes de que responda el primero, se
+   * espera a que respondan todos y decide el último: si salió bien queda donde
+   * está; si falló, vuelve al último estado que el servidor confirmó (que puede
+   * venir de un movimiento anterior que respondió después).
    */
   move(number: number, to: BoardState): void {
     const projectId = this._projectId();
     const current = this._issues().find((i) => i.number === number);
     if (!projectId || !current || columnOf(current) === to) return;
 
-    // Sin movimientos en vuelo, el estado actual es el que tiene el servidor.
-    if (!this.latestMove.has(number)) this.confirmedState.set(number, current.state);
     const seq = ++this.moveSeq;
-    this.latestMove.set(number, seq);
+    // Sin movimientos en vuelo, el estado actual es el que tiene el servidor.
+    const moves = this.inFlight.get(number) ?? {
+      latest: seq,
+      count: 0,
+      confirmed: current.state,
+      outcome: null,
+    };
+    moves.latest = seq;
+    moves.count++;
+    this.inFlight.set(number, moves);
     this._issues.update((list) => withState(list, number, to));
     this.setPending(number, true);
     const key = issueKey(this.projectKey(), number);
     // Se cambió de proyecto (o se volvió a él) mientras estaba en vuelo.
-    const stale = () => this._projectId() !== projectId || !this.latestMove.has(number);
+    const stale = () => this._projectId() !== projectId || this.inFlight.get(number) !== moves;
 
     this.client
       .moveIssue(projectId, number, to)
@@ -175,34 +192,48 @@ export class BoardStore {
         next: (issue) => {
           if (stale()) return;
           // Aunque lo haya superado otro movimiento, el servidor ya lo aplicó.
-          this.confirmedState.set(number, issue.number === number ? issue.state : to);
-          if (this.latestMove.get(number) !== seq) return;
-          this.finishMove(number);
-          // El backend es la verdad (updatedAt, y por si normalizó algo).
-          if (issue.number === number) this._issues.update((list) => upsertIssue(list, issue));
-          this.notify('info', 'board.notice.moved', key, to);
+          const confirmed = issue.number === number ? issue : null;
+          moves.confirmed = confirmed?.state ?? to;
+          this.settle(number, moves, seq, { ok: true, issue: confirmed, to }, key);
         },
         error: () => {
-          if (stale() || this.latestMove.get(number) !== seq) return;
-          const confirmed = this.confirmedState.get(number) ?? current.state;
-          this.finishMove(number);
-          this._issues.update((list) =>
-            list.map((i) => (i.number === number ? { ...i, state: confirmed } : i)),
-          );
-          this.notify(
-            'error',
-            'board.notice.moveFailed',
-            key,
-            columnOf({ state: confirmed }) ?? undefined,
-          );
+          if (stale()) return;
+          this.settle(number, moves, seq, { ok: false }, key);
         },
       });
   }
 
-  private finishMove(number: number): void {
-    this.latestMove.delete(number);
-    this.confirmedState.delete(number);
+  /** Cuenta una respuesta; con la última que falta, aplica el resultado del último movimiento. */
+  private settle(
+    number: number,
+    moves: MovesInFlight,
+    seq: number,
+    outcome: MoveOutcome,
+    key: string,
+  ): void {
+    moves.count--;
+    if (seq === moves.latest) moves.outcome = outcome;
+    if (moves.count > 0 || !moves.outcome) return;
+
+    const last = moves.outcome;
+    this.inFlight.delete(number);
     this.setPending(number, false);
+    if (last.ok) {
+      // El backend es la verdad (updatedAt, y por si normalizó algo).
+      if (last.issue) this._issues.update((list) => upsertIssue(list, last.issue!));
+      this.notify('info', 'board.notice.moved', key, last.to);
+      return;
+    }
+    const confirmed = moves.confirmed;
+    this._issues.update((list) =>
+      list.map((i) => (i.number === number ? { ...i, state: confirmed } : i)),
+    );
+    this.notify(
+      'error',
+      'board.notice.moveFailed',
+      key,
+      columnOf({ state: confirmed }) ?? undefined,
+    );
   }
 
   /** Crea un issue (el backend lo pone en «Por hacer») y lo suma al tablero. */

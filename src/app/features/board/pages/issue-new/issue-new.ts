@@ -19,17 +19,11 @@ import { DomainError, PRIORITIES, type Priority } from '@/app/api';
 import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { Button } from '@/app/ui/components/button/button';
 import { Markdown } from '@/app/ui/components/markdown/markdown';
+import { PRIORITY_LEVEL, PRIORITY_TONE } from '../../components/priority-badge/priority-badge';
+import { boardNav } from '../../board-nav';
 import { BoardStore } from '../../data-access/board.store';
 
 const TITLE_MAX = 200;
-
-/** Color del punto de cada prioridad en el selector (`vrb-segmented__dot--*`). */
-const PRIORITY_DOT: Record<(typeof PRIORITIES)[number], string> = {
-  PRIORITY_LOW: 'neutral',
-  PRIORITY_MEDIUM: 'warning',
-  PRIORITY_HIGH: 'danger',
-  PRIORITY_URGENT: 'danger',
-};
 
 /**
  * Alta de issue: título, prioridad (selector segmentado) y descripción en
@@ -52,7 +46,8 @@ export class IssueNew {
   private readonly titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
 
   protected readonly priorities = PRIORITIES;
-  protected readonly priorityDot = PRIORITY_DOT;
+  /** Color del punto de cada prioridad en el selector. */
+  protected readonly priorityDot = (priority: Priority) => PRIORITY_TONE[PRIORITY_LEVEL[priority]];
   protected readonly titleMax = TITLE_MAX;
   protected readonly form = inject(FormBuilder).nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(TITLE_MAX)]],
@@ -73,16 +68,11 @@ export class IssueNew {
     const nav = inject(ShellNav);
     effect(() => {
       const project = this.store.project();
-      nav.set(
-        [
-          { label: 'shell.nav.projects', translate: true, link: ['/proyectos'] },
-          project
-            ? { label: project.name, link: ['/proyectos', project.id] }
-            : { label: 'board.title', translate: true, link: ['/proyectos', this.projectId()] },
-          { label: 'issueNew.title', translate: true },
-        ],
-        project && { id: project.id, name: project.name },
-      );
+      const { crumbs, project: shellProject } = boardNav(project, this.projectId(), {
+        label: 'issueNew.title',
+        translate: true,
+      });
+      nav.set(crumbs, shellProject);
     });
   }
 

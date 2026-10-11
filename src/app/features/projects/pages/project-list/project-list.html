@@ -78,6 +78,7 @@
   class="vrb-dialog"
   aria-labelledby="project-form-title"
   aria-describedby="project-form-description"
+  (cancel)="onDialogCancel($event)"
   (close)="onDialogClose()"
 >
   <form class="project-list__dialog-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -93,6 +94,7 @@
       type="button"
       class="vrb-dialog__close"
       [attr.aria-label]="'common.close' | translate"
+      [disabled]="saving()"
       (click)="closeForm()"
     >
       <ui-icon name="close" />
@@ -190,7 +192,7 @@
     </div>
 
     <footer class="vrb-dialog__footer">
-      <ui-button variant="outline" (pressed)="closeForm()">
+      <ui-button variant="outline" [disabled]="saving()" (pressed)="closeForm()">
         {{ 'common.cancel' | translate }}
       </ui-button>
       <ui-button type="submit" [loading]="saving()">
