@@ -21,11 +21,12 @@ export const KANBAN_PRIORITY: Record<PriorityLevel, string> = {
   urgent: 'urgente',
 };
 
-const TONE: Record<PriorityLevel, string> = {
-  low: 'vrb-badge--neutral',
-  medium: 'vrb-badge--warning',
-  high: 'vrb-badge--danger',
-  urgent: 'vrb-badge--danger',
+/** Tono de vrb por prioridad (`vrb-badge--*`, `vrb-segmented__dot--*`). */
+export const PRIORITY_TONE: Record<PriorityLevel, 'neutral' | 'warning' | 'danger'> = {
+  low: 'neutral',
+  medium: 'warning',
+  high: 'danger',
+  urgent: 'danger',
 };
 
 /** Prioridad como `vrb-badge`: color + texto (el color nunca es la única señal, WCAG 1.4.1). */
@@ -33,7 +34,7 @@ const TONE: Record<PriorityLevel, string> = {
   selector: 'app-priority-badge',
   imports: [TranslatePipe],
   template: `
-    <span [class]="'vrb-badge ' + tone()">
+    <span [class]="'vrb-badge vrb-badge--' + tone()">
       <span class="u-visually-hidden">{{ 'issue.priorityLabel' | translate }}: </span>
       {{ 'issue.priority.' + level() | translate }}
     </span>
@@ -44,5 +45,5 @@ export class PriorityBadge {
   readonly priority = input.required<Priority>();
 
   protected readonly level = computed(() => PRIORITY_LEVEL[this.priority()]);
-  protected readonly tone = computed(() => TONE[this.level()]);
+  protected readonly tone = computed(() => PRIORITY_TONE[this.level()]);
 }

@@ -30,4 +30,9 @@ export class ShellNav {
     this._crumbs.set(crumbs);
     this._project.set(project);
   }
+
+  /** Al salir del shell (logout): la próxima sesión no ve el proyecto anterior. */
+  clear(): void {
+    this.set([]);
+  }
 }

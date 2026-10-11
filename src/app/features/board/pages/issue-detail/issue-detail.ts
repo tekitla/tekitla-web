@@ -16,7 +16,8 @@ import { BOARD_STATES, type BoardState } from '@/app/api';
 import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { Markdown } from '@/app/ui/components/markdown/markdown';
 import { PriorityBadge } from '../../components/priority-badge/priority-badge';
-import { columnOf, issueKey } from '../../data-access/board.logic';
+import { STATE_TONE, columnOf, issueKey } from '../../data-access/board.logic';
+import { boardNav } from '../../board-nav';
 import { BoardStore } from '../../data-access/board.store';
 
 /**
@@ -38,22 +39,16 @@ export class IssueDetail {
   readonly number = input.required({ transform: numberAttribute });
 
   protected readonly states = BOARD_STATES;
-  /** Tonos de vrb por estado: badge del encabezado y punto del selector. */
-  protected readonly stateTone: Record<BoardState, string> = {
-    ISSUE_STATE_TODO: 'vrb-badge--neutral',
-    ISSUE_STATE_IN_PROGRESS: 'vrb-badge--info',
-    ISSUE_STATE_DONE: 'vrb-badge--success',
-  };
-  protected readonly stateDot: Record<BoardState, string> = {
-    ISSUE_STATE_TODO: 'neutral',
-    ISSUE_STATE_IN_PROGRESS: 'info',
-    ISSUE_STATE_DONE: 'success',
-  };
+  protected readonly tone = STATE_TONE;
   protected readonly key = computed(() => issueKey(this.store.projectKey(), this.number()));
   protected readonly column = computed(() => {
     const issue = this.store.selected();
     return issue ? columnOf(issue) : null;
   });
+  /** Descartado: no tiene columna; elegir un estado lo reabre. */
+  protected readonly canceled = computed(
+    () => this.store.selected()?.state === 'ISSUE_STATE_CANCELED',
+  );
   protected readonly pending = computed(() => this.store.pending().has(this.number()));
 
   constructor() {
@@ -69,16 +64,10 @@ export class IssueDetail {
     const nav = inject(ShellNav);
     effect(() => {
       const project = this.store.project();
-      nav.set(
-        [
-          { label: 'shell.nav.projects', translate: true, link: ['/proyectos'] },
-          project
-            ? { label: project.name, link: ['/proyectos', project.id] }
-            : { label: 'board.title', translate: true, link: ['/proyectos', this.projectId()] },
-          { label: this.key() },
-        ],
-        project && { id: project.id, name: project.name },
-      );
+      const { crumbs, project: shellProject } = boardNav(project, this.projectId(), {
+        label: this.key(),
+      });
+      nav.set(crumbs, shellProject);
     });
   }
 

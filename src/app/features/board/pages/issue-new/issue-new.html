@@ -47,7 +47,7 @@
               <label class="vrb-segmented__option">
                 <input type="radio" formControlName="priority" [value]="priority" />
                 <span
-                  [class]="'vrb-segmented__dot vrb-segmented__dot--' + priorityDot[priority]"
+                  [class]="'vrb-segmented__dot vrb-segmented__dot--' + priorityDot(priority)"
                 ></span>
                 {{ 'issue.priorityByEnum.' + priority | translate }}
               </label>

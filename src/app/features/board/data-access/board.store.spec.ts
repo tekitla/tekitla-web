@@ -184,6 +184,42 @@ describe('BoardStore', () => {
       expect(store.notice()).toMatchObject({ kind: 'error', state: 'ISSUE_STATE_IN_PROGRESS' });
     });
 
+    it('si el último falla antes de que responda el primero, espera y vuelve a lo que confirmó el primero', () => {
+      const first = new Subject<Issue>();
+      const second = new Subject<Issue>();
+      client.moveIssue.mockReturnValueOnce(first).mockReturnValueOnce(second);
+
+      store.move(1, 'ISSUE_STATE_DONE');
+      store.move(1, 'ISSUE_STATE_IN_PROGRESS');
+      second.error(apiError(500));
+
+      // Falta la respuesta del primero: todavía no se decide nada.
+      expect(store.isPending(1)).toBe(true);
+      expect(store.notice()).toBeNull();
+
+      first.next(issue(1, { state: 'ISSUE_STATE_DONE' }));
+
+      expect(numbersIn('ISSUE_STATE_DONE')).toEqual([1]);
+      expect(store.isPending(1)).toBe(false);
+      expect(store.notice()).toMatchObject({ kind: 'error', state: 'ISSUE_STATE_DONE' });
+    });
+
+    it('si el último sale bien antes que el primero, queda donde lo dejó el último', () => {
+      const first = new Subject<Issue>();
+      const second = new Subject<Issue>();
+      client.moveIssue.mockReturnValueOnce(first).mockReturnValueOnce(second);
+
+      store.move(1, 'ISSUE_STATE_DONE');
+      store.move(1, 'ISSUE_STATE_IN_PROGRESS');
+      second.next(issue(1, { state: 'ISSUE_STATE_IN_PROGRESS' }));
+      expect(store.isPending(1)).toBe(true);
+      first.error(apiError(500));
+
+      expect(numbersIn('ISSUE_STATE_IN_PROGRESS')).toEqual([1, 2]);
+      expect(store.isPending(1)).toBe(false);
+      expect(store.notice()).toMatchObject({ kind: 'info', state: 'ISSUE_STATE_IN_PROGRESS' });
+    });
+
     it('la respuesta de un movimiento no toca el tablero de otro proyecto', () => {
       const ok = new Subject<Issue>();
       const ko = new Subject<Issue>();

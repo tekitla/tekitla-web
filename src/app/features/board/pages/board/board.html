@@ -158,7 +158,9 @@
                 | translate
                   : {
                       issue: notice.issue,
-                      column: notice.state ? ('board.columns.' + notice.state | translate) : '',
+                      column: notice.state
+                        ? ('board.columns.' + notice.state | translate)
+                        : ('board.canceled' | translate),
                     }
             }}
           </p>

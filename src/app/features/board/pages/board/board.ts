@@ -20,6 +20,8 @@ import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { Button } from '@/app/ui/components/button/button';
 import { Icon } from '@/app/ui/components/icon/icon';
 import { IssueCard, type MoveRequest } from '../../components/issue-card/issue-card';
+import { STATE_TONE } from '../../data-access/board.logic';
+import { boardNav } from '../../board-nav';
 import { BoardStore } from '../../data-access/board.store';
 
 /** Los avisos de éxito se van solos; los de error quedan hasta cerrarlos. */
@@ -60,12 +62,7 @@ export class Board {
   readonly projectId = input.required<string>();
 
   protected readonly states = BOARD_STATES;
-  /** Tono de `.vrb-kanban__column` según la categoría del estado. */
-  protected readonly tone: Record<BoardState, string> = {
-    ISSUE_STATE_TODO: 'neutral',
-    ISSUE_STATE_IN_PROGRESS: 'info',
-    ISSUE_STATE_DONE: 'success',
-  };
+  protected readonly tone = STATE_TONE;
   protected readonly canceledCount = computed(
     () => this.store.issues().filter((i) => i.state === 'ISSUE_STATE_CANCELED').length,
   );
@@ -79,13 +76,8 @@ export class Board {
     const nav = inject(ShellNav);
     effect(() => {
       const project = this.store.project();
-      nav.set(
-        [
-          { label: 'shell.nav.projects', translate: true, link: ['/proyectos'] },
-          project ? { label: project.name } : { label: 'board.title', translate: true },
-        ],
-        project && { id: project.id, name: project.name },
-      );
+      const { crumbs, project: shellProject } = boardNav(project, this.projectId());
+      nav.set(crumbs, shellProject);
     });
 
     let timer: ReturnType<typeof setTimeout> | undefined;
