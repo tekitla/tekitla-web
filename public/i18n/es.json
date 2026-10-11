@@ -15,9 +15,14 @@
   },
   "shell": {
     "skip": "Saltar al contenido",
+    "workspace": "Personal",
+    "openMenu": "Abrir menú",
+    "breadcrumb": "Ruta",
     "nav": {
-      "label": "Principal",
-      "projects": "Proyectos"
+      "label": "Navegación",
+      "workspace": "Espacio de trabajo",
+      "projects": "Proyectos",
+      "board": "Tablero"
     },
     "logout": "Cerrar sesión"
   },
@@ -25,9 +30,15 @@
     "login": {
       "title": "Iniciar sesión",
       "lead": "Entra con tu cuenta de Google para ver tus proyectos e issues.",
-      "google": "Entrar con Google",
+      "google": "Continuar con Google",
       "error": "No pudimos iniciar sesión con Google. Intenta de nuevo.",
-      "notConfigured": "Falta la configuración web de Firebase en este ambiente (src/environments). Avisale a quien administra Tekitla."
+      "notConfigured": "Falta la configuración web de Firebase en este ambiente (src/environments). Avisale a quien administra Tekitla.",
+      "eyebrow": "// issues y tableros",
+      "headline": "cada issue, columna por columna",
+      "tagline": "Proyectos, tableros e issues en un solo lugar.",
+      "by": "// un proyecto de",
+      "credit": "Herramientas que uso para construir software, hechas con mi propio design system.",
+      "allowlist": "Solo las cuentas permitidas pueden entrar."
     },
     "noAccess": {
       "title": "Tu cuenta no tiene acceso",
@@ -41,15 +52,17 @@
     "list": {
       "title": "Proyectos",
       "new": "Nuevo proyecto",
-      "empty": "Todavía no tienes proyectos. Crea el primero con el formulario de arriba.",
-      "loadError": "No pudimos cargar los proyectos."
+      "empty": "Crea el primero: su clave da nombre a los issues (TK-42).",
+      "loadError": "No pudimos cargar los proyectos.",
+      "eyebrow": "// personal",
+      "emptyTitle": "Todavía no hay proyectos"
     },
     "form": {
       "title": "Nuevo proyecto",
       "key": "Clave",
-      "keyHint": "De 2 a 10 letras mayúsculas o dígitos, empezando con letra. Da nombre a los issues: TK-42.",
+      "keyHint": "2 a 10 letras mayúsculas o dígitos, empezando con letra.",
       "name": "Nombre",
-      "description": "Descripción",
+      "description": "La clave da nombre a los issues: TK-42.",
       "submit": "Crear proyecto",
       "errors": {
         "keyRequired": "Escribe una clave.",
@@ -59,7 +72,8 @@
         "keyTaken": "Ya tienes un proyecto con la clave {{key}}. Elige otra.",
         "nameRequired": "Escribe un nombre.",
         "generic": "No pudimos crear el proyecto."
-      }
+      },
+      "descriptionLabel": "Descripción"
     }
   },
   "board": {
@@ -86,7 +100,8 @@
       "moved": "{{issue}} pasó a {{column}}.",
       "moveFailed": "No se pudo mover {{issue}}: volvió a {{column}}. Intenta de nuevo.",
       "created": "{{issue}} creado en Por hacer."
-    }
+    },
+    "canceledHidden": "Descartados ocultos: {{count}}"
   },
   "issue": {
     "priorityLabel": "Prioridad",
@@ -105,7 +120,6 @@
   },
   "issueNew": {
     "title": "Nuevo issue",
-    "back": "Volver al tablero",
     "fields": {
       "title": "Título",
       "priority": "Prioridad",
@@ -118,7 +132,11 @@
     "errors": {
       "titleRequired": "Escribe un título.",
       "generic": "No pudimos crear el issue."
-    }
+    },
+    "lead": "Se crea al final de",
+    "titlePlaceholder": "Qué hay que hacer",
+    "editor": "Modo del editor",
+    "write": "Escribir"
   },
   "issueDetail": {
     "back": "Volver al tablero",
@@ -128,6 +146,7 @@
     "description": "Descripción",
     "noDescription": "Sin descripción.",
     "notFound": "No encontramos este issue.",
-    "loadError": "No pudimos cargar el issue."
+    "loadError": "No pudimos cargar el issue.",
+    "project": "Proyecto"
   }
 }

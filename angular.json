@@ -32,9 +32,23 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "*.woff2",
+                "input": "node_modules/@vrojas1015/vrb/design-system/fonts",
+                "output": "fonts"
+              },
+              {
+                "glob": "victorrb-lockup*.svg",
+                "input": "node_modules/@vrojas1015/vrb/design-system/assets/Logos",
+                "output": "logos"
               }
             ],
-            "styles": ["node_modules/@angular/cdk/overlay-prebuilt.css", "src/styles.scss"]
+            "styles": [
+              "node_modules/@angular/cdk/overlay-prebuilt.css",
+              "node_modules/@vrojas1015/vrb/dist/vrb.css",
+              "src/styles.scss"
+            ]
           },
           "configurations": {
             "production": {

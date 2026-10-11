@@ -1,7 +1,11 @@
+import type * as pb from '@tekitla/tekitla-protos/issues/v1/issues_pb';
+
 /**
  * Contratos del `IssueService` de Tekitla tal como los expone el gateway
- * (grpc-gateway) en JSON. Copiados de `tekitla-protos/proto/issues/v1/issues.proto`:
- * si el proto cambia, se actualiza acá (y nunca se inventan campos).
+ * (grpc-gateway) en JSON. Se derivan de los tipos de `@tekitla/tekitla-protos`
+ * (solo tipos: nada de protobuf-es llega al bundle), así que si el proto suma,
+ * quita o renombra un campo, `npm run typecheck` falla hasta actualizar los
+ * mappers.
  *
  * Reglas del JSON de grpc-gateway:
  * - campos en lowerCamelCase; enums como string (`ISSUE_STATE_TODO`);
@@ -12,12 +16,26 @@
  *   en `issues.mappers.ts`.
  */
 
-/** Columnas del tablero. */
-export type IssueState =
-  'ISSUE_STATE_UNSPECIFIED' | 'ISSUE_STATE_TODO' | 'ISSUE_STATE_IN_PROGRESS' | 'ISSUE_STATE_DONE';
+/** Campos de un mensaje de protobuf-es, sin los internos (`$typeName`, `$unknown`). */
+type Fields<M> = Omit<M, '$typeName' | '$unknown'>;
 
-/** Estados que se pueden asignar (UNSPECIFIED es INVALID_ARGUMENT en MoveIssue). */
-export type BoardState = Exclude<IssueState, 'ISSUE_STATE_UNSPECIFIED'>;
+/**
+ * Forma JSON normalizada de un mensaje: todos sus campos presentes, con los que
+ * cambian de tipo en JSON (enums, timestamps) reemplazados por `Over`. `Over`
+ * solo acepta campos que existen en el mensaje.
+ */
+type Json<M, Over extends Partial<Record<keyof Fields<M>, unknown>> = object> = {
+  [K in keyof Fields<M>]-?: K extends keyof Over ? Over[K] : Fields<M>[K];
+};
+
+/** Categoría del estado. CANCELED = descartado (cerrado sin hacerse). */
+export type IssueState = `ISSUE_STATE_${keyof typeof pb.IssueState}`;
+
+/**
+ * Columnas del tablero (UNSPECIFIED es INVALID_ARGUMENT en MoveIssue; los
+ * descartados no se muestran en el tablero).
+ */
+export type BoardState = Exclude<IssueState, 'ISSUE_STATE_UNSPECIFIED' | 'ISSUE_STATE_CANCELED'>;
 
 export const BOARD_STATES: readonly BoardState[] = [
   'ISSUE_STATE_TODO',
@@ -25,8 +43,7 @@ export const BOARD_STATES: readonly BoardState[] = [
   'ISSUE_STATE_DONE',
 ];
 
-export type Priority =
-  'PRIORITY_UNSPECIFIED' | 'PRIORITY_LOW' | 'PRIORITY_MEDIUM' | 'PRIORITY_HIGH' | 'PRIORITY_URGENT';
+export type Priority = `PRIORITY_${keyof typeof pb.Priority}`;
 
 /** Prioridades elegibles al crear, de menor a mayor. */
 export const PRIORITIES: readonly Exclude<Priority, 'PRIORITY_UNSPECIFIED'>[] = [
@@ -36,50 +53,37 @@ export const PRIORITIES: readonly Exclude<Priority, 'PRIORITY_UNSPECIFIED'>[] = 
   'PRIORITY_URGENT',
 ];
 
-export interface Project {
-  id: string;
-  /** 2 a 10 mayúsculas/dígitos, empieza con letra (p. ej. `TK`). */
-  key: string;
-  name: string;
-  description: string;
-  /** RFC 3339; vacío si no vino. */
+/** Timestamps en RFC 3339; vacío si no vino. */
+interface Timestamps {
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Issue {
-  id: string;
-  projectId: string;
-  /** Correlativo dentro del proyecto, desde 1 (`TK-42`). */
-  number: number;
-  title: string;
-  /** Markdown. */
-  description: string;
-  state: IssueState;
-  priority: Priority;
-  createdAt: string;
-  updatedAt: string;
-}
+/**
+ * Proyecto. `key`: 2 a 10 mayúsculas/dígitos, empieza con letra (p. ej. `TK`).
+ * `workspaceId`: espacio de trabajo dueño (hoy, el personal del usuario).
+ */
+export type Project = Json<pb.Project, Timestamps>;
+
+/**
+ * Issue. `number`: correlativo dentro del proyecto, desde 1 (`TK-42`).
+ * `description`: Markdown. `rank`: posición en el orden manual, opaca (se
+ * compara como string; vacío si no vino).
+ */
+export type Issue = Json<pb.Issue, Timestamps & { state: IssueState; priority: Priority }>;
 
 /** Paginación por cursor opaco. `limit <= 0` usa el default del servicio. */
-export interface PageRequest {
-  cursor?: string;
-  limit?: number;
-}
+export type PageRequest = Partial<Json<pb.PageRequest>>;
 
-export interface PageResponse {
-  nextCursor: string;
-  hasNext: boolean;
-}
+export type PageResponse = Json<pb.PageResponse>;
 
 // ── Requests ──────────────────────────────────────────────────────────────
 
-/** POST /v1/projects */
-export interface CreateProjectRequest {
-  key: string;
-  name: string;
-  description: string;
-}
+/** POST /v1/projects. Sin `workspaceId`: el espacio personal del usuario. */
+export type CreateProjectRequest = Pick<
+  Json<pb.CreateProjectRequest>,
+  'key' | 'name' | 'description'
+>;
 
 /** GET /v1/projects/{projectId}/issues */
 export interface ListIssuesRequest {
@@ -89,12 +93,10 @@ export interface ListIssuesRequest {
 }
 
 /** POST /v1/projects/{projectId}/issues — se crea en ISSUE_STATE_TODO. */
-export interface CreateIssueRequest {
-  title: string;
-  description: string;
-  /** UNSPECIFIED se guarda como MEDIUM. */
-  priority: Priority;
-}
+export type CreateIssueRequest = Pick<
+  Json<pb.CreateIssueRequest, { priority: Priority }>,
+  'title' | 'description' | 'priority'
+>;
 
 // ── Respuestas normalizadas ───────────────────────────────────────────────
 

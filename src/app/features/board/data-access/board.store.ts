@@ -6,6 +6,7 @@ import {
   type BoardState,
   type CreateIssueRequest,
   type Issue,
+  type IssueState,
   IssuesClient,
   type Project,
   toDomainError,
@@ -77,6 +78,11 @@ export class BoardStore {
   private noticeSeq = 0;
   /** Último movimiento pedido por issue: sólo ése puede confirmar o deshacer. */
   private readonly latestMove = new Map<number, number>();
+  /**
+   * Último estado que el servidor confirmó para cada issue con movimientos en
+   * vuelo: a ése vuelve si falla el último (no a un estado optimista intermedio).
+   */
+  private readonly confirmedState = new Map<number, IssueState>();
 
   isPending(number: number): boolean {
     return this._pending().has(number);
@@ -97,6 +103,11 @@ export class BoardStore {
       this._loaded.set(false);
       this._activeColumn.set('ISSUE_STATE_TODO');
       this._loading.set(true);
+      // Lo que esté en vuelo es del proyecto anterior: sus respuestas se ignoran.
+      this._pending.set(new Set());
+      this.latestMove.clear();
+      this.confirmedState.clear();
+      this.detailRequestId++;
     }
     this._error.set(null);
     this._notFound.set(false);
@@ -147,35 +158,51 @@ export class BoardStore {
     const current = this._issues().find((i) => i.number === number);
     if (!projectId || !current || columnOf(current) === to) return;
 
-    const previousState = current.state;
+    // Sin movimientos en vuelo, el estado actual es el que tiene el servidor.
+    if (!this.latestMove.has(number)) this.confirmedState.set(number, current.state);
     const seq = ++this.moveSeq;
     this.latestMove.set(number, seq);
     this._issues.update((list) => withState(list, number, to));
     this.setPending(number, true);
     const key = issueKey(this.projectKey(), number);
+    // Se cambió de proyecto (o se volvió a él) mientras estaba en vuelo.
+    const stale = () => this._projectId() !== projectId || !this.latestMove.has(number);
 
     this.client
       .moveIssue(projectId, number, to)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (issue) => {
+          if (stale()) return;
+          // Aunque lo haya superado otro movimiento, el servidor ya lo aplicó.
+          this.confirmedState.set(number, issue.number === number ? issue.state : to);
           if (this.latestMove.get(number) !== seq) return;
-          this.latestMove.delete(number);
-          this.setPending(number, false);
+          this.finishMove(number);
           // El backend es la verdad (updatedAt, y por si normalizó algo).
           if (issue.number === number) this._issues.update((list) => upsertIssue(list, issue));
           this.notify('info', 'board.notice.moved', key, to);
         },
         error: () => {
-          if (this.latestMove.get(number) !== seq) return;
-          this.latestMove.delete(number);
-          this.setPending(number, false);
+          if (stale() || this.latestMove.get(number) !== seq) return;
+          const confirmed = this.confirmedState.get(number) ?? current.state;
+          this.finishMove(number);
           this._issues.update((list) =>
-            list.map((i) => (i.number === number ? { ...i, state: previousState } : i)),
+            list.map((i) => (i.number === number ? { ...i, state: confirmed } : i)),
           );
-          this.notify('error', 'board.notice.moveFailed', key, columnOf({ state: previousState }));
+          this.notify(
+            'error',
+            'board.notice.moveFailed',
+            key,
+            columnOf({ state: confirmed }) ?? undefined,
+          );
         },
       });
+  }
+
+  private finishMove(number: number): void {
+    this.latestMove.delete(number);
+    this.confirmedState.delete(number);
+    this.setPending(number, false);
   }
 
   /** Crea un issue (el backend lo pone en «Por hacer») y lo suma al tablero. */
@@ -185,7 +212,7 @@ export class BoardStore {
     return this.client.createIssue(projectId, req).pipe(
       tap((issue) => {
         this._issues.update((list) => upsertIssue(list, issue));
-        this._activeColumn.set(columnOf(issue));
+        this._activeColumn.set(columnOf(issue) ?? 'ISSUE_STATE_TODO');
         this.notify('info', 'board.notice.created', issueKey(this.projectKey(), issue.number));
       }),
       catchError((err: unknown) => throwError(() => toDomainError(err))),

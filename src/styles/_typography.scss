@@ -1,22 +1,15 @@
 body {
-  font-family: var(--font-sans);
+  font-family: var(--vrb-font-sans);
   font-size: var(--text-body);
   line-height: 1.5;
-  color: var(--text-primary);
-  background: var(--surface-muted);
+  color: var(--vrb-fg);
+  background: var(--vrb-bg);
 }
 
-h1,
-h2,
-h3 {
-  margin: 0 0 var(--space-4);
-  line-height: 1.2;
+a {
+  color: var(--vrb-brand);
 }
 
-h1 {
-  font-size: var(--text-h1);
-}
-
-h2 {
-  font-size: var(--text-h2);
+a:hover {
+  color: var(--vrb-fg);
 }

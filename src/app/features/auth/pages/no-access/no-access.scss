@@ -1,27 +1,12 @@
-@use 'mixins' as m;
-
-// Bloque BEM: .no-access
+// La tarjeta es un .vrb-empty; acá solo el centrado en la página.
 .no-access {
   display: grid;
   place-items: center;
   min-height: 100dvh;
   padding: var(--space-4);
+  background: var(--vrb-bg);
+}
 
-  &__card {
-    @include m.card;
-    display: grid;
-    gap: var(--space-4);
-    width: 100%;
-    max-width: 420px;
-    padding: var(--space-6);
-  }
-
-  &__title {
-    margin: 0;
-  }
-
-  &__text {
-    margin: 0;
-    color: var(--text-muted);
-  }
+.no-access__card {
+  max-width: 480px;
 }

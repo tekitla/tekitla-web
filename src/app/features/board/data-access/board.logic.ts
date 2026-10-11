@@ -1,31 +1,31 @@
-import { BOARD_STATES, type BoardState, type Issue, type Priority } from '@/app/api';
+import { BOARD_STATES, type BoardState, type Issue } from '@/app/api';
 
 /** Funciones puras del tablero (sin Angular): agrupar, mover, ordenar. */
 
 export type BoardColumns = Record<BoardState, Issue[]>;
 
-const PRIORITY_RANK: Record<Priority, number> = {
-  PRIORITY_URGENT: 4,
-  PRIORITY_HIGH: 3,
-  PRIORITY_MEDIUM: 2,
-  PRIORITY_UNSPECIFIED: 2, // el backend guarda UNSPECIFIED como MEDIUM
-  PRIORITY_LOW: 1,
-};
-
-/** Columna en la que se muestra un issue. Un estado desconocido cae en «Por hacer». */
-export function columnOf(issue: Pick<Issue, 'state'>): BoardState {
-  return issue.state === 'ISSUE_STATE_UNSPECIFIED' ? 'ISSUE_STATE_TODO' : issue.state;
+/**
+ * Columna en la que se muestra un issue, o `null` si no va en el tablero
+ * (descartado). Un estado desconocido cae en «Por hacer».
+ */
+export function columnOf(issue: Pick<Issue, 'state'>): BoardState | null {
+  switch (issue.state) {
+    case 'ISSUE_STATE_CANCELED':
+      return null;
+    case 'ISSUE_STATE_UNSPECIFIED':
+      return 'ISSUE_STATE_TODO';
+    default:
+      return issue.state;
+  }
 }
 
 /**
- * Mismo orden que ListIssues: prioridad descendente y, dentro de la misma, el
- * más reciente primero. Así una tarjeta movida cae donde la pondría el backend.
+ * Mismo orden que ListIssues: `rank` ascendente, comparado como string (sin
+ * locale, como el backend). El número sólo desempata ranks vacíos o iguales.
  */
 export function compareIssues(a: Issue, b: Issue): number {
-  const byPriority = PRIORITY_RANK[b.priority] - PRIORITY_RANK[a.priority];
-  if (byPriority !== 0) return byPriority;
-  if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? 1 : -1;
-  return b.number - a.number;
+  if (a.rank !== b.rank) return a.rank < b.rank ? -1 : 1;
+  return a.number - b.number;
 }
 
 export function groupByState(issues: readonly Issue[]): BoardColumns {
@@ -34,7 +34,10 @@ export function groupByState(issues: readonly Issue[]): BoardColumns {
     ISSUE_STATE_IN_PROGRESS: [],
     ISSUE_STATE_DONE: [],
   };
-  for (const issue of issues) columns[columnOf(issue)].push(issue);
+  for (const issue of issues) {
+    const column = columnOf(issue);
+    if (column) columns[column].push(issue);
+  }
   for (const state of BOARD_STATES) columns[state].sort(compareIssues);
   return columns;
 }

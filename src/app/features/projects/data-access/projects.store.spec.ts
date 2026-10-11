@@ -12,6 +12,7 @@ const project = (id: string, name: string, key = 'TK'): Project => ({
   description: '',
   createdAt: '',
   updatedAt: '',
+  workspaceId: 'w1',
 });
 
 describe('ProjectsStore', () => {

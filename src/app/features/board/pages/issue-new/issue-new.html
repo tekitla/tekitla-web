@@ -1,107 +1,140 @@
 <section class="issue-new" aria-labelledby="issue-new-title">
-  <a class="issue-new__back" [routerLink]="['/proyectos', projectId()]">
-    <span aria-hidden="true">←</span> {{ 'issueNew.back' | translate }}
-  </a>
-
-  <h1 id="issue-new-title" class="issue-new__title">
-    {{ 'issueNew.title' | translate }}
+  <div class="vrb-page-header">
     @if (store.project(); as project) {
-      <span class="issue-new__project">· {{ project.key }}</span>
+      <p class="vrb-page-header__eyebrow">// {{ project.key.toLowerCase() }}</p>
     }
-  </h1>
+    <h1 id="issue-new-title" class="vrb-page-header__title">{{ 'issueNew.title' | translate }}</h1>
+    <p class="vrb-page-header__description">
+      {{ 'issueNew.lead' | translate }}
+      <span class="vrb-badge vrb-badge--neutral vrb-badge--dot">
+        {{ 'board.columns.ISSUE_STATE_TODO' | translate }}
+      </span>
+    </p>
+  </div>
 
-  <form class="issue-new__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <div class="issue-new__field">
-      <label class="issue-new__label" for="issue-title">{{
-        'issueNew.fields.title' | translate
-      }}</label>
-      <input
-        #titleInput
-        id="issue-title"
-        class="issue-new__input"
-        formControlName="title"
-        autocomplete="off"
-        [maxLength]="titleMax"
-        required
-        [attr.aria-invalid]="showTitleError()"
-        aria-describedby="issue-title-error"
-      />
-      <p id="issue-title-error" class="issue-new__error" aria-live="polite">
-        @if (showTitleError()) {
-          {{ 'issueNew.errors.titleRequired' | translate }}
-        }
-      </p>
-    </div>
-
-    <div class="issue-new__field">
-      <label class="issue-new__label" for="issue-priority">
-        {{ 'issueNew.fields.priority' | translate }}
-      </label>
-      <select
-        id="issue-priority"
-        class="issue-new__input issue-new__input--select"
-        formControlName="priority"
-      >
-        @for (priority of priorities; track priority) {
-          <option [value]="priority">{{ 'issue.priorityByEnum.' + priority | translate }}</option>
-        }
-      </select>
-    </div>
-
-    <div class="issue-new__field">
-      <div class="issue-new__description-head">
-        <label class="issue-new__label" for="issue-description">
-          {{ 'issueNew.fields.description' | translate }}
-          <span class="issue-new__optional">{{ 'common.optional' | translate }}</span>
-        </label>
-        <button
-          type="button"
-          class="issue-new__toggle"
-          [attr.aria-pressed]="preview()"
-          (click)="preview.set(!preview())"
-        >
-          {{ 'issueNew.preview' | translate }}
-        </button>
-      </div>
-      <textarea
-        id="issue-description"
-        class="issue-new__input issue-new__input--textarea"
-        formControlName="description"
-        rows="8"
-        aria-describedby="issue-description-hint"
-        [hidden]="preview()"
-      ></textarea>
-      @if (preview()) {
-        <div
-          class="issue-new__preview"
-          [attr.aria-label]="'issueNew.preview' | translate"
-          role="region"
-        >
-          @if (form.controls.description.value.trim()) {
-            <ui-markdown [source]="form.controls.description.value" />
-          } @else {
-            <p class="issue-new__hint">{{ 'issueNew.previewEmpty' | translate }}</p>
-          }
+  <article class="vrb-card">
+    <div class="vrb-card__body issue-new__body">
+      <form class="vrb-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="vrb-field">
+          <label class="vrb-field__label" for="issue-title">
+            {{ 'issueNew.fields.title' | translate }}
+          </label>
+          <input
+            #titleInput
+            id="issue-title"
+            class="vrb-input"
+            formControlName="title"
+            autocomplete="off"
+            [maxLength]="titleMax"
+            [placeholder]="'issueNew.titlePlaceholder' | translate"
+            required
+            [attr.aria-invalid]="showTitleError()"
+            aria-describedby="issue-title-error"
+          />
+          <p id="issue-title-error" class="vrb-field__error" aria-live="polite">
+            @if (showTitleError()) {
+              {{ 'issueNew.errors.titleRequired' | translate }}
+            }
+          </p>
         </div>
-      }
-      <p id="issue-description-hint" class="issue-new__hint">
-        {{ 'issueNew.markdownHint' | translate }}
-      </p>
-    </div>
 
-    @if (submitError(); as error) {
-      <p class="issue-new__error" role="alert">
-        {{ 'issueNew.errors.generic' | translate }} ({{ error }})
-      </p>
-    }
+        <div class="vrb-field">
+          <span class="vrb-field__label" id="issue-priority-label">
+            {{ 'issueNew.fields.priority' | translate }}
+          </span>
+          <fieldset class="vrb-segmented" aria-labelledby="issue-priority-label">
+            @for (priority of priorities; track priority) {
+              <label class="vrb-segmented__option">
+                <input type="radio" formControlName="priority" [value]="priority" />
+                <span
+                  [class]="'vrb-segmented__dot vrb-segmented__dot--' + priorityDot[priority]"
+                ></span>
+                {{ 'issue.priorityByEnum.' + priority | translate }}
+              </label>
+            }
+          </fieldset>
+        </div>
 
-    <div class="issue-new__actions">
-      <ui-button type="submit" [loading]="saving()">
-        {{ 'issueNew.submit' | translate }}
-      </ui-button>
-      <a class="issue-new__cancel" [routerLink]="['/proyectos', projectId()]">
-        {{ 'common.cancel' | translate }}
-      </a>
+        <div class="vrb-field">
+          <label class="vrb-field__label" for="issue-description">
+            {{ 'issueNew.fields.description' | translate }}
+            <span class="vrb-field__optional">{{ 'common.optional' | translate }}</span>
+          </label>
+          <div class="vrb-editor">
+            <div
+              class="vrb-editor__bar"
+              role="tablist"
+              [attr.aria-label]="'issueNew.editor' | translate"
+            >
+              <button
+                type="button"
+                class="vrb-editor__tab"
+                role="tab"
+                id="issue-editor-write"
+                aria-controls="issue-description"
+                [attr.aria-selected]="!preview()"
+                (click)="preview.set(false)"
+              >
+                {{ 'issueNew.write' | translate }}
+              </button>
+              <button
+                type="button"
+                class="vrb-editor__tab"
+                role="tab"
+                id="issue-editor-preview"
+                aria-controls="issue-description-preview"
+                [attr.aria-selected]="preview()"
+                (click)="preview.set(true)"
+              >
+                {{ 'issueNew.preview' | translate }}
+              </button>
+            </div>
+            <textarea
+              id="issue-description"
+              class="vrb-editor__input"
+              formControlName="description"
+              rows="7"
+              aria-describedby="issue-description-hint"
+              [hidden]="preview()"
+            ></textarea>
+            @if (preview()) {
+              <div
+                id="issue-description-preview"
+                class="vrb-editor__preview"
+                role="tabpanel"
+                aria-labelledby="issue-editor-preview"
+              >
+                @if (form.controls.description.value.trim()) {
+                  <ui-markdown [source]="form.controls.description.value" />
+                } @else {
+                  <p class="issue-new__muted">{{ 'issueNew.previewEmpty' | translate }}</p>
+                }
+              </div>
+            }
+          </div>
+          <p id="issue-description-hint" class="vrb-field__hint">
+            {{ 'issueNew.markdownHint' | translate }}
+          </p>
+        </div>
+
+        @if (submitError(); as error) {
+          <div class="vrb-alert vrb-alert--danger" role="alert">
+            <div class="vrb-alert__body">
+              <p class="vrb-alert__title">{{ 'issueNew.errors.generic' | translate }}</p>
+              <p class="vrb-alert__description">{{ error }}</p>
+            </div>
+          </div>
+        }
+
+        <div class="vrb-form__actions vrb-form__actions--divided vrb-form__actions--end">
+          <a class="vrb-button vrb-button--ghost" [routerLink]="['/proyectos', projectId()]">
+            {{ 'common.cancel' | translate }}
+          </a>
+          <ui-button type="submit" [loading]="saving()">
+            {{ 'issueNew.submit' | translate }}
+          </ui-button>
+        </div>
+      </form>
     </div>
-  </form>
+  </article>
 </section>

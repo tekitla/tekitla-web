@@ -1,148 +1,17 @@
-@use 'mixins' as m;
-
-// Bloque BEM: .issue-new
+// Formulario, editor y prioridad salen de vrb; acá solo el ancho de lectura.
 .issue-new {
-  display: grid;
-  gap: var(--space-3);
   max-width: 720px;
+}
 
-  &__back,
-  &__cancel {
-    justify-self: start;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    min-height: var(--touch-target);
-    color: var(--color-primary);
-    text-decoration: none;
-    @include m.focus-visible;
+.issue-new__body {
+  padding-top: var(--space-6);
+}
 
-    &:hover {
-      text-decoration: underline;
-    }
-  }
+.issue-new__muted {
+  margin: 0;
+  color: var(--vrb-muted-fg);
+}
 
-  &__back {
-    font-size: var(--text-small);
-  }
-
-  &__title {
-    margin: 0;
-    font-size: var(--text-h2);
-  }
-
-  &__project {
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-weight: 400;
-  }
-
-  &__form {
-    @include m.card;
-    display: grid;
-    gap: var(--space-4);
-    padding: var(--space-4);
-
-    @include m.from-tablet {
-      padding: var(--space-6);
-    }
-  }
-
-  &__field {
-    display: grid;
-    gap: var(--space-1);
-  }
-
-  &__label {
-    font-weight: 500;
-  }
-
-  &__optional {
-    color: var(--text-muted);
-    font-weight: 400;
-    font-size: var(--text-small);
-  }
-
-  &__input {
-    width: 100%;
-    min-height: var(--touch-target);
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-sm);
-    background: var(--surface-canvas);
-    @include m.focus-visible;
-
-    &[aria-invalid='true'] {
-      border-color: var(--system-error);
-    }
-
-    &[hidden] {
-      display: none;
-    }
-
-    &--select {
-      max-width: 16rem;
-    }
-
-    &--textarea {
-      resize: vertical;
-      font-family: var(--font-mono);
-      font-size: var(--text-small);
-    }
-  }
-
-  &__description-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-2);
-  }
-
-  &__toggle {
-    min-height: var(--touch-target);
-    padding: 0 var(--space-3);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-pill);
-    background: var(--surface-canvas);
-    font-size: var(--text-small);
-    cursor: pointer;
-    @include m.focus-visible;
-
-    &[aria-pressed='true'] {
-      border-color: var(--color-primary);
-      background: var(--color-primary-soft);
-      color: var(--color-primary-dark);
-    }
-  }
-
-  &__preview {
-    min-height: 10rem;
-    padding: var(--space-3);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    background: var(--surface-muted);
-  }
-
-  &__hint {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: var(--text-small);
-  }
-
-  &__error {
-    margin: 0;
-    color: var(--system-error);
-    font-size: var(--text-small);
-
-    &:empty {
-      display: none;
-    }
-  }
-
-  &__actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-4);
-  }
+.vrb-editor__input[hidden] {
+  display: none;
 }

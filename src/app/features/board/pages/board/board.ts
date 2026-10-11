@@ -5,6 +5,7 @@ import {
   DestroyRef,
   Injector,
   afterNextRender,
+  computed,
   effect,
   inject,
   input,
@@ -15,7 +16,9 @@ import { TranslatePipe } from '@ngx-translate/core';
 
 import { BOARD_STATES, type BoardState, type Issue } from '@/app/api';
 import { Viewport } from '@/app/core/layout/viewport';
+import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { Button } from '@/app/ui/components/button/button';
+import { Icon } from '@/app/ui/components/icon/icon';
 import { IssueCard, type MoveRequest } from '../../components/issue-card/issue-card';
 import { BoardStore } from '../../data-access/board.store';
 
@@ -23,7 +26,8 @@ import { BoardStore } from '../../data-access/board.store';
 const INFO_NOTICE_MS = 5000;
 
 /**
- * Tablero de un proyecto: 3 columnas (Por hacer / En curso / Hecho).
+ * Tablero de un proyecto (`vrb-kanban`): 3 columnas (Por hacer / En curso /
+ * Hecho), ordenadas por `rank`; los descartados no se muestran.
  *
  * - Desktop (≥ 768px): las 3 columnas lado a lado, con drag & drop (CDK) entre
  *   columnas, además del menú «Mover» de cada tarjeta y Shift+← / Shift+→.
@@ -33,7 +37,16 @@ const INFO_NOTICE_MS = 5000;
  */
 @Component({
   selector: 'app-board',
-  imports: [RouterLink, CdkDropListGroup, CdkDropList, CdkDrag, IssueCard, Button, TranslatePipe],
+  imports: [
+    RouterLink,
+    CdkDropListGroup,
+    CdkDropList,
+    CdkDrag,
+    IssueCard,
+    Button,
+    Icon,
+    TranslatePipe,
+  ],
   templateUrl: './board.html',
   styleUrl: './board.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,17 +60,32 @@ export class Board {
   readonly projectId = input.required<string>();
 
   protected readonly states = BOARD_STATES;
-  /** Modificador BEM por columna. */
-  protected readonly slug: Record<BoardState, string> = {
-    ISSUE_STATE_TODO: 'todo',
-    ISSUE_STATE_IN_PROGRESS: 'in-progress',
-    ISSUE_STATE_DONE: 'done',
+  /** Tono de `.vrb-kanban__column` según la categoría del estado. */
+  protected readonly tone: Record<BoardState, string> = {
+    ISSUE_STATE_TODO: 'neutral',
+    ISSUE_STATE_IN_PROGRESS: 'info',
+    ISSUE_STATE_DONE: 'success',
   };
+  protected readonly canceledCount = computed(
+    () => this.store.issues().filter((i) => i.state === 'ISSUE_STATE_CANCELED').length,
+  );
 
   constructor() {
     effect(() => {
       const id = this.projectId();
       untracked(() => this.store.load(id));
+    });
+
+    const nav = inject(ShellNav);
+    effect(() => {
+      const project = this.store.project();
+      nav.set(
+        [
+          { label: 'shell.nav.projects', translate: true, link: ['/proyectos'] },
+          project ? { label: project.name } : { label: 'board.title', translate: true },
+        ],
+        project && { id: project.id, name: project.name },
+      );
     });
 
     let timer: ReturnType<typeof setTimeout> | undefined;

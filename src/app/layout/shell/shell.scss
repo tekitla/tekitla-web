@@ -1,93 +1,58 @@
-@use 'mixins' as m;
+// El marco sale de vrb (.vrb-shell, .vrb-sidebar, .vrb-breadcrumb); acá solo
+// lo que vrb no trae: el salto al contenido y los textos del sidebar.
+.shell__skip {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: calc(var(--vrb-z-toast) + 1);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--vrb-radius-button);
+  background: var(--vrb-ink);
+  color: var(--vrb-ink-fg);
+  transform: translateY(-200%);
 
-// Bloque BEM: .shell — mobile first.
-.shell {
-  &__skip {
-    position: absolute;
-    top: var(--space-2);
-    left: var(--space-2);
-    z-index: 100;
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    background: var(--color-primary);
-    color: var(--text-on-primary);
-    transform: translateY(-200%);
-
-    &:focus {
-      transform: none;
-    }
+  &:focus {
+    transform: none;
   }
+}
 
-  &__header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    height: var(--header-h);
-    padding: 0 var(--space-4);
-    background: var(--surface-canvas);
-    border-bottom: 1px solid var(--border-subtle);
+.shell__brand,
+.shell__user {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
 
-    @include m.from-tablet {
-      gap: var(--space-6);
-      padding: 0 var(--space-6);
-    }
-  }
+.shell__brand-name {
+  font: 600 14px/18px var(--vrb-font-mono);
+}
 
-  &__brand {
-    font-weight: 700;
-    color: var(--color-primary);
-    text-decoration: none;
-    @include m.focus-visible;
-  }
+.shell__brand-sub,
+.shell__user-email {
+  overflow: hidden;
+  color: var(--vrb-muted-fg);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-  &__nav {
-    display: flex;
-    gap: var(--space-4);
-  }
+.shell__user {
+  flex: 1 1 auto;
+}
 
-  &__nav-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--touch-target);
-    color: var(--text-muted);
-    text-decoration: none;
-    @include m.focus-visible;
+.shell__user-name {
+  overflow: hidden;
+  font-weight: 500;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-    &--active {
-      color: var(--color-primary);
-      font-weight: 500;
-    }
-  }
+.shell__user-avatar {
+  width: 28px;
+  height: 28px;
+}
 
-  &__user {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    margin-left: auto;
-  }
-
-  // En el celular no entra: el email se ve en desktop.
-  &__user-email {
-    display: none;
-    font-size: var(--text-small);
-    color: var(--text-muted);
-
-    @include m.from-tablet {
-      display: inline;
-    }
-  }
-
-  &__main {
-    max-width: var(--container-max);
-    margin: 0 auto;
-    padding: var(--space-4) var(--space-4) var(--space-8);
-
-    &:focus {
-      outline: none;
-    }
-
-    @include m.from-tablet {
-      padding: var(--space-6);
-    }
-  }
+.shell__content:focus {
+  outline: none;
 }

@@ -6,6 +6,8 @@ App frontend Angular (`tekitla-web`). Generada desde la plantilla
 ## Arrancar
 
 ```bash
+# Paquetes privados de GitHub Packages: hace falta un token con read:packages.
+export NODE_AUTH_TOKEN=$(gh auth token)
 npm install
 npm start            # http://localhost:4200 contra el gateway local (http://localhost:8080)
 ```

@@ -1,143 +1,201 @@
 <section class="project-list" aria-labelledby="projects-title">
-  <header class="project-list__header">
-    <h1 id="projects-title" class="project-list__title">{{ 'projects.list.title' | translate }}</h1>
-    @if (!formOpen()) {
-      <ui-button size="sm" (pressed)="openForm()">
-        {{ 'projects.list.new' | translate }}
-      </ui-button>
-    }
-  </header>
-
-  @if (formOpen() || store.isEmpty()) {
-    <form
-      class="project-list__form"
-      [formGroup]="form"
-      (ngSubmit)="submit()"
-      novalidate
-      aria-labelledby="project-form-title"
-    >
-      <h2 id="project-form-title" class="project-list__form-title">
-        {{ 'projects.form.title' | translate }}
-      </h2>
-
-      <div class="project-list__field">
-        <label class="project-list__label" for="project-key">
-          {{ 'projects.form.key' | translate }}
-        </label>
-        <input
-          #keyInput
-          id="project-key"
-          class="project-list__input project-list__input--key"
-          formControlName="key"
-          autocomplete="off"
-          autocapitalize="characters"
-          spellcheck="false"
-          maxlength="10"
-          inputmode="text"
-          required
-          [attr.aria-invalid]="showErrors('key')"
-          aria-describedby="project-key-hint project-key-error"
-          (input)="normalizeKey()"
-        />
-        <p id="project-key-hint" class="project-list__hint">
-          {{ 'projects.form.keyHint' | translate }}
-        </p>
-        <p id="project-key-error" class="project-list__error" aria-live="polite">
-          @if (showErrors('key')) {
-            @let errors = form.controls.key.errors;
-            @if (errors?.['required']) {
-              {{ 'projects.form.errors.keyRequired' | translate }}
-            } @else if (errors?.['projectKeyStart']) {
-              {{ 'projects.form.errors.keyStart' | translate }}
-            } @else if (errors?.['projectKeyChars']) {
-              {{ 'projects.form.errors.keyChars' | translate }}
-            } @else if (errors?.['projectKeyLength']) {
-              {{ 'projects.form.errors.keyLength' | translate }}
-            } @else if (errors?.['taken']) {
-              {{ 'projects.form.errors.keyTaken' | translate: { key: takenKey() } }}
-            }
-          }
-        </p>
-      </div>
-
-      <div class="project-list__field">
-        <label class="project-list__label" for="project-name">
-          {{ 'projects.form.name' | translate }}
-        </label>
-        <input
-          id="project-name"
-          class="project-list__input"
-          formControlName="name"
-          autocomplete="off"
-          maxlength="100"
-          required
-          [attr.aria-invalid]="showErrors('name')"
-          aria-describedby="project-name-error"
-        />
-        <p id="project-name-error" class="project-list__error" aria-live="polite">
-          @if (showErrors('name')) {
-            {{ 'projects.form.errors.nameRequired' | translate }}
-          }
-        </p>
-      </div>
-
-      <div class="project-list__field">
-        <label class="project-list__label" for="project-description">
-          {{ 'projects.form.description' | translate }}
-          <span class="project-list__optional">{{ 'common.optional' | translate }}</span>
-        </label>
-        <textarea
-          id="project-description"
-          class="project-list__input project-list__input--textarea"
-          formControlName="description"
-          rows="3"
-          maxlength="2000"
-        ></textarea>
-      </div>
-
-      @if (submitError(); as error) {
-        <p class="project-list__error" role="alert">
-          {{ 'projects.form.errors.generic' | translate }} ({{ error }})
-        </p>
-      }
-
-      <div class="project-list__actions">
-        <ui-button type="submit" [loading]="saving()">
-          {{ 'projects.form.submit' | translate }}
+  <div class="vrb-page-header">
+    <p class="vrb-page-header__eyebrow">{{ 'projects.list.eyebrow' | translate }}</p>
+    <h1 id="projects-title" class="vrb-page-header__title">
+      {{ 'projects.list.title' | translate }}
+    </h1>
+    @if (!store.isEmpty()) {
+      <div class="vrb-page-header__actions">
+        <ui-button (pressed)="openForm()">
+          <ui-icon name="plus" />{{ 'projects.list.new' | translate }}
         </ui-button>
-        @if (!store.isEmpty()) {
-          <ui-button variant="ghost" (pressed)="closeForm()">
-            {{ 'common.cancel' | translate }}
-          </ui-button>
-        }
       </div>
-    </form>
-  }
+    }
+  </div>
 
   @if (store.loading()) {
-    <p class="project-list__status" role="status">{{ 'common.loading' | translate }}</p>
+    <ul class="project-list__grid" role="status" [attr.aria-label]="'common.loading' | translate">
+      @for (i of skeletons; track i) {
+        <li class="vrb-card project-list__skeleton">
+          <div class="vrb-card__header">
+            <span class="vrb-skeleton project-list__skeleton-avatar"></span>
+            <span class="vrb-skeleton vrb-skeleton--title"></span>
+            <span class="vrb-skeleton vrb-skeleton--text"></span>
+          </div>
+        </li>
+      }
+    </ul>
   } @else if (store.error(); as error) {
-    <div class="project-list__status project-list__status--error" role="alert">
-      <p>{{ 'projects.list.loadError' | translate }} ({{ error }})</p>
-      <ui-button variant="secondary" size="sm" (pressed)="store.load()">
-        {{ 'common.retry' | translate }}
-      </ui-button>
+    <div class="vrb-empty vrb-empty--bordered vrb-empty--danger" role="alert">
+      <p class="vrb-empty__title">{{ 'projects.list.loadError' | translate }}</p>
+      <p class="vrb-empty__description">{{ error }}</p>
+      <div class="vrb-empty__actions">
+        <ui-button variant="outline" (pressed)="store.load()">
+          {{ 'common.retry' | translate }}
+        </ui-button>
+      </div>
     </div>
   } @else if (store.isEmpty()) {
-    <p class="project-list__status">{{ 'projects.list.empty' | translate }}</p>
+    <div class="vrb-empty vrb-empty--bordered">
+      <div class="vrb-empty__media"><ui-icon name="projects" /></div>
+      <p class="vrb-empty__title">{{ 'projects.list.emptyTitle' | translate }}</p>
+      <p class="vrb-empty__description">{{ 'projects.list.empty' | translate }}</p>
+      <div class="vrb-empty__actions">
+        <ui-button (pressed)="openForm()">
+          <ui-icon name="plus" />{{ 'projects.list.new' | translate }}
+        </ui-button>
+      </div>
+    </div>
   } @else {
-    <ul class="project-list__items">
-      @for (project of store.projects(); track project.id) {
-        <li class="project-list__item">
-          <a class="project-list__link" [routerLink]="['/proyectos', project.id]">
-            <span class="project-list__key">{{ project.key }}</span>
-            <span class="project-list__name">{{ project.name }}</span>
-            @if (project.description) {
-              <span class="project-list__description">{{ project.description }}</span>
-            }
+    <ul class="project-list__grid">
+      @for (project of store.projects(); track project.id; let i = $index) {
+        <li>
+          <a
+            class="vrb-card vrb-card--interactive project-list__card"
+            [routerLink]="['/proyectos', project.id]"
+          >
+            <div class="vrb-card__header">
+              <div class="vrb-cluster">
+                <span [class]="'tk-avatar tk-avatar--lg ' + tone(i)" aria-hidden="true">
+                  {{ project.key.slice(0, 2) }}
+                </span>
+                <span class="vrb-card__eyebrow">{{ project.key }}</span>
+              </div>
+              <h2 class="vrb-card__title">{{ project.name }}</h2>
+              @if (project.description) {
+                <p class="vrb-card__description">{{ project.description }}</p>
+              }
+            </div>
           </a>
         </li>
       }
     </ul>
   }
 </section>
+
+<dialog
+  #dialog
+  class="vrb-dialog"
+  aria-labelledby="project-form-title"
+  aria-describedby="project-form-description"
+  (close)="onDialogClose()"
+>
+  <form class="project-list__dialog-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <header class="vrb-dialog__header">
+      <h2 id="project-form-title" class="vrb-dialog__title">
+        {{ 'projects.form.title' | translate }}
+      </h2>
+      <p id="project-form-description" class="vrb-dialog__description">
+        {{ 'projects.form.description' | translate }}
+      </p>
+    </header>
+    <button
+      type="button"
+      class="vrb-dialog__close"
+      [attr.aria-label]="'common.close' | translate"
+      (click)="closeForm()"
+    >
+      <ui-icon name="close" />
+    </button>
+
+    <div class="vrb-dialog__body">
+      <div class="vrb-form">
+        <div class="vrb-form__row">
+          <div class="vrb-field">
+            <label class="vrb-field__label" for="project-key">
+              {{ 'projects.form.key' | translate }}
+            </label>
+            <input
+              #keyInput
+              id="project-key"
+              class="vrb-input project-list__key-input"
+              formControlName="key"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              maxlength="10"
+              inputmode="text"
+              placeholder="TK"
+              required
+              [attr.aria-invalid]="showErrors('key')"
+              aria-describedby="project-key-hint project-key-error"
+              (input)="normalizeKey()"
+            />
+            <p id="project-key-hint" class="vrb-field__hint">
+              {{ 'projects.form.keyHint' | translate }}
+            </p>
+            <p id="project-key-error" class="vrb-field__error" aria-live="polite">
+              @if (showErrors('key')) {
+                @let errors = form.controls.key.errors;
+                @if (errors?.['required']) {
+                  {{ 'projects.form.errors.keyRequired' | translate }}
+                } @else if (errors?.['projectKeyStart']) {
+                  {{ 'projects.form.errors.keyStart' | translate }}
+                } @else if (errors?.['projectKeyChars']) {
+                  {{ 'projects.form.errors.keyChars' | translate }}
+                } @else if (errors?.['projectKeyLength']) {
+                  {{ 'projects.form.errors.keyLength' | translate }}
+                } @else if (errors?.['taken']) {
+                  {{ 'projects.form.errors.keyTaken' | translate: { key: takenKey() } }}
+                }
+              }
+            </p>
+          </div>
+
+          <div class="vrb-field">
+            <label class="vrb-field__label" for="project-name">
+              {{ 'projects.form.name' | translate }}
+            </label>
+            <input
+              id="project-name"
+              class="vrb-input"
+              formControlName="name"
+              autocomplete="off"
+              maxlength="100"
+              required
+              [attr.aria-invalid]="showErrors('name')"
+              aria-describedby="project-name-error"
+            />
+            <p id="project-name-error" class="vrb-field__error" aria-live="polite">
+              @if (showErrors('name')) {
+                {{ 'projects.form.errors.nameRequired' | translate }}
+              }
+            </p>
+          </div>
+        </div>
+
+        <div class="vrb-field">
+          <label class="vrb-field__label" for="project-description">
+            {{ 'projects.form.descriptionLabel' | translate }}
+            <span class="vrb-field__optional">{{ 'common.optional' | translate }}</span>
+          </label>
+          <textarea
+            id="project-description"
+            class="vrb-input project-list__textarea"
+            formControlName="description"
+            rows="2"
+            maxlength="2000"
+          ></textarea>
+        </div>
+
+        @if (submitError(); as error) {
+          <div class="vrb-alert vrb-alert--danger" role="alert">
+            <div class="vrb-alert__body">
+              <p class="vrb-alert__title">{{ 'projects.form.errors.generic' | translate }}</p>
+              <p class="vrb-alert__description">{{ error }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <footer class="vrb-dialog__footer">
+      <ui-button variant="outline" (pressed)="closeForm()">
+        {{ 'common.cancel' | translate }}
+      </ui-button>
+      <ui-button type="submit" [loading]="saving()">
+        {{ 'projects.form.submit' | translate }}
+      </ui-button>
+    </footer>
+  </form>
+</dialog>

@@ -1,51 +1,81 @@
 <section class="board" aria-labelledby="board-title">
-  <header class="board__header">
-    <a class="board__back" routerLink="/proyectos">
-      <span aria-hidden="true">←</span> {{ 'board.back' | translate }}
-    </a>
-    <div class="board__heading">
-      <h1 id="board-title" class="board__title">
-        @if (store.project(); as project) {
-          <span class="board__key">{{ project.key }}</span> {{ project.name }}
-        } @else {
-          {{ 'board.title' | translate }}
-        }
-      </h1>
-      @if (store.project()) {
-        <a class="board__new" routerLink="issues/nuevo">
-          <span aria-hidden="true">+</span> {{ 'board.newIssue' | translate }}
-        </a>
+  <div class="vrb-page-header">
+    @if (store.project(); as project) {
+      <p class="vrb-page-header__eyebrow">// {{ project.key.toLowerCase() }}</p>
+      <h1 id="board-title" class="vrb-page-header__title">{{ project.name }}</h1>
+      @if (project.description) {
+        <p class="vrb-page-header__description">{{ project.description }}</p>
       }
-    </div>
-    <p id="board-shortcut-hint" class="board__hint">
-      {{ (isMobile() ? 'board.hintMobile' : 'board.hintDesktop') | translate }}
-    </p>
-  </header>
+      <div class="vrb-page-header__actions">
+        <a
+          class="vrb-button vrb-button--primary vrb-button--sm board__new"
+          routerLink="issues/nuevo"
+        >
+          <ui-icon name="plus" />{{ 'board.newIssue' | translate }}
+        </a>
+      </div>
+    } @else {
+      <h1 id="board-title" class="vrb-page-header__title">{{ 'board.title' | translate }}</h1>
+    }
+  </div>
 
   @if (store.loading()) {
-    <p class="board__status" role="status">{{ 'common.loading' | translate }}</p>
+    <div
+      class="vrb-kanban board__kanban"
+      role="status"
+      [attr.aria-label]="'common.loading' | translate"
+    >
+      @for (state of states; track state) {
+        <div class="vrb-kanban__column board__column-skeleton">
+          <span class="vrb-skeleton vrb-skeleton--text"></span>
+          <span class="vrb-skeleton board__card-skeleton"></span>
+          <span class="vrb-skeleton board__card-skeleton"></span>
+        </div>
+      }
+    </div>
   } @else if (store.notFound()) {
-    <div class="board__status" role="alert">
-      <p>{{ 'board.notFound' | translate }}</p>
-      <a class="board__back" routerLink="/proyectos">{{ 'board.back' | translate }}</a>
+    <div class="vrb-empty vrb-empty--bordered" role="alert">
+      <p class="vrb-empty__title">{{ 'board.notFound' | translate }}</p>
+      <div class="vrb-empty__actions">
+        <a class="vrb-button vrb-button--outline" routerLink="/proyectos">
+          {{ 'board.back' | translate }}
+        </a>
+      </div>
     </div>
   } @else if (store.error(); as error) {
-    <div class="board__status board__status--error" role="alert">
-      <p>{{ 'board.loadError' | translate }} ({{ error }})</p>
-      <ui-button variant="secondary" size="sm" (pressed)="store.load(projectId())">
-        {{ 'common.retry' | translate }}
-      </ui-button>
+    <div class="vrb-empty vrb-empty--bordered vrb-empty--danger" role="alert">
+      <p class="vrb-empty__title">{{ 'board.loadError' | translate }}</p>
+      <p class="vrb-empty__description">{{ error }}</p>
+      <div class="vrb-empty__actions">
+        <ui-button variant="outline" (pressed)="store.load(projectId())">
+          {{ 'common.retry' | translate }}
+        </ui-button>
+      </div>
     </div>
   } @else {
+    <div class="vrb-cluster vrb-cluster--lg board__info">
+      @if (canceledCount(); as canceled) {
+        <span class="vrb-cluster vrb-cluster--sm">
+          <ui-icon name="filter" />{{ 'board.canceledHidden' | translate: { count: canceled } }}
+        </span>
+      }
+      <span id="board-shortcut-hint">
+        {{ (isMobile() ? 'board.hintMobile' : 'board.hintDesktop') | translate }}
+      </span>
+    </div>
+
     @if (isMobile()) {
-      <div class="board__tabs" role="tablist" [attr.aria-label]="'board.columnsLabel' | translate">
+      <div
+        class="vrb-tabs__list board__tabs"
+        role="tablist"
+        [attr.aria-label]="'board.columnsLabel' | translate"
+      >
         @for (state of states; track state; let i = $index) {
           @let selected = store.activeColumn() === state;
           <button
             type="button"
             role="tab"
-            class="board__tab"
-            [class.board__tab--active]="selected"
+            class="vrb-tabs__tab"
             [id]="'board-tab-' + state"
             [attr.aria-selected]="selected"
             [attr.aria-controls]="'board-panel-' + state"
@@ -53,34 +83,35 @@
             (click)="selectTab(state)"
             (keydown)="onTabKeydown($event, i)"
           >
-            <span class="board__tab-label">{{ 'board.columns.' + state | translate }}</span>
-            <span class="board__count">{{ store.columns()[state].length }}</span>
+            {{ 'board.columns.' + state | translate }}
+            <span class="board__tab-count">{{ store.columns()[state].length }}</span>
           </button>
         }
       </div>
     }
 
-    <div class="board__columns" cdkDropListGroup>
+    <div class="vrb-kanban board__kanban" cdkDropListGroup>
       @for (state of states; track state) {
         @let issues = store.columns()[state];
         <section
-          [class]="'board__column board__column--' + slug[state]"
+          [class]="'vrb-kanban__column board__column vrb-kanban__column--' + tone[state]"
           [id]="'board-panel-' + state"
           [hidden]="isMobile() && store.activeColumn() !== state"
           [attr.role]="isMobile() ? 'tabpanel' : null"
           [attr.aria-labelledby]="isMobile() ? 'board-tab-' + state : 'board-heading-' + state"
         >
-          <h2 class="board__column-title" [id]="'board-heading-' + state">
-            <span class="board__dot" aria-hidden="true"></span>
-            {{ 'board.columns.' + state | translate }}
-            <span class="board__count">
+          <header class="vrb-kanban__header">
+            <h2 class="vrb-kanban__title" [id]="'board-heading-' + state">
+              {{ 'board.columns.' + state | translate }}
+            </h2>
+            <span class="vrb-kanban__count">
               <span class="u-visually-hidden">(</span>{{ issues.length
               }}<span class="u-visually-hidden">)</span>
             </span>
-          </h2>
+          </header>
 
           <ul
-            class="board__list"
+            class="vrb-kanban__list board__list"
             cdkDropList
             [cdkDropListData]="state"
             [cdkDropListSortingDisabled]="true"
@@ -89,7 +120,7 @@
           >
             @for (issue of issues; track issue.id) {
               <li
-                class="board__item"
+                class="vrb-kanban__item board__item"
                 cdkDrag
                 cdkDragPreviewContainer="parent"
                 [cdkDragData]="issue"
@@ -104,7 +135,7 @@
                 />
               </li>
             } @empty {
-              <li class="board__empty">{{ 'board.emptyColumn' | translate }}</li>
+              <li class="vrb-kanban__empty">{{ 'board.emptyColumn' | translate }}</li>
             }
           </ul>
         </section>
@@ -112,30 +143,33 @@
     </div>
   }
 
-  <div class="board__notices" aria-live="polite">
+  <div class="vrb-toaster vrb-toaster--bottom-center" aria-live="polite">
     @if (store.notice(); as notice) {
       <div
-        class="board__notice"
-        [class.board__notice--error]="notice.kind === 'error'"
+        class="vrb-toast"
+        [class.vrb-toast--danger]="notice.kind === 'error'"
+        [class.vrb-toast--success]="notice.kind !== 'error'"
         [attr.role]="notice.kind === 'error' ? 'alert' : 'status'"
       >
-        <p class="board__notice-text">
-          {{
-            notice.message
-              | translate
-                : {
-                    issue: notice.issue,
-                    column: notice.state ? ('board.columns.' + notice.state | translate) : '',
-                  }
-          }}
-        </p>
+        <div class="vrb-toast__body">
+          <p class="vrb-toast__title">
+            {{
+              notice.message
+                | translate
+                  : {
+                      issue: notice.issue,
+                      column: notice.state ? ('board.columns.' + notice.state | translate) : '',
+                    }
+            }}
+          </p>
+        </div>
         <button
           type="button"
-          class="board__notice-close"
+          class="vrb-toast__close"
           [attr.aria-label]="'common.close' | translate"
           (click)="store.dismissNotice()"
         >
-          <span aria-hidden="true">×</span>
+          <ui-icon name="close" />
         </button>
       </div>
     }

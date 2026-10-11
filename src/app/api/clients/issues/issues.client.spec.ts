@@ -38,10 +38,18 @@ describe('IssuesClient', () => {
     expect(req.request.params.get('page.cursor')).toBe('c1');
     expect(req.request.params.get('page.limit')).toBe('10');
     // grpc-gateway omite `description` vacía y no manda `page` en la última.
-    req.flush({ projects: [{ id: 'p1', key: 'TK', name: 'Tekitla' }] });
+    req.flush({ projects: [{ id: 'p1', key: 'TK', name: 'Tekitla', workspaceId: 'w1' }] });
 
     expect(projects).toEqual([
-      { id: 'p1', key: 'TK', name: 'Tekitla', description: '', createdAt: '', updatedAt: '' },
+      {
+        id: 'p1',
+        key: 'TK',
+        name: 'Tekitla',
+        description: '',
+        createdAt: '',
+        updatedAt: '',
+        workspaceId: 'w1',
+      },
     ]);
   });
 
@@ -73,6 +81,7 @@ describe('IssuesClient', () => {
       issues: [
         { id: 'i1', number: 42, title: 'A', state: 'ISSUE_STATE_TODO', priority: 'PRIORITY_HIGH' },
         { id: 'i2', number: '7', title: 'B', priority: 'PRIORITY_DESCONOCIDA' },
+        { id: 'i3', number: 8, state: 'ISSUE_STATE_CANCELED', rank: '0|hzzzzz:' },
       ],
     });
 
@@ -81,7 +90,9 @@ describe('IssuesClient', () => {
       number: 7,
       state: 'ISSUE_STATE_UNSPECIFIED',
       priority: 'PRIORITY_UNSPECIFIED',
+      rank: '',
     });
+    expect(issues[2]).toMatchObject({ state: 'ISSUE_STATE_CANCELED', rank: '0|hzzzzz:' });
   });
 
   it('listIssues sin estado no manda el parámetro', () => {

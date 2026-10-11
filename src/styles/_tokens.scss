@@ -1,73 +1,58 @@
-// Design tokens: única fuente de colores, tipografía, espaciado y radios.
-// Los componentes usan SIEMPRE var(--token); nunca hex/px sueltos.
-// Reemplazar los valores por los del sistema de diseño del producto.
+// Tokens de la app. Los colores, la tipografía y los radios salen del design
+// system vrb (`--vrb-*`, de @vrojas1015/vrb/dist/vrb.css): estos alias existen
+// para el SCSS propio de la app. Lo nuevo usa clases `vrb-` y lee `--vrb-*`
+// directo; nunca hex/px sueltos.
 :root {
   // Color · marca
-  --color-primary: #2f5d8a;
-  --color-primary-dark: #1d3d5c;
-  --color-primary-soft: #dbe7f3;
+  --color-primary: var(--vrb-brand);
+  --color-primary-dark: color-mix(in oklab, var(--vrb-brand) 75%, var(--vrb-fg));
+  --color-primary-soft: var(--vrb-fill);
 
   // Color · superficies y texto
-  --surface-canvas: #ffffff;
-  --surface-muted: #f4f5f7;
-  --surface-column: #e9ebef;
-  --border-subtle: #dfe1e6;
+  --surface-canvas: var(--vrb-surface);
+  --surface-muted: var(--vrb-bg);
+  --surface-column: var(--vrb-fill);
+  --border-subtle: var(--vrb-border);
   // Bordes de controles (inputs): ≥ 3:1 contra el fondo (WCAG 1.4.11).
-  --border-strong: #7d8590;
-  --text-primary: #1f2328;
-  --text-muted: #5f6670;
-  --text-on-primary: #ffffff;
+  --border-strong: color-mix(in oklab, var(--vrb-fg) 45%, var(--vrb-bg));
+  --text-primary: var(--vrb-fg);
+  --text-muted: var(--vrb-muted-fg);
+  --text-on-primary: var(--vrb-brand-fg);
 
   // Color · sistema
-  --system-error: #b3261e;
-  --system-success: #2e7d32;
-  --system-error-soft: #fbe1df;
-
-  // Color · prioridad de issues (texto ≥ 4.5:1 sobre su fondo suave)
-  --priority-low: #4a5059;
-  --priority-low-soft: #eceef1;
-  --priority-medium: #1d3d5c;
-  --priority-medium-soft: #dbe7f3;
-  --priority-high: #8a4b00;
-  --priority-high-soft: #fdebd3;
-  --priority-urgent: #9b1c14;
-  --priority-urgent-soft: #fbe1df;
-
-  // Color · estado (columnas del tablero)
-  --state-todo: #7d8590;
-  --state-in-progress: #2f5d8a;
-  --state-done: #2e7d32;
+  --system-error: var(--vrb-danger);
+  --system-success: var(--vrb-success);
+  --system-error-soft: color-mix(in oklab, var(--vrb-danger) 12%, var(--vrb-bg));
 
   // Tipografía
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace;
+  --font-sans: var(--vrb-font-sans);
+  --font-mono: var(--vrb-font-mono);
   --text-h1: 1.75rem;
   --text-h2: 1.375rem;
   --text-body: 1rem;
   --text-small: 0.875rem;
 
   // Espaciado (escala de 4px)
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
+  --space-1: var(--vrb-space-1);
+  --space-2: var(--vrb-space-2);
+  --space-3: var(--vrb-space-3);
+  --space-4: var(--vrb-space-4);
+  --space-6: var(--vrb-space-6);
+  --space-8: var(--vrb-space-8);
 
   // Radios, sombras, foco
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-pill: 999px;
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --focus-ring: 0 0 0 3px rgba(47, 93, 138, 0.3);
+  --radius-sm: var(--vrb-radius-check);
+  --radius-md: var(--vrb-radius-control);
+  --radius-pill: var(--vrb-radius-badge);
+  --shadow-card: var(--vrb-shadow-raise);
+  --focus-ring: 0 0 0 3px color-mix(in oklab, var(--vrb-brand) 35%, transparent);
 
   // Layout
-  --header-h: 56px;
   --container-max: 1200px;
   // Alto/ancho mínimo de lo que se toca con el dedo (WCAG 2.5.5 / guías móviles).
   --touch-target: 44px;
 
   // Animación
-  --duration-sm: 160ms;
-  --shadow-drag: 0 8px 24px rgba(0, 0, 0, 0.18);
+  --duration-sm: var(--vrb-duration);
+  --shadow-drag: var(--vrb-shadow-overlay);
 }

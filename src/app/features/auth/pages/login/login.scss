@@ -1,52 +1,113 @@
 @use 'mixins' as m;
 
-// Bloque BEM: .login
+// Bloque BEM: .login. Dos paneles en desktop (marca + formulario); en celular
+// la marca queda arriba y más baja.
 .login {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-wrap: wrap;
   min-height: 100dvh;
-  padding: var(--space-4);
+  background: var(--vrb-bg);
+  color: var(--vrb-fg);
+}
 
-  &__card {
-    @include m.card;
-    display: grid;
-    gap: var(--space-4);
-    width: 100%;
-    max-width: 360px;
-    padding: var(--space-6);
-  }
+.login__hero {
+  position: relative;
+  display: flex;
+  flex: 1 1 480px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: 320px;
+  padding: var(--space-6);
+  overflow: hidden;
+  border-bottom: 1px solid var(--vrb-border);
+  background: var(--vrb-fill);
 
-  &__brand {
-    margin: 0;
-    color: var(--color-primary);
-    font-weight: 700;
-    letter-spacing: 0.04em;
+  @include m.from-tablet {
+    padding: 40px;
+    border-right: 1px solid var(--vrb-border);
+    border-bottom: 0;
   }
+}
 
-  &__title {
-    margin: 0;
-  }
+.login__pattern {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
 
-  &__lead {
-    margin: 0;
-    color: var(--text-muted);
-  }
+.login__brand,
+.login__pitch,
+.login__credit {
+  position: relative;
+}
 
-  &__google {
-    display: inline-grid;
-    place-items: center;
-    width: 1.25em;
-    height: 1.25em;
-    border-radius: var(--radius-pill);
-    background: var(--surface-canvas);
-    color: var(--color-primary);
-    font-weight: 700;
-    font-size: var(--text-small);
-  }
+.login__brand {
+  font: 600 20px/1 var(--vrb-font-mono);
+}
 
-  &__error {
-    margin: 0;
-    color: var(--system-error);
-    font-size: var(--text-small);
+.login__pitch {
+  max-width: 420px;
+  padding: var(--space-4) 0;
+  background: color-mix(in oklab, var(--vrb-fill) 85%, transparent);
+}
+
+.login__headline {
+  margin: 0;
+  font: 600 32px/36px var(--vrb-font-mono);
+  letter-spacing: -0.03em;
+
+  @include m.from-tablet {
+    font-size: 40px;
+    line-height: 44px;
   }
+}
+
+.login__lead {
+  margin: 0;
+  color: var(--vrb-muted-fg);
+  font-size: 16px;
+  line-height: 26px;
+}
+
+.login__credit {
+  align-self: flex-start;
+  max-width: 360px;
+}
+
+.login__credit-body {
+  gap: var(--space-2);
+  padding: var(--space-4) 20px;
+}
+
+.login__logo {
+  width: auto;
+  height: 28px;
+}
+
+.login__panel {
+  display: flex;
+  flex: 1 1 400px;
+  align-items: center;
+  justify-content: center;
+  padding: 40px var(--space-6);
+}
+
+.login__form {
+  width: 100%;
+  max-width: 360px;
+}
+
+.login__title {
+  margin: 0;
+  font: 600 24px/30px var(--vrb-font-sans);
+  letter-spacing: -0.02em;
+}
+
+.login__note {
+  margin: 0;
+  color: var(--vrb-muted-fg);
+  font-size: 13px;
+  text-align: center;
 }

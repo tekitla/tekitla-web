@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Issue } from '@/app/api';
-import { adjacentState, groupByState, issueKey, upsertIssue, withState } from './board.logic';
+import {
+  adjacentState,
+  columnOf,
+  groupByState,
+  issueKey,
+  upsertIssue,
+  withState,
+} from './board.logic';
 
 const issue = (number: number, patch: Partial<Issue> = {}): Issue => ({
   id: `i${number}`,
@@ -13,6 +20,7 @@ const issue = (number: number, patch: Partial<Issue> = {}): Issue => ({
   priority: 'PRIORITY_MEDIUM',
   createdAt: `2026-10-0${number}T00:00:00Z`,
   updatedAt: '',
+  rank: `0|a${number}`,
   ...patch,
 });
 
@@ -24,19 +32,34 @@ describe('board.logic', () => {
       issue(3, { state: 'ISSUE_STATE_UNSPECIFIED' }),
       issue(4, { state: 'ISSUE_STATE_DONE' }),
     ]);
-    expect(columns.ISSUE_STATE_TODO.map((i) => i.number)).toEqual([3, 1]);
+    expect(columns.ISSUE_STATE_TODO.map((i) => i.number)).toEqual([1, 3]);
     expect(columns.ISSUE_STATE_IN_PROGRESS.map((i) => i.number)).toEqual([2]);
     expect(columns.ISSUE_STATE_DONE.map((i) => i.number)).toEqual([4]);
   });
 
-  it('ordena como el backend: prioridad desc y luego más reciente', () => {
+  it('los descartados (CANCELED) no van en ninguna columna', () => {
+    const columns = groupByState([issue(1), issue(2, { state: 'ISSUE_STATE_CANCELED' })]);
+    expect(
+      Object.values(columns)
+        .flat()
+        .map((i) => i.number),
+    ).toEqual([1]);
+    expect(columnOf(issue(2, { state: 'ISSUE_STATE_CANCELED' }))).toBeNull();
+  });
+
+  it('ordena como el backend: rank ascendente, sin mirar prioridad ni fecha', () => {
     const columns = groupByState([
-      issue(1, { priority: 'PRIORITY_LOW' }),
-      issue(2, { priority: 'PRIORITY_URGENT' }),
-      issue(3),
-      issue(4),
+      issue(1, { rank: '0|c', priority: 'PRIORITY_URGENT' }),
+      issue(2, { rank: '0|a', priority: 'PRIORITY_LOW' }),
+      issue(3, { rank: '0|b' }),
+      issue(4, { rank: '0|B' }), // comparación por código, no por locale: 'B' < 'a'
     ]);
-    expect(columns.ISSUE_STATE_TODO.map((i) => i.number)).toEqual([2, 4, 3, 1]);
+    expect(columns.ISSUE_STATE_TODO.map((i) => i.number)).toEqual([4, 2, 3, 1]);
+  });
+
+  it('con rank vacío o repetido desempata por número', () => {
+    const columns = groupByState([issue(3, { rank: '' }), issue(1, { rank: '' })]);
+    expect(columns.ISSUE_STATE_TODO.map((i) => i.number)).toEqual([1, 3]);
   });
 
   it('withState no muta la lista original', () => {

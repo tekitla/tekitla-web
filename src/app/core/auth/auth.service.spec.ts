@@ -61,6 +61,24 @@ describe('AuthService', () => {
     expect(await service.ready()).toBe(false);
   });
 
+  it('ready refleja un login posterior a la carga (sin volver a restaurar)', async () => {
+    firebase['currentUser'].mockResolvedValue(null);
+    expect(await service.ready()).toBe(false);
+
+    expect(await service.loginWithGoogle()).toBe(true);
+
+    expect(await service.ready()).toBe(true);
+    expect(firebase['currentUser']).toHaveBeenCalledTimes(1);
+  });
+
+  it('ready refleja un logout posterior a la carga', async () => {
+    expect(await service.ready()).toBe(true);
+
+    await service.logout();
+
+    expect(await service.ready()).toBe(false);
+  });
+
   it('loginWithGoogle cancelado no cambia la sesión', async () => {
     firebase['signInWithGoogle'].mockResolvedValue(null);
     expect(await service.loginWithGoogle()).toBe(false);

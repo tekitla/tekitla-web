@@ -57,6 +57,6 @@ test('una cuenta fuera de la allowlist (403) ve «Tu cuenta no tiene acceso»', 
 test('sin sesión redirige al login', async ({ page }) => {
   await page.goto('/proyectos/p-tk');
   await expect(page).toHaveURL(/\/login\?returnUrl=%2Fproyectos%2Fp-tk/);
-  await expect(page.getByRole('button', { name: 'Entrar con Google' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continuar con Google' })).toBeVisible();
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/login.png` });
 });
