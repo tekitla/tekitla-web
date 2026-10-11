@@ -38,10 +38,18 @@ describe('IssuesClient', () => {
     expect(req.request.params.get('page.cursor')).toBe('c1');
     expect(req.request.params.get('page.limit')).toBe('10');
     // grpc-gateway omite `description` vacía y no manda `page` en la última.
-    req.flush({ projects: [{ id: 'p1', key: 'TK', name: 'Tekitla' }] });
+    req.flush({ projects: [{ id: 'p1', key: 'TK', name: 'Tekitla', workspaceId: 'w1' }] });
 
     expect(projects).toEqual([
-      { id: 'p1', key: 'TK', name: 'Tekitla', description: '', createdAt: '', updatedAt: '' },
+      {
+        id: 'p1',
+        key: 'TK',
+        name: 'Tekitla',
+        description: '',
+        createdAt: '',
+        updatedAt: '',
+        workspaceId: 'w1',
+      },
     ]);
   });
 

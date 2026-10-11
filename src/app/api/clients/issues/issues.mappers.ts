@@ -38,6 +38,7 @@ export function toProject(raw: RawProject = {}): Project {
     description: raw.description ?? '',
     createdAt: raw.createdAt ?? '',
     updatedAt: raw.updatedAt ?? '',
+    workspaceId: raw.workspaceId ?? '',
   };
 }
 

@@ -12,6 +12,7 @@ const project: Project = {
   description: '',
   createdAt: '',
   updatedAt: '',
+  workspaceId: 'w1',
 };
 
 const issue = (number: number, patch: Partial<Issue> = {}): Issue => ({

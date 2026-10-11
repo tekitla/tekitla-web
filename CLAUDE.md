@@ -35,9 +35,12 @@ Otros: `src/environments` (dev/qa/prod), `src/styles` (base global), `src/types`
   los clients no guardan estado; los stores exponen sólo lectura (`asReadonly`, `computed`).
 - **Store**: `@Injectable()` provisto en la ruta de la feature; protege contra respuestas
   viejas con un requestId (ver `features/board/data-access/board.store.ts`).
-- **Contratos** en `<x>.contracts.ts`, copiados del contrato del backend. Los de Tekitla
-  (`api/clients/issues/issues.contracts.ts`) salen de `tekitla-protos/proto/issues/v1/issues.proto`;
-  grpc-gateway omite campos con valor por defecto, por eso se normalizan en `issues.mappers.ts`.
+- **Contratos** en `<x>.contracts.ts`. Los de Tekitla (`api/clients/issues/issues.contracts.ts`)
+  se derivan de los tipos de `@tekitla/tekitla-protos` (`import type`: nada llega al bundle), así que
+  un campo nuevo o renombrado en el proto rompe `npm run typecheck`. grpc-gateway omite campos con
+  valor por defecto, por eso se normalizan en `issues.mappers.ts`.
+- **Paquetes privados** (`@tekitla/*`, `@vrojas1015/vrb`) desde GitHub Packages: `.npmrc` lee
+  `NODE_AUTH_TOKEN` (en local `NODE_AUTH_TOKEN=$(gh auth token) npm ci`; en el CI, el secret `NPM_TOKEN`).
 - **Mobile first**: estilos base = celular; `@include m.from-tablet` (≥ 768px) agrega lo de desktop.
   Lo que se toca mide al menos `var(--touch-target)`.
 - **Errores**: todo error HTTP llega como `DomainError` (`isNotFound()`, `isValidation()`, …).

@@ -23,6 +23,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # paquetes privados (.npmrc)
       - run: npm run lint
       - run: npm run test:unit
       - run: npm run build:prod
