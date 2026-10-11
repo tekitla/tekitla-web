@@ -7,7 +7,9 @@ plataforma están en los `CLAUDE.md` de las carpetas padre; acá sólo lo propio
 
 - Angular 21 standalone, zoneless, control flow (`@if`/`@for`), signal inputs
 - Estado: signals + stores propios por feature (sin NgRx)
-- SCSS + BEM, tokens CSS en `src/styles/_tokens.scss`
+- Design system **vrb** (`@vrojas1015/vrb`): clases `vrb-*` en los templates y variables `--vrb-*`
+  (`dist/vrb.css` cargado en `angular.json`). SCSS propio en BEM sólo para lo que vrb no trae;
+  `src/styles/_tokens.scss` son alias a `--vrb-*`
 - Auth: Firebase Auth con Google. El gateway valida el **ID token de Firebase**
   directo (`Authorization: Bearer <idToken>`): no hay JWT propio ni refresh de la app;
   Firebase persiste la sesión y renueva el token. 401 → token nuevo y un reintento;

@@ -1,5 +1,9 @@
-// Punto de entrada de la base global. El orden importa: reset → tokens → tipografía.
+// Punto de entrada de la base global. vrb (dist/vrb.css) se carga antes desde
+// angular.json; acá van las fuentes y lo propio. El orden importa: reset →
+// tokens → tipografía.
+@use 'fonts';
 @use 'reset';
 @use 'tokens';
 @use 'typography';
 @use 'utilities';
+@use 'tekitla';

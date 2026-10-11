@@ -1,25 +1,62 @@
-<main class="login">
-  <section class="login__card" aria-labelledby="login-title">
-    <p class="login__brand" aria-hidden="true">Tekitla</p>
-    <h1 id="login-title" class="login__title">{{ 'auth.login.title' | translate }}</h1>
-    <p class="login__lead">{{ 'auth.login.lead' | translate }}</p>
-
-    @if (!configured) {
-      <p class="login__error" role="alert">{{ 'auth.login.notConfigured' | translate }}</p>
-    }
-
-    @if (failed()) {
-      <p class="login__error" role="alert">{{ 'auth.login.error' | translate }}</p>
-    }
-
-    <ui-button
-      [loading]="loading()"
-      [disabled]="!configured"
-      [fullWidth]="true"
-      (pressed)="signIn()"
-    >
-      <span class="login__google" aria-hidden="true">G</span>
-      {{ 'auth.login.google' | translate }}
-    </ui-button>
+<div class="login">
+  <section class="login__hero" aria-labelledby="login-pitch">
+    <div class="login__pattern" aria-hidden="true">
+      <canvas #pattern></canvas>
+    </div>
+    <b class="login__brand">tekitla</b>
+    <div class="vrb-stack login__pitch">
+      <p class="vrb-page-header__eyebrow">{{ 'auth.login.eyebrow' | translate }}</p>
+      <h1 id="login-pitch" class="login__headline">{{ 'auth.login.headline' | translate }}</h1>
+      <p class="login__lead">{{ 'auth.login.tagline' | translate }}</p>
+    </div>
+    <article class="vrb-card login__credit">
+      <div class="vrb-card__body login__credit-body">
+        <p class="vrb-card__eyebrow">{{ 'auth.login.by' | translate }}</p>
+        <img
+          class="login__logo"
+          src="/logos/victorrb-lockup.svg"
+          alt="victor rb"
+          width="151"
+          height="24"
+        />
+        <p class="vrb-card__description">{{ 'auth.login.credit' | translate }}</p>
+      </div>
+    </article>
   </section>
-</main>
+
+  <main class="login__panel">
+    <div class="vrb-stack vrb-stack--lg login__form">
+      <div class="vrb-stack vrb-stack--sm">
+        <h2 class="login__title">{{ 'auth.login.title' | translate }}</h2>
+        <p class="login__lead">{{ 'auth.login.lead' | translate }}</p>
+      </div>
+
+      @if (!configured) {
+        <div class="vrb-alert vrb-alert--danger" role="alert">
+          <div class="vrb-alert__body">
+            <p class="vrb-alert__description">{{ 'auth.login.notConfigured' | translate }}</p>
+          </div>
+        </div>
+      }
+
+      @if (failed()) {
+        <div class="vrb-alert vrb-alert--danger" role="alert">
+          <div class="vrb-alert__body">
+            <p class="vrb-alert__description">{{ 'auth.login.error' | translate }}</p>
+          </div>
+        </div>
+      }
+
+      <ui-button
+        size="lg"
+        [loading]="loading()"
+        [disabled]="!configured"
+        [fullWidth]="true"
+        (pressed)="signIn()"
+      >
+        {{ 'auth.login.google' | translate }}
+      </ui-button>
+      <p class="login__note">{{ 'auth.login.allowlist' | translate }}</p>
+    </div>
+  </main>
+</div>

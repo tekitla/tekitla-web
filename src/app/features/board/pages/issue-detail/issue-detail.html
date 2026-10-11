@@ -1,22 +1,15 @@
 <article class="issue-detail" aria-labelledby="issue-detail-title">
-  <a class="issue-detail__back" [routerLink]="['/proyectos', projectId()]">
-    <span aria-hidden="true">←</span> {{ 'issueDetail.back' | translate }}
-  </a>
-
   @if (store.selected(); as issue) {
-    <header class="issue-detail__header">
-      <p class="issue-detail__key">{{ key() }}</p>
-      <h1 id="issue-detail-title" class="issue-detail__title">{{ issue.title }}</h1>
-      <div class="issue-detail__meta">
-        <app-priority-badge [priority]="issue.priority" />
-        @if (issue.createdAt) {
-          <span>
-            {{ 'issueDetail.created' | translate }}
-            <time [attr.datetime]="issue.createdAt">{{
-              issue.createdAt | date: 'mediumDate'
-            }}</time>
+    <div class="vrb-page-header">
+      <p class="vrb-page-header__eyebrow">// {{ key().toLowerCase() }}</p>
+      <h1 id="issue-detail-title" class="vrb-page-header__title">{{ issue.title }}</h1>
+      <div class="vrb-page-header__description vrb-cluster vrb-cluster--sm">
+        @if (column(); as state) {
+          <span [class]="'vrb-badge vrb-badge--dot ' + stateTone[state]">
+            {{ 'board.columns.' + state | translate }}
           </span>
         }
+        <app-priority-badge [priority]="issue.priority" />
         @if (issue.updatedAt) {
           <span>
             {{ 'issueDetail.updated' | translate }}
@@ -24,45 +17,113 @@
           </span>
         }
       </div>
-    </header>
+    </div>
 
-    <fieldset class="issue-detail__states" [attr.aria-busy]="pending() || null">
-      <legend class="issue-detail__legend">{{ 'issueDetail.state' | translate }}</legend>
-      @for (state of states; track state) {
-        <button
-          type="button"
-          class="issue-detail__state"
-          [class.issue-detail__state--active]="column() === state"
-          [attr.aria-pressed]="column() === state"
-          [disabled]="pending()"
-          (click)="move(state)"
-        >
-          {{ 'board.columns.' + state | translate }}
-        </button>
-      }
-    </fieldset>
-    @if (store.notice(); as notice) {
-      @if (notice.kind === 'error') {
-        <p class="issue-detail__error" role="alert">
-          {{ notice.message | translate: { issue: notice.issue } }}
-        </p>
-      }
-    }
+    <div class="issue-detail__layout">
+      <article class="vrb-card issue-detail__main" aria-labelledby="issue-description-title">
+        <header class="vrb-card__header">
+          <h2 id="issue-description-title" class="vrb-card__title">
+            {{ 'issueDetail.description' | translate }}
+          </h2>
+        </header>
+        <div class="vrb-card__body">
+          @if (issue.description.trim()) {
+            <ui-markdown [source]="issue.description" />
+          } @else {
+            <p class="issue-detail__empty">{{ 'issueDetail.noDescription' | translate }}</p>
+          }
+        </div>
+      </article>
 
-    <section class="issue-detail__body" [attr.aria-label]="'issueDetail.description' | translate">
-      @if (issue.description.trim()) {
-        <ui-markdown [source]="issue.description" />
-      } @else {
-        <p class="issue-detail__empty">{{ 'issueDetail.noDescription' | translate }}</p>
-      }
-    </section>
+      <aside class="vrb-card issue-detail__aside">
+        <div class="vrb-card__body">
+          <div class="vrb-field">
+            <span class="vrb-field__label" id="issue-state-label">
+              {{ 'issueDetail.state' | translate }}
+            </span>
+            <fieldset
+              class="vrb-segmented vrb-segmented--sm issue-detail__states"
+              aria-labelledby="issue-state-label"
+              [disabled]="pending()"
+              [attr.aria-busy]="pending() || null"
+            >
+              @for (state of states; track state) {
+                <label class="vrb-segmented__option">
+                  <input
+                    type="radio"
+                    name="issue-state"
+                    [checked]="column() === state"
+                    (change)="move(state)"
+                  />
+                  <span
+                    [class]="'vrb-segmented__dot vrb-segmented__dot--' + stateDot[state]"
+                  ></span>
+                  {{ 'board.columns.' + state | translate }}
+                </label>
+              }
+            </fieldset>
+            @if (store.notice(); as notice) {
+              @if (notice.kind === 'error') {
+                <p class="vrb-field__error" role="alert">
+                  {{
+                    notice.message
+                      | translate
+                        : {
+                            issue: notice.issue,
+                            column: notice.state
+                              ? ('board.columns.' + notice.state | translate)
+                              : '',
+                          }
+                  }}
+                </p>
+              }
+            }
+          </div>
+
+          <dl class="issue-detail__facts">
+            @if (store.project(); as project) {
+              <dt>{{ 'issueDetail.project' | translate }}</dt>
+              <dd class="vrb-cluster vrb-cluster--sm">
+                <span class="tk-avatar" aria-hidden="true">{{ project.key.slice(0, 2) }}</span>
+                {{ project.name }}
+              </dd>
+            }
+            @if (issue.createdAt) {
+              <dt>{{ 'issueDetail.created' | translate }}</dt>
+              <dd>
+                <time [attr.datetime]="issue.createdAt">{{
+                  issue.createdAt | date: 'mediumDate'
+                }}</time>
+              </dd>
+            }
+            @if (issue.updatedAt) {
+              <dt>{{ 'issueDetail.updated' | translate }}</dt>
+              <dd>
+                <time [attr.datetime]="issue.updatedAt">{{ issue.updatedAt | date: 'short' }}</time>
+              </dd>
+            }
+          </dl>
+        </div>
+      </aside>
+    </div>
   } @else if (store.selectedLoading()) {
-    <p class="issue-detail__status" role="status">{{ 'common.loading' | translate }}</p>
+    <div class="vrb-stack" role="status" [attr.aria-label]="'common.loading' | translate">
+      <span class="vrb-skeleton vrb-skeleton--title"></span>
+      <span class="vrb-skeleton issue-detail__skeleton"></span>
+    </div>
   } @else if (store.selectedNotFound()) {
-    <p class="issue-detail__error" role="alert">{{ 'issueDetail.notFound' | translate }}</p>
+    <div class="vrb-empty vrb-empty--bordered" role="alert">
+      <p class="vrb-empty__title">{{ 'issueDetail.notFound' | translate }}</p>
+      <div class="vrb-empty__actions">
+        <a class="vrb-button vrb-button--outline" [routerLink]="['/proyectos', projectId()]">
+          {{ 'issueDetail.back' | translate }}
+        </a>
+      </div>
+    </div>
   } @else if (store.selectedError(); as error) {
-    <p class="issue-detail__error" role="alert">
-      {{ 'issueDetail.loadError' | translate }} ({{ error }})
-    </p>
+    <div class="vrb-empty vrb-empty--bordered vrb-empty--danger" role="alert">
+      <p class="vrb-empty__title">{{ 'issueDetail.loadError' | translate }}</p>
+      <p class="vrb-empty__description">{{ error }}</p>
+    </div>
   }
 </article>

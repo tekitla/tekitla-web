@@ -1,119 +1,47 @@
-@use 'mixins' as m;
+// Tarjetas, badges y el selector de estado salen de vrb; acá solo las dos
+// columnas (descripción y datos), que en celular se apilan.
+.issue-detail__layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
 
-// Bloque BEM: .issue-detail
-.issue-detail {
+.issue-detail__main {
+  flex: 999 1 520px;
+  min-width: 0;
+}
+
+.issue-detail__aside {
+  flex: 1 1 300px;
+}
+
+.issue-detail__states {
+  width: 100%;
+}
+
+.issue-detail__facts {
   display: grid;
-  gap: var(--space-4);
-  max-width: 820px;
+  grid-template-columns: auto 1fr;
+  gap: 10px var(--space-4);
+  margin: 0;
+  font-size: 14px;
 
-  &__back {
-    justify-self: start;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    min-height: var(--touch-target);
-    color: var(--color-primary);
-    font-size: var(--text-small);
-    text-decoration: none;
-    @include m.focus-visible;
-
-    &:hover {
-      text-decoration: underline;
-    }
+  dt {
+    color: var(--vrb-muted-fg);
   }
 
-  &__header {
-    display: grid;
-    gap: var(--space-2);
-  }
-
-  &__key {
+  dd {
     margin: 0;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-weight: 600;
   }
+}
 
-  &__title {
-    margin: 0;
-    font-size: var(--text-h2);
-    overflow-wrap: anywhere;
+.issue-detail__empty {
+  margin: 0;
+  color: var(--vrb-muted-fg);
+}
 
-    @include m.from-tablet {
-      font-size: var(--text-h1);
-    }
-  }
-
-  &__meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2) var(--space-4);
-    color: var(--text-muted);
-    font-size: var(--text-small);
-  }
-
-  &__states {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0;
-    margin: 0;
-    padding: 0;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-
-    @include m.from-tablet {
-      max-width: 480px;
-    }
-  }
-
-  &__legend {
-    @include m.visually-hidden;
-  }
-
-  &__state {
-    min-height: var(--touch-target);
-    padding: 0 var(--space-2);
-    border: 0;
-    background: var(--surface-canvas);
-    color: var(--text-primary);
-    font-size: var(--text-small);
-    font-weight: 500;
-    cursor: pointer;
-    @include m.focus-visible;
-
-    & + & {
-      border-left: 1px solid var(--border-strong);
-    }
-
-    &:disabled {
-      cursor: progress;
-    }
-
-    &--active {
-      background: var(--color-primary);
-      color: var(--text-on-primary);
-    }
-  }
-
-  &__body {
-    @include m.card;
-    padding: var(--space-4);
-
-    @include m.from-tablet {
-      padding: var(--space-6);
-    }
-  }
-
-  &__empty,
-  &__status {
-    margin: 0;
-    color: var(--text-muted);
-  }
-
-  &__error {
-    margin: 0;
-    color: var(--system-error);
-  }
+.issue-detail__skeleton {
+  height: 160px;
+  border-radius: var(--vrb-radius-card);
 }

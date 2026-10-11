@@ -14,14 +14,22 @@ import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { DomainError } from '@/app/api';
+import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { Button } from '@/app/ui/components/button/button';
+import { Icon } from '@/app/ui/components/icon/icon';
 import { normalizeProjectKey, projectKeyValidator } from '../../data-access/project-key';
 import { ProjectsStore } from '../../data-access/projects.store';
 
-/** Lista de proyectos + alta. Al crear uno, navega a su tablero. */
+/** Color del avatar de cada proyecto, en rotación (todavía no hay color por proyecto). */
+const TONES = ['tk-avatar--accent', 'tk-avatar--info', 'tk-avatar--success', 'tk-avatar--brand'];
+
+/**
+ * Lista de proyectos (tarjetas) + alta en un `<dialog>` nativo (foco atrapado,
+ * Escape cierra). Al crear uno, navega a su tablero.
+ */
 @Component({
   selector: 'app-project-list',
-  imports: [ReactiveFormsModule, RouterLink, Button, TranslatePipe],
+  imports: [ReactiveFormsModule, RouterLink, Button, Icon, TranslatePipe],
   templateUrl: './project-list.html',
   styleUrl: './project-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,31 +40,46 @@ export class ProjectList implements OnInit {
   private readonly injector = inject(Injector);
 
   private readonly keyInput = viewChild<ElementRef<HTMLInputElement>>('keyInput');
+  private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
+
+  protected readonly skeletons = [0, 1, 2];
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
     key: ['', [Validators.required, projectKeyValidator]],
     name: ['', [Validators.required, Validators.maxLength(100)]],
     description: ['', Validators.maxLength(2000)],
   });
-  protected readonly formOpen = signal(false);
   protected readonly saving = signal(false);
   protected readonly submitError = signal<string | null>(null);
   /** Key rechazada por el backend (409), para el mensaje. */
   protected readonly takenKey = signal<string | null>(null);
 
+  constructor() {
+    inject(ShellNav).set([{ label: 'projects.list.title', translate: true }]);
+  }
+
   ngOnInit(): void {
     this.store.load();
   }
 
+  protected tone(index: number): string {
+    return TONES[index % TONES.length]!;
+  }
+
   protected openForm(): void {
-    this.formOpen.set(true);
-    afterNextRender(() => this.keyInput()?.nativeElement.focus(), { injector: this.injector });
+    this.dialog().nativeElement.showModal();
+    this.keyInput()?.nativeElement.focus();
   }
 
   protected closeForm(): void {
-    this.formOpen.set(false);
+    this.dialog().nativeElement.close();
+  }
+
+  /** Al cerrar (botón, Cancelar o Escape) el formulario vuelve a empezar. */
+  protected onDialogClose(): void {
     this.form.reset();
     this.submitError.set(null);
+    this.takenKey.set(null);
   }
 
   /** La key se escribe siempre en mayúsculas y sin espacios. */
@@ -84,6 +107,7 @@ export class ProjectList implements OnInit {
     this.store.create({ key, name: name.trim(), description: description.trim() }).subscribe({
       next: (project) => {
         this.saving.set(false);
+        this.closeForm();
         void this.router.navigate(['/proyectos', project.id]);
       },
       error: (err: DomainError) => {
@@ -104,8 +128,7 @@ export class ProjectList implements OnInit {
   private focusFirstInvalid(): void {
     afterNextRender(
       () => {
-        const form = this.keyInput()?.nativeElement.form;
-        form?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+        this.dialog().nativeElement.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
       },
       { injector: this.injector },
     );

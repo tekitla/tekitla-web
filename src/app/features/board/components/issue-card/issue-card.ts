@@ -4,8 +4,9 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { BOARD_STATES, type BoardState, type Issue } from '@/app/api';
+import { Icon } from '@/app/ui/components/icon/icon';
 import { adjacentState, columnOf, issueKey } from '../../data-access/board.logic';
-import { PriorityBadge } from '../priority-badge/priority-badge';
+import { KANBAN_PRIORITY, PRIORITY_LEVEL } from '../priority-badge/priority-badge';
 
 /** Pedido de mover una tarjeta, con el origen (para devolver el foco). */
 export interface MoveRequest {
@@ -15,7 +16,7 @@ export interface MoveRequest {
 }
 
 /**
- * Tarjeta de un issue en el tablero. Toda la tarjeta lleva al detalle (el enlace
+ * Tarjeta de un issue en el tablero (`vrb-kanban-card`). Toda la tarjeta lleva al detalle (el enlace
  * se estira con un pseudo-elemento) y tiene un botón «Mover» con menú: en
  * pantallas táctiles es LA forma de mover (arrastrar ahí es incómodo), y en
  * desktop es la alternativa accesible al drag & drop. Con el foco en la tarjeta,
@@ -23,7 +24,7 @@ export interface MoveRequest {
  */
 @Component({
   selector: 'app-issue-card',
-  imports: [RouterLink, CdkMenuTrigger, CdkMenu, CdkMenuItem, PriorityBadge, TranslatePipe],
+  imports: [RouterLink, CdkMenuTrigger, CdkMenu, CdkMenuItem, Icon, TranslatePipe],
   templateUrl: './issue-card.html',
   styleUrl: './issue-card.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,6 +39,8 @@ export class IssueCard {
 
   protected readonly key = computed(() => issueKey(this.projectKey(), this.issue().number));
   protected readonly column = computed(() => columnOf(this.issue()));
+  protected readonly level = computed(() => PRIORITY_LEVEL[this.issue().priority]);
+  protected readonly kanbanPriority = computed(() => KANBAN_PRIORITY[this.level()]);
   /** Destinos del menú: las otras dos columnas. */
   protected readonly targets = computed(() => BOARD_STATES.filter((s) => s !== this.column()));
   protected readonly link = computed(() => [

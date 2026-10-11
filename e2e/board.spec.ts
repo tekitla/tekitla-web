@@ -101,8 +101,10 @@ test.describe('desktop', () => {
 
     await page.getByRole('link', { name: 'Nuevo issue' }).click();
     await page.getByLabel('Título').fill('Probar en el celular');
-    await page.getByLabel('Prioridad').selectOption({ label: 'Urgente' });
+    // El radio está oculto a la vista: se elige tocando su etiqueta.
+    await page.locator('label', { hasText: 'Urgente' }).click();
     await page.getByLabel('Descripción').fill('Con **markdown**');
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/issue-nuevo-1280.png`, fullPage: true });
     await page.getByRole('button', { name: 'Crear issue' }).click();
 
     await expect(page).toHaveURL(/\/proyectos\/p-tk$/);
@@ -127,11 +129,10 @@ test.describe('desktop', () => {
       await page.evaluate(() => (window as unknown as { __xss?: number }).__xss),
     ).toBeUndefined();
 
-    await page.getByRole('button', { name: 'En curso' }).click();
-    await expect(page.getByRole('button', { name: 'En curso' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await page.locator('.vrb-segmented label', { hasText: 'En curso' }).click();
+    await expect(page.getByRole('radio', { name: 'En curso' })).toBeChecked();
+    await expect(page.locator('.vrb-page-header__description')).toContainText('En curso');
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/issue-detalle-1280.png`, fullPage: true });
   });
 });
 

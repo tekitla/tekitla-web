@@ -1,29 +1,115 @@
 <a class="shell__skip" href="#contenido">{{ 'shell.skip' | translate }}</a>
 
-<header class="shell__header">
-  <a class="shell__brand" routerLink="/">{{ title }}</a>
+<div class="vrb-shell" [attr.data-sidebar-open]="menuOpen() || null">
+  <aside id="shell-sidebar" class="vrb-sidebar" [attr.aria-label]="'shell.nav.label' | translate">
+    <div class="vrb-sidebar__header">
+      <span class="tk-avatar tk-avatar--ink" aria-hidden="true">tk</span>
+      <span class="shell__brand">
+        <b class="shell__brand-name">tekitla</b>
+        <small class="shell__brand-sub">{{ 'shell.workspace' | translate }}</small>
+      </span>
+    </div>
 
-  <nav class="shell__nav" [attr.aria-label]="'shell.nav.label' | translate">
-    <a
-      class="shell__nav-link"
-      routerLink="/proyectos"
-      routerLinkActive="shell__nav-link--active"
-      ariaCurrentWhenActive="page"
-    >
-      {{ 'shell.nav.projects' | translate }}
-    </a>
-  </nav>
+    <nav class="vrb-sidebar__content">
+      <div class="vrb-sidebar__group">
+        <p class="vrb-sidebar__group-label">{{ 'shell.nav.workspace' | translate }}</p>
+        <ul class="vrb-sidebar__menu">
+          <li>
+            <a
+              class="vrb-sidebar__link"
+              routerLink="/proyectos"
+              routerLinkActive
+              [routerLinkActiveOptions]="{ exact: true }"
+              ariaCurrentWhenActive="page"
+            >
+              <ui-icon name="projects" />
+              <span class="vrb-sidebar__text">{{ 'shell.nav.projects' | translate }}</span>
+            </a>
+          </li>
+        </ul>
+      </div>
 
-  <div class="shell__user">
-    @if (session.user(); as user) {
-      <span class="shell__user-email">{{ user.email }}</span>
-    }
-    <ui-button variant="ghost" size="sm" (pressed)="logout()">
-      {{ 'shell.logout' | translate }}
-    </ui-button>
+      @if (nav.project(); as project) {
+        <div class="vrb-sidebar__group">
+          <p class="vrb-sidebar__group-label">{{ project.name }}</p>
+          <ul class="vrb-sidebar__menu">
+            <li>
+              <a
+                class="vrb-sidebar__link"
+                [routerLink]="['/proyectos', project.id]"
+                routerLinkActive
+                ariaCurrentWhenActive="page"
+              >
+                <ui-icon name="board" />
+                <span class="vrb-sidebar__text">{{ 'shell.nav.board' | translate }}</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+      }
+    </nav>
+
+    <div class="vrb-sidebar__footer">
+      <span
+        class="tk-avatar tk-avatar--muted tk-avatar--round shell__user-avatar"
+        aria-hidden="true"
+      >
+        {{ initials() }}
+      </span>
+      <span class="shell__user">
+        @if (session.user(); as user) {
+          @if (user.displayName) {
+            <b class="shell__user-name">{{ user.displayName }}</b>
+          }
+          <small class="shell__user-email">{{ user.email }}</small>
+        }
+      </span>
+      <button
+        type="button"
+        class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
+        [attr.aria-label]="'shell.logout' | translate"
+        [title]="'shell.logout' | translate"
+        (click)="logout()"
+      >
+        <ui-icon name="logout" />
+      </button>
+    </div>
+  </aside>
+
+  <div class="vrb-shell__scrim" aria-hidden="true" (click)="closeMenu()"></div>
+
+  <div class="vrb-shell__main">
+    <header class="vrb-shell__header">
+      <button
+        type="button"
+        class="vrb-button vrb-button--ghost vrb-button--icon vrb-shell__menu-button"
+        aria-controls="shell-sidebar"
+        [attr.aria-expanded]="menuOpen()"
+        [attr.aria-label]="'shell.openMenu' | translate"
+        (click)="toggleMenu()"
+      >
+        <ui-icon name="menu" />
+      </button>
+      @if (nav.crumbs().length) {
+        <nav class="vrb-breadcrumb" [attr.aria-label]="'shell.breadcrumb' | translate">
+          <ol class="vrb-breadcrumb__list">
+            @for (crumb of nav.crumbs(); track $index) {
+              <li class="vrb-breadcrumb__item">
+                @let label = crumb.translate ? (crumb.label | translate) : crumb.label;
+                @if (crumb.link) {
+                  <a class="vrb-breadcrumb__link" [routerLink]="crumb.link">{{ label }}</a>
+                } @else {
+                  <span class="vrb-breadcrumb__page" aria-current="page">{{ label }}</span>
+                }
+              </li>
+            }
+          </ol>
+        </nav>
+      }
+    </header>
+
+    <main id="contenido" class="vrb-shell__content shell__content" tabindex="-1">
+      <router-outlet />
+    </main>
   </div>
-</header>
-
-<main id="contenido" class="shell__main" tabindex="-1">
-  <router-outlet />
-</main>
+</div>

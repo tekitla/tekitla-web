@@ -1,138 +1,49 @@
-@use 'mixins' as m;
-
+// La tarjeta es un .vrb-kanban-card; acá solo el enlace que la cubre entera y
+// el botón «Mover» por encima.
 :host {
   display: block;
 }
 
-// Bloque BEM: .issue-card
 .issue-card {
-  @include m.card;
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas:
-    'meta move'
-    'title title';
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  transition: opacity var(--duration-sm) ease;
 
-  &:hover {
-    border-color: var(--color-primary);
-  }
-
-  // Foco visible en toda la tarjeta cuando el foco está en el enlace.
   &:has(.issue-card__link:focus-visible) {
-    box-shadow: var(--focus-ring);
-    border-color: var(--color-primary);
+    outline: 2px solid var(--vrb-brand);
+    outline-offset: 2px;
   }
 
   &--pending {
     opacity: 0.6;
   }
+}
 
-  &__meta {
-    grid-area: meta;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
+.issue-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.issue-card__link {
+  color: var(--vrb-fg);
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: none;
   }
 
-  &__key {
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-size: var(--text-small);
-    font-weight: 600;
+  // Toda la tarjeta lleva al detalle.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
   }
+}
 
-  &__link {
-    grid-area: title;
-    color: var(--text-primary);
-    font-weight: 500;
-    text-decoration: none;
-    overflow-wrap: anywhere;
-
-    &:focus-visible {
-      outline: none;
-    }
-
-    // Toda la tarjeta es clickeable (el botón «Mover» queda por encima).
-    &::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-    }
-  }
-
-  &__move {
-    grid-area: move;
-    position: relative; // por encima del ::after del enlace
-    z-index: 1;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    min-width: var(--touch-target);
-    min-height: var(--touch-target);
-    padding: 0 var(--space-3);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-pill);
-    background: var(--surface-canvas);
-    color: var(--text-primary);
-    font-size: var(--text-small);
-    cursor: pointer;
-    @include m.focus-visible;
-
-    &:hover:not(:disabled) {
-      background: var(--surface-muted);
-    }
-
-    &:disabled {
-      cursor: progress;
-    }
-
-    // En desktop hay drag & drop: el botón es más discreto.
-    @include m.from-tablet {
-      min-height: 32px;
-      min-width: 0;
-      padding: 0 var(--space-2);
-    }
-  }
-
-  &__move-icon {
-    width: 1em;
-    height: 1em;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  &__menu {
-    @include m.card;
-    display: grid;
-    min-width: 200px;
-    padding: var(--space-1);
-    box-shadow: var(--shadow-drag);
-  }
-
-  &__menu-item {
-    min-height: var(--touch-target);
-    padding: 0 var(--space-3);
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    text-align: left;
-    cursor: pointer;
-
-    &:hover,
-    &:focus {
-      outline: none;
-      background: var(--color-primary-soft);
-      color: var(--color-primary-dark);
-    }
-  }
+// Por encima del enlace estirado. En táctil, el área mínima la pone vrb.
+.issue-card__move {
+  position: relative;
+  z-index: 1;
+  margin: -6px -6px -6px 0;
 }

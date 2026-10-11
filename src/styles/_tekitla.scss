@@ -1,0 +1,61 @@
+// Lo único propio de Tekitla encima de vrb (igual que en el diseño): el avatar
+// con iniciales de proyectos y personas. Todo lee variables --vrb-*.
+.tk-avatar {
+  --tone: var(--vrb-accent);
+
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: var(--tone);
+  color: #fff;
+  font: 600 10px/1 var(--vrb-font-mono);
+  text-transform: uppercase;
+}
+
+.tk-avatar--lg {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.tk-avatar--round {
+  border-radius: var(--vrb-radius-badge);
+}
+
+.tk-avatar--ink {
+  --tone: var(--vrb-ink);
+
+  color: var(--vrb-ink-fg);
+}
+
+.tk-avatar--muted {
+  --tone: var(--vrb-muted);
+
+  color: var(--vrb-fg);
+}
+
+.tk-avatar--accent {
+  --tone: var(--vrb-accent);
+}
+
+.tk-avatar--info {
+  --tone: var(--vrb-info);
+}
+
+.tk-avatar--success {
+  --tone: var(--vrb-success);
+}
+
+.tk-avatar--brand {
+  --tone: var(--vrb-brand);
+}
+
+// Los errores de campo viven siempre en el DOM (aria-live); vacíos no deben
+// dibujar la viñeta de vrb.
+.vrb-field__error:empty {
+  display: none;
+}

@@ -1,11 +1,24 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { createDotPattern } from '@vrojas1015/vrb/dot-pattern';
 
 import { AuthService } from '@/app/core/auth/auth.service';
 import { Button } from '@/app/ui/components/button/button';
 
-/** Login con Google (Firebase Auth). Sin formulario: Google es el único proveedor. */
+/**
+ * Login con Google (Firebase Auth). Sin formulario: Google es el único proveedor.
+ * El fondo de la marca es el DotPattern de vrb (canvas, sin framework).
+ */
 @Component({
   selector: 'app-login',
   imports: [Button, TranslatePipe],
@@ -21,6 +34,22 @@ export class Login {
   protected readonly configured = this.auth.isConfigured();
   protected readonly loading = signal(false);
   protected readonly failed = signal(false);
+
+  private readonly pattern = viewChild.required<ElementRef<HTMLCanvasElement>>('pattern');
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      const stop = createDotPattern(this.pattern().nativeElement, {
+        direction: 'to-bottom-right',
+        tone: 'brand',
+        gap: 20,
+        size: 4,
+        min: 0.25,
+      });
+      destroyRef.onDestroy(stop);
+    });
+  }
 
   protected async signIn(): Promise<void> {
     if (this.loading()) return;

@@ -1,16 +1,16 @@
 <main class="no-access">
-  <section class="no-access__card" aria-labelledby="no-access-title">
-    <h1 id="no-access-title" class="no-access__title">{{ 'auth.noAccess.title' | translate }}</h1>
-    <p class="no-access__text">
+  <section class="vrb-empty vrb-empty--bordered no-access__card" aria-labelledby="no-access-title">
+    <h1 id="no-access-title" class="vrb-empty__title">{{ 'auth.noAccess.title' | translate }}</h1>
+    <p class="vrb-empty__description">
       @if (session.user()?.email; as email) {
         {{ 'auth.noAccess.withEmail' | translate: { email } }}
       } @else {
         {{ 'auth.noAccess.text' | translate }}
       }
     </p>
-    <p class="no-access__text">{{ 'auth.noAccess.hint' | translate }}</p>
-    <ui-button [fullWidth]="true" (pressed)="switchAccount()">
-      {{ 'auth.noAccess.switch' | translate }}
-    </ui-button>
+    <p class="vrb-empty__description">{{ 'auth.noAccess.hint' | translate }}</p>
+    <div class="vrb-empty__actions">
+      <ui-button (pressed)="switchAccount()">{{ 'auth.noAccess.switch' | translate }}</ui-button>
+    </div>
   </section>
 </main>
