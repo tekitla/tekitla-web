@@ -18,6 +18,7 @@ export type {
   Issue,
   IssueChange,
   IssueEvent,
+  ListIssueEventsResponse,
   IssueState,
   Label,
   LabelColor,
