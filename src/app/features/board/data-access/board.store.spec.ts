@@ -57,8 +57,8 @@ const issue = (number: number, patch: Partial<Issue> = {}): Issue => {
   };
 };
 
-const apiError = (status: number, code = '') =>
-  new DomainError({ status, code, message: `HTTP ${status}`, details: [], traceId: null });
+const apiError = (status: number, code = '', reason = '') =>
+  new DomainError({ status, code, reason, message: `HTTP ${status}`, details: [], traceId: null });
 
 type ClientMock = Record<
   | 'listAllProjects'
@@ -215,7 +215,7 @@ describe('BoardStore', () => {
 
       store.move(3, 'todo', 0);
 
-      expect(store.notice()).toMatchObject({ kind: 'error', message: 'board.notice.stale' });
+      expect(store.notice()).toMatchObject({ kind: 'error', detail: 'board.notice.stale' });
       expect(client.listAllIssues).toHaveBeenCalledTimes(1);
       expect(numbersIn('done')).toEqual([1]);
     });

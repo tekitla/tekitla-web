@@ -132,7 +132,9 @@
               }
               @if (event.createdAt) {
                 <time class="activity__time" [attr.datetime]="event.createdAt">{{
-                  event.createdAt | date: 'd MMM, HH:mm'
+                  isToday(event.createdAt)
+                    ? ('activity.today' | translate) + ' ' + (event.createdAt | date: 'HH:mm')
+                    : (event.createdAt | date: 'd MMM, HH:mm')
                 }}</time>
               }
             </div>

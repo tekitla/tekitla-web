@@ -31,6 +31,8 @@ export interface BoardNotice {
   issue: string;
   /** Nombre del estado (columna) que menciona el aviso. */
   column?: string;
+  /** Clave de traducción de una segunda línea (qué pasó después). */
+  detail?: string;
   id: number;
 }
 
@@ -272,7 +274,7 @@ export class BoardStore {
         },
         error: (err: unknown) => {
           if (stale()) return;
-          const outcome = { ok: false, stale: toDomainError(err).isFailedPrecondition() } as const;
+          const outcome = { ok: false, stale: toDomainError(err).isStaleOrder() } as const;
           this.settle(number, moves, seq, outcome, key);
         },
       });
@@ -305,11 +307,12 @@ export class BoardStore {
       list.map((i) => (i.number === number ? { ...i, ...confirmed } : i)),
     );
     if (last.stale) {
-      this.notify('error', 'board.notice.stale', key);
+      this.notify('error', 'board.notice.moveFailed', key, undefined, 'board.notice.stale');
       this.refresh();
       return;
     }
-    this.notify('error', 'board.notice.moveFailed', key, this.statusName(confirmed.statusId));
+    const column = this.statusName(confirmed.statusId);
+    this.notify('error', 'board.notice.moveFailed', key, column, 'board.notice.moveFailedDetail');
   }
 
   /** Crea un issue (el backend lo pone en el primer estado «Por hacer») y lo suma al tablero. */
@@ -400,8 +403,14 @@ export class BoardStore {
     return this.config.statuses().find((s) => s.id === statusId)?.name;
   }
 
-  private notify(kind: BoardNotice['kind'], message: string, issue: string, column?: string): void {
-    this._notice.set({ kind, message, issue, column, id: ++this.noticeSeq });
+  private notify(
+    kind: BoardNotice['kind'],
+    message: string,
+    issue: string,
+    column?: string,
+    detail?: string,
+  ): void {
+    this._notice.set({ kind, message, issue, column, detail, id: ++this.noticeSeq });
   }
 
   private setPending(number: number, pending: boolean): void {

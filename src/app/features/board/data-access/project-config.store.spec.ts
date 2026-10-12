@@ -119,6 +119,7 @@ describe('ProjectConfigStore', () => {
           new DomainError({
             status: 409,
             code: 'ALREADY_EXISTS',
+            reason: 'STATUS_NAME_TAKEN',
             message: 'x',
             details: [],
             traceId: null,

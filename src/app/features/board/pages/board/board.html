@@ -46,20 +46,44 @@
       </div>
     </div>
   } @else if (store.error(); as error) {
-    <div class="vrb-empty vrb-empty--bordered vrb-empty--danger" role="alert">
-      <p class="vrb-empty__title">{{ 'board.loadError' | translate }}</p>
-      <p class="vrb-empty__description">{{ error }}</p>
+    <div class="vrb-alert vrb-alert--danger" role="alert">
+      <ui-icon name="alert" />
+      <div class="vrb-alert__body">
+        <p class="vrb-alert__title">{{ 'board.loadError' | translate }}</p>
+        <p class="vrb-alert__description">
+          {{ 'board.loadErrorHint' | translate }}
+          <span class="u-visually-hidden">({{ error }})</span>
+        </p>
+        <div class="vrb-alert__actions">
+          <ui-button size="sm" (pressed)="store.load(projectId())">
+            {{ 'common.retry' | translate }}
+          </ui-button>
+          <a class="vrb-button vrb-button--ghost vrb-button--sm" routerLink="/proyectos">
+            {{ 'board.backToProjects' | translate }}
+          </a>
+        </div>
+      </div>
+    </div>
+  } @else if (empty()) {
+    <div class="vrb-empty vrb-empty--bordered">
+      <p class="vrb-empty__title">{{ 'board.emptyTitle' | translate }}</p>
+      <p class="vrb-empty__description">
+        {{ 'board.emptyText' | translate: { column: store.columns()[0]?.status?.name ?? '' } }}
+      </p>
       <div class="vrb-empty__actions">
-        <ui-button variant="outline" (pressed)="store.load(projectId())">
-          {{ 'common.retry' | translate }}
-        </ui-button>
+        <a class="vrb-button vrb-button--primary board__link" routerLink="issues/nuevo">
+          <ui-icon name="plus" />{{ 'board.newIssue' | translate }}
+        </a>
       </div>
     </div>
   } @else {
     <div class="vrb-cluster vrb-cluster--lg board__info">
       @if (canceledCount(); as canceled) {
         <span class="vrb-cluster vrb-cluster--sm">
-          <ui-icon name="filter" />{{ 'board.canceledHidden' | translate: { count: canceled } }}
+          <ui-icon name="filter" />{{
+            (canceled === 1 ? 'board.canceledHiddenOne' : 'board.canceledHidden')
+              | translate: { count: canceled }
+          }}
         </span>
       }
       <span id="board-shortcut-hint">
@@ -169,6 +193,11 @@
           <p class="vrb-toast__title">
             {{ notice.message | translate: { issue: notice.issue, column: notice.column } }}
           </p>
+          @if (notice.detail) {
+            <p class="vrb-toast__description">
+              {{ notice.detail | translate: { issue: notice.issue, column: notice.column } }}
+            </p>
+          }
         </div>
         <button
           type="button"

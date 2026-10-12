@@ -10,6 +10,12 @@ export interface ApiError {
    * `UNSUPPORTED_MEDIA_TYPE`. Vacío si la respuesta no lo trae.
    */
   code: string;
+  /**
+   * Clave estable del error de dominio (`STALE_ORDER`, `STATUS_NAME_TAKEN`…),
+   * cuando el gateway la expone (`error.reason`, opcional: sólo en 4xx que
+   * dicen algo más que el código). Vacío si no vino.
+   */
+  reason: string;
   message: string;
   details: unknown[];
   /**
@@ -75,6 +81,15 @@ export class DomainError extends Error {
     return this.api.code === 'FAILED_PRECONDITION';
   }
 
+  /**
+   * El servidor rechazó un `:move` porque la vista del tablero está vieja.
+   * Sin `reason` (gateway anterior), cualquier FAILED_PRECONDITION de `:move`
+   * es eso: es la única precondición que tiene.
+   */
+  isStaleOrder(): boolean {
+    return this.api.reason ? this.api.reason === 'STALE_ORDER' : this.isFailedPrecondition();
+  }
+
   isServer(): boolean {
     return this.api.status >= 500;
   }
@@ -92,6 +107,7 @@ export function toDomainError(err: unknown): DomainError {
     return new DomainError({
       status: err.status,
       code: body.code ?? '',
+      reason: body.reason ?? '',
       message: body.message ?? err.message ?? 'Error inesperado',
       details: body.details ?? [],
       traceId: err.headers?.get('X-Trace-Id') ?? body.requestId ?? null,
@@ -100,6 +116,7 @@ export function toDomainError(err: unknown): DomainError {
   return new DomainError({
     status: 0,
     code: '',
+    reason: '',
     message: err instanceof Error ? err.message : 'Error inesperado',
     details: [],
     traceId: null,
@@ -108,13 +125,14 @@ export function toDomainError(err: unknown): DomainError {
 
 interface ErrorBody {
   code?: string;
+  reason?: string;
   message?: string;
   details?: unknown[];
   requestId?: string;
 }
 
 /**
- * El gateway responde `{"error": {"code", "message", "request_id"}}`; se
+ * El gateway responde `{"error": {"code", "message", "reason"?, "request_id"}}`; se
  * acepta también el cuerpo plano (`{"message"}`) de otros backends.
  */
 function gatewayBody(raw: unknown): ErrorBody {
@@ -123,6 +141,7 @@ function gatewayBody(raw: unknown): ErrorBody {
   const body = (nested && typeof nested === 'object' ? nested : raw) as Record<string, unknown>;
   return {
     code: typeof body['code'] === 'string' ? body['code'] : undefined,
+    reason: typeof body['reason'] === 'string' ? body['reason'] : undefined,
     message: typeof body['message'] === 'string' ? body['message'] : undefined,
     details: Array.isArray(body['details']) ? body['details'] : undefined,
     requestId: typeof body['request_id'] === 'string' ? body['request_id'] : undefined,

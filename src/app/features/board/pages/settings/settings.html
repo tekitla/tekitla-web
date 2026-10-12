@@ -4,7 +4,12 @@
       <p class="vrb-page-header__eyebrow">// {{ project.key.toLowerCase() }} · ajustes</p>
     }
     <h1 id="settings-title" class="vrb-page-header__title">{{ 'settings.title' | translate }}</h1>
-    <p class="vrb-page-header__description">{{ 'settings.lead' | translate }}</p>
+    <p class="vrb-page-header__description">
+      {{
+        'settings.lead'
+          | translate: { project: store.project()?.name ?? ('settings.thisProject' | translate) }
+      }}
+    </p>
   </div>
 
   @if (store.loading()) {

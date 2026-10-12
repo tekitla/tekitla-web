@@ -2,8 +2,7 @@ import type { Status } from '@/app/api';
 
 /**
  * Validaciones de Ajustes del lado del cliente (las mismas reglas del
- * backend), para avisar antes de pedir: el gateway todavía no expone el
- * `reason` de los errores, sólo su código y mensaje.
+ * backend), para avisar antes de pedir en lugar de esperar el error.
  */
 
 /** Largo máximo del nombre de un estado o una etiqueta. */

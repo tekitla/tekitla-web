@@ -15,15 +15,25 @@ export interface SettingsError {
   message: string;
 }
 
+/** Textos por `reason` del gateway (`error.reason`). */
+const BY_REASON: Record<string, string> = {
+  STATUS_NAME_TAKEN: 'settings.errors.nameTaken',
+  LABEL_NAME_TAKEN: 'settings.errors.nameTaken',
+  LAST_STATUS_OF_CATEGORY: 'settings.errors.lastOfCategory',
+  STATUS_HAS_ISSUES: 'settings.errors.statusHasIssues',
+};
+
 /**
- * Traduce el error del backend a un texto de Ajustes. El gateway expone el
- * código gRPC pero todavía no el `reason`; por operación, el código alcanza:
+ * Traduce el error del backend a un texto de Ajustes. Primero por `reason`
+ * (si el gateway lo expone); si no vino, por código y operación:
  * ALREADY_EXISTS = nombre repetido; FAILED_PRECONDITION = máximo del proyecto
  * al crear, o último de su categoría / falta destino al borrar un estado.
  */
 export function settingsError(err: DomainError, operation: SettingsOperation): SettingsError {
-  const code = err.api.code;
   const message = err.message;
+  const byReason = BY_REASON[err.api.reason];
+  if (byReason) return { key: byReason, message };
+  const code = err.api.code;
   if (code === 'ALREADY_EXISTS') return { key: 'settings.errors.nameTaken', message };
   if (code === 'FAILED_PRECONDITION') {
     if (operation === 'createStatus') return { key: 'settings.errors.statusLimit', message };

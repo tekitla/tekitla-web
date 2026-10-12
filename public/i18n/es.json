@@ -90,21 +90,27 @@
     "hintMobile": "Usa «Mover» en cada tarjeta para cambiarla de columna.",
     "emptyColumn": "Sin issues",
     "notFound": "No encontramos este proyecto.",
-    "loadError": "No pudimos cargar el tablero.",
+    "loadError": "No pudimos cargar el tablero",
     "card": {
       "move": "Mover",
       "moveLabel": "Mover {{issue}} a otra columna",
       "moveTo": "Mover a {{column}}"
     },
     "notice": {
-      "moved": "{{issue}} pasó a {{column}}.",
-      "reordered": "{{issue}} cambió de lugar en {{column}}.",
-      "moveFailed": "No se pudo mover {{issue}}: volvió a {{column}}. Intenta de nuevo.",
-      "stale": "No se pudo mover {{issue}}: el tablero cambió mientras tanto. Lo recargamos; intenta de nuevo.",
-      "created": "{{issue}} creado en {{column}}."
+      "moved": "{{issue}} pasó a {{column}}",
+      "reordered": "{{issue}} cambió de lugar en {{column}}",
+      "moveFailed": "No se pudo mover {{issue}}",
+      "moveFailedDetail": "Volvió a {{column}}. Intenta de nuevo.",
+      "stale": "El tablero cambió mientras tanto: lo recargamos. Intenta de nuevo.",
+      "created": "{{issue}} creado en {{column}}"
     },
-    "canceledHidden": "Descartados ocultos: {{count}}",
-    "settings": "Ajustes"
+    "canceledHidden": "{{count}} descartados ocultos",
+    "settings": "Ajustes",
+    "loadErrorHint": "Revisa tu conexión e intenta de nuevo.",
+    "backToProjects": "Volver a proyectos",
+    "emptyTitle": "Todavía no hay issues",
+    "emptyText": "Crea el primero y aparecerá en {{column}}.",
+    "canceledHiddenOne": "1 descartado oculto"
   },
   "issue": {
     "priorityLabel": "Prioridad",
@@ -161,7 +167,8 @@
     "errors": {
       "titleRequired": "Escribe un título.",
       "save": "No se pudo guardar."
-    }
+    },
+    "lastChange": "Último cambio"
   },
   "editor": {
     "mode": "Modo del editor",
@@ -176,7 +183,7 @@
       "ISSUE_STATE_TODO": "Por hacer",
       "ISSUE_STATE_IN_PROGRESS": "En curso",
       "ISSUE_STATE_DONE": "Hecho",
-      "ISSUE_STATE_CANCELED": "Descartado"
+      "ISSUE_STATE_CANCELED": "Cancelado"
     }
   },
   "activity": {
@@ -191,7 +198,7 @@
     "to": "a",
     "and": "y",
     "created": "creó el issue",
-    "statusChanged": "lo movió",
+    "statusChanged": "movió el issue",
     "titleChanged": "cambió el título",
     "descriptionChanged": "editó la descripción",
     "priorityChanged": "cambió la prioridad",
@@ -206,11 +213,12 @@
     "commentPlaceholder": "Escribe un comentario",
     "commentHint": "Admite Markdown. Ctrl + Enter para enviar.",
     "commentError": "No se pudo comentar.",
-    "send": "Comentar"
+    "send": "Comentar",
+    "today": "Hoy"
   },
   "settings": {
     "title": "Ajustes del proyecto",
-    "lead": "Lo que cambies aquí aplica a todos los issues del proyecto.",
+    "lead": "Lo que cambies aquí aplica a todos los issues de {{project}}.",
     "loadError": "No pudimos cargar los ajustes.",
     "tabsLabel": "Secciones de ajustes",
     "tabs": {
@@ -258,7 +266,10 @@
       "deleteEmpty": "{{name}} no tiene issues.",
       "lastHint": "Cada categoría necesita al menos un estado: el último de una categoría no se puede eliminar.",
       "preview": "// columnas resultantes",
-      "canceledNote": "Los estados de categoría Descartado nunca se muestran en el tablero."
+      "canceledNote": "Los estados de categoría Cancelado (como Descartado) nunca se muestran en el tablero.",
+      "actions": "Más acciones para {{name}}",
+      "renameItem": "Renombrar",
+      "deleteItem": "Eliminar"
     },
     "labels": {
       "lead": "Las etiquetas clasifican los issues; se ven en las tarjetas del tablero.",
@@ -285,7 +296,10 @@
       "labelLimit": "El proyecto ya tiene el máximo de etiquetas.",
       "cannotDelete": "No se puede eliminar: es el último de su categoría o falta elegir a dónde pasan sus issues.",
       "notFound": "Ya no existe: recarga la página.",
-      "generic": "No se pudo guardar."
-    }
+      "generic": "No se pudo guardar.",
+      "lastOfCategory": "No se puede eliminar: es el último estado de su categoría.",
+      "statusHasIssues": "Tiene issues: elige a qué estado pasan."
+    },
+    "thisProject": "este proyecto"
   }
 }

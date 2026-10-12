@@ -83,6 +83,11 @@ describe('board.logic', () => {
     });
   });
 
+  it('sin statusId ni categoría (UNSPECIFIED) va al primer «Por hacer»', () => {
+    const lost = issue(1, { statusId: '', state: 'ISSUE_STATE_UNSPECIFIED' });
+    expect(statusOf(lost, statuses)?.id).toBe('todo');
+  });
+
   it('statusOf y countByStatus usan el estado concreto', () => {
     const list = [issue(1), issue(2), issue(3, { statusId: 'done', state: 'ISSUE_STATE_DONE' })];
     expect(statusOf(list[2]!, statuses)?.id).toBe('done');

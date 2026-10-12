@@ -7,6 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { TranslatePipe } from '@ngx-translate/core';
 import type { Observable } from 'rxjs';
 
@@ -31,13 +32,13 @@ type Target = 'create' | string;
 
 /**
  * Ajustes › Estados: cada estado es una columna del tablero. Crear (nombre y
- * categoría), renombrar, reordenar (subir/bajar) y borrar pasando sus issues
- * a otro estado. La categoría no cambia después de crear. Se valida del lado
+ * categoría), reordenar (subir/bajar) y, desde el menú «Más acciones» de cada
+ * fila, renombrar y borrar pasando sus issues a otro estado. La categoría no cambia después de crear. Se valida del lado
  * del cliente lo que se puede (nombre, máximo, último de su categoría).
  */
 @Component({
   selector: 'app-status-settings',
-  imports: [Button, Icon, TranslatePipe],
+  imports: [CdkMenuTrigger, CdkMenu, CdkMenuItem, Button, Icon, TranslatePipe],
   templateUrl: './status-settings.html',
   styleUrl: '../settings-table.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -135,7 +136,7 @@ export class StatusSettings {
     if (invalid) return;
     this.run(status.id, 'renameStatus', this.config.renameStatus(status.id, name), () => {
       this.renamingId.set(null);
-      this.focus(`status-rename-${status.id}`);
+      this.focus(`status-actions-${status.id}`);
     });
   }
 
@@ -143,7 +144,7 @@ export class StatusSettings {
     if (event.key === 'Escape') {
       event.preventDefault();
       this.renamingId.set(null);
-      this.focus(`status-rename-${status.id}`);
+      this.focus(`status-actions-${status.id}`);
     }
   }
 
@@ -173,7 +174,7 @@ export class StatusSettings {
 
   protected cancelDelete(status: Status): void {
     this.deletingId.set(null);
-    this.focus(`status-delete-${status.id}`);
+    this.focus(`status-actions-${status.id}`);
   }
 
   protected destinations(status: Status): Status[] {

@@ -66,6 +66,12 @@ export class IssueActivity {
       : event.actorId.slice(0, 2).toUpperCase() || '?';
   }
 
+  /** «Hoy 14:05» para lo de hoy; «6 oct, 10:12» para lo demás (como el diseño). */
+  protected isToday(iso: string): boolean {
+    const date = new Date(iso);
+    return !Number.isNaN(date.getTime()) && date.toDateString() === new Date().toDateString();
+  }
+
   protected submit(): void {
     if (this.posting()) return;
     const body = this.body.value.trim();

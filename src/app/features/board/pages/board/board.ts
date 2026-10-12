@@ -65,6 +65,8 @@ export class Board {
   readonly projectId = input.required<string>();
 
   protected readonly tone = CATEGORY_TONE;
+  /** Ningún issue en el tablero (los descartados no cuentan). */
+  protected readonly empty = computed(() => this.store.columns().every((c) => !c.issues.length));
   protected readonly canceledCount = computed(
     () =>
       this.store.issues().filter((i) => this.store.statusOf(i)?.category === 'ISSUE_STATE_CANCELED')

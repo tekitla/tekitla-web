@@ -202,33 +202,17 @@
               </td>
               <td class="tk-table__num">{{ countOf(status) }}</td>
               <td class="tk-table__actions">
-                <div class="vrb-cluster vrb-cluster--sm vrb-cluster--nowrap vrb-cluster--end">
-                  <button
-                    type="button"
-                    class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
-                    [id]="'status-rename-' + status.id"
-                    [disabled]="!!busy()"
-                    [attr.aria-label]="
-                      'settings.statuses.rename' | translate: { name: status.name }
-                    "
-                    (click)="startRename(status)"
-                  >
-                    <ui-icon name="edit" />
-                  </button>
-                  <button
-                    type="button"
-                    class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
-                    [id]="'status-delete-' + status.id"
-                    [disabled]="isLast(status) || !!busy()"
-                    [attr.aria-label]="
-                      'settings.statuses.delete' | translate: { name: status.name }
-                    "
-                    [attr.aria-describedby]="isLast(status) ? 'status-last-hint' : null"
-                    (click)="startDelete(status)"
-                  >
-                    <ui-icon name="trash" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
+                  [id]="'status-actions-' + status.id"
+                  [disabled]="!!busy()"
+                  [cdkMenuTriggerFor]="actions"
+                  [cdkMenuTriggerData]="{ $implicit: status }"
+                  [attr.aria-label]="'settings.statuses.actions' | translate: { name: status.name }"
+                >
+                  <ui-icon name="more" />
+                </button>
               </td>
             </tr>
             @if (deletingId() === status.id) {
@@ -307,7 +291,7 @@
   </div>
 
   <aside class="settings-layout__aside" aria-labelledby="status-preview-title">
-    <p id="status-preview-title" class="vrb-card__eyebrow">
+    <p id="status-preview-title" class="vrb-page-header__eyebrow">
       {{ 'settings.statuses.preview' | translate }}
     </p>
     <ol class="vrb-stack vrb-stack--sm settings-preview">
@@ -330,3 +314,26 @@
     <p class="vrb-field__hint">{{ 'settings.statuses.canceledNote' | translate }}</p>
   </aside>
 </div>
+
+<ng-template #actions let-status>
+  <div class="vrb-menu" cdkMenu>
+    <button
+      type="button"
+      class="vrb-menu__item"
+      cdkMenuItem
+      (cdkMenuItemTriggered)="startRename(status)"
+    >
+      <ui-icon name="edit" />{{ 'settings.statuses.renameItem' | translate }}
+    </button>
+    <button
+      type="button"
+      class="vrb-menu__item vrb-menu__item--danger"
+      cdkMenuItem
+      [cdkMenuItemDisabled]="isLast(status)"
+      [attr.aria-describedby]="isLast(status) ? 'status-last-hint' : null"
+      (cdkMenuItemTriggered)="startDelete(status)"
+    >
+      <ui-icon name="trash" />{{ 'settings.statuses.deleteItem' | translate }}
+    </button>
+  </div>
+</ng-template>

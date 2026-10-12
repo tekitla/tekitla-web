@@ -169,6 +169,9 @@
               @if (notice.kind === 'error') {
                 <p class="vrb-field__error" role="alert">
                   {{ notice.message | translate: { issue: notice.issue, column: notice.column } }}
+                  @if (notice.detail) {
+                    {{ notice.detail | translate: { issue: notice.issue, column: notice.column } }}
+                  }
                 </p>
               }
             }
@@ -250,7 +253,9 @@
             @if (store.project(); as project) {
               <dt>{{ 'issueDetail.project' | translate }}</dt>
               <dd class="vrb-cluster vrb-cluster--sm">
-                <span class="tk-avatar" aria-hidden="true">{{ project.key.slice(0, 2) }}</span>
+                <span class="tk-avatar tk-avatar--accent" aria-hidden="true">{{
+                  project.key.slice(0, 2)
+                }}</span>
                 {{ project.name }}
               </dd>
             }
@@ -263,7 +268,7 @@
               </dd>
             }
             @if (issue.updatedAt) {
-              <dt>{{ 'issueDetail.updated' | translate }}</dt>
+              <dt>{{ 'issueDetail.lastChange' | translate }}</dt>
               <dd>
                 <time [attr.datetime]="issue.updatedAt">{{ issue.updatedAt | date: 'short' }}</time>
               </dd>

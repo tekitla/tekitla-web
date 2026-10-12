@@ -56,6 +56,7 @@ describe('ProjectsStore', () => {
           new DomainError({
             status: 409,
             code: 'ALREADY_EXISTS',
+            reason: 'PROJECT_KEY_TAKEN',
             message: 'exists',
             details: [],
             traceId: null,

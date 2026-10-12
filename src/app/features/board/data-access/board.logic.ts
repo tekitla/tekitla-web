@@ -67,12 +67,15 @@ export function isBoardStatus(status: Status): boolean {
 
 /**
  * Estado de un issue. Si su `statusId` no está en la lista (vino de un
- * backend viejo o el estado se acaba de borrar), el primero de su categoría.
+ * backend viejo o el estado se acaba de borrar), el primero de su categoría;
+ * sin categoría (UNSPECIFIED, omitida por grpc-gateway), el primero de «Por
+ * hacer», como en la rebanada 1.
  */
 export function statusOf(issue: Issue, statuses: readonly Status[]): Status | null {
+  const category = issue.state === 'ISSUE_STATE_UNSPECIFIED' ? 'ISSUE_STATE_TODO' : issue.state;
   return (
     statuses.find((s) => s.id === issue.statusId) ??
-    sortStatuses(statuses).find((s) => s.category === issue.state) ??
+    sortStatuses(statuses).find((s) => s.category === category) ??
     null
   );
 }
