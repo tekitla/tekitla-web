@@ -303,10 +303,12 @@
           "
         >
           <header class="vrb-kanban__header">
+            @let category = 'status.category.' + status.category | translate;
             <span class="vrb-kanban__title">{{ status.name }}</span>
-            <span class="vrb-kanban__category">
-              {{ 'status.category.' + status.category | translate }}
-            </span>
+            <!-- Como en el tablero: la categoría sólo si el nombre no la dice. -->
+            @if (category !== status.name) {
+              <span class="vrb-kanban__category">{{ category }}</span>
+            }
           </header>
         </li>
       }

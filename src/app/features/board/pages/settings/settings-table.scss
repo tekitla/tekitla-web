@@ -75,7 +75,8 @@
   width: 1%;
 }
 
-.tk-table__num {
+// Más específico que `.tk-table th/td` (que alinea a la izquierda).
+.tk-table .tk-table__num {
   font-family: var(--vrb-font-mono);
   text-align: right;
 }

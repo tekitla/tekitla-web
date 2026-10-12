@@ -70,3 +70,11 @@
   padding: 0;
   border: 0;
 }
+
+// .vrb-card__header es grid: el título y su acción, en una fila.
+.issue-detail__card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}

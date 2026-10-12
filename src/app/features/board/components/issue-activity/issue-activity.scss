@@ -67,3 +67,11 @@
   padding-block: var(--space-2);
   resize: vertical;
 }
+
+// .vrb-card__header es grid: el título y el filtro, en una fila.
+.activity__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
