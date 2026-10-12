@@ -3,21 +3,45 @@ import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
 
 import { RestClient } from '../rest/rest.client';
 import type {
-  BoardState,
+  Comment,
   CreateIssueRequest,
+  CreateLabelRequest,
   CreateProjectRequest,
+  CreateStatusRequest,
   Issue,
+  IssueEvent,
+  Label,
+  ListIssueEventsResponse,
   ListIssuesRequest,
   ListIssuesResponse,
   ListProjectsResponse,
+  MoveIssueRequest,
   PageRequest,
   Project,
+  RawCommentEnvelope,
   RawIssueEnvelope,
+  RawLabelEnvelope,
+  RawListIssueEventsResponse,
   RawListIssuesResponse,
+  RawListLabelsResponse,
   RawListProjectsResponse,
+  RawListStatusesResponse,
   RawProjectEnvelope,
+  RawStatusEnvelope,
+  Status,
+  UpdateIssueRequest,
+  UpdateLabelRequest,
+  UpdateStatusRequest,
 } from './issues.contracts';
-import { toIssue, toPage, toProject } from './issues.mappers';
+import {
+  toComment,
+  toIssue,
+  toIssueEvent,
+  toLabel,
+  toPage,
+  toProject,
+  toStatus,
+} from './issues.mappers';
 
 const PROJECTS = '/v1/projects';
 
@@ -79,7 +103,7 @@ export class IssuesClient {
 
   getIssue(projectId: string, number: number): Observable<Issue> {
     return this.rest
-      .get<RawIssueEnvelope>(`${issuesPath(projectId)}/${number}`)
+      .get<RawIssueEnvelope>(issuePath(projectId, number))
       .pipe(map((res) => toIssue(res.issue)));
   }
 
@@ -89,15 +113,131 @@ export class IssuesClient {
       .pipe(map((res) => toIssue(res.issue)));
   }
 
-  moveIssue(projectId: string, number: number, state: BoardState): Observable<Issue> {
+  /** Cambia de estado y, con vecinos, de lugar en la columna (ver `MoveIssueRequest`). */
+  moveIssue(projectId: string, number: number, req: MoveIssueRequest): Observable<Issue> {
+    const body = {
+      statusId: req.statusId,
+      afterNumber: req.afterNumber || undefined,
+      beforeNumber: req.beforeNumber || undefined,
+    };
     return this.rest
-      .post<RawIssueEnvelope>(`${issuesPath(projectId)}/${number}:move`, { state })
+      .post<RawIssueEnvelope>(`${issuePath(projectId, number)}:move`, body)
       .pipe(map((res) => toIssue(res.issue)));
+  }
+
+  /** Edita solo lo que viene; `labelIds` va como `labels: {ids}` (presencia en el proto). */
+  updateIssue(projectId: string, number: number, req: UpdateIssueRequest): Observable<Issue> {
+    const { labelIds, ...rest } = req;
+    const body = labelIds ? { ...rest, labels: { ids: labelIds } } : rest;
+    return this.rest
+      .patch<RawIssueEnvelope>(issuePath(projectId, number), body)
+      .pipe(map((res) => toIssue(res.issue)));
+  }
+
+  createComment(projectId: string, number: number, body: string): Observable<Comment> {
+    return this.rest
+      .post<RawCommentEnvelope>(`${issuePath(projectId, number)}/comments`, { body })
+      .pipe(map((res) => toComment(res.comment)));
+  }
+
+  listIssueEvents(
+    projectId: string,
+    number: number,
+    page: PageRequest = {},
+  ): Observable<ListIssueEventsResponse> {
+    return this.rest
+      .get<RawListIssueEventsResponse>(`${issuePath(projectId, number)}/events`, {
+        params: pageParams(page),
+      })
+      .pipe(
+        map((res) => ({ events: (res.events ?? []).map(toIssueEvent), page: toPage(res.page) })),
+      );
+  }
+
+  /** Todo el historial de un issue (todas las páginas), del más viejo al más nuevo. */
+  listAllIssueEvents(projectId: string, number: number): Observable<IssueEvent[]> {
+    return collectPages((cursor) =>
+      this.listIssueEvents(projectId, number, { cursor, limit: BULK_PAGE_LIMIT }).pipe(
+        map((res) => ({ items: res.events, page: res.page })),
+      ),
+    );
+  }
+
+  // ── Estados (columnas) ────────────────────────────────────────────────────
+
+  /** Sin paginar (máximo 20), en el orden de las columnas. */
+  listStatuses(projectId: string): Observable<Status[]> {
+    return this.rest
+      .get<RawListStatusesResponse>(`${projectPath(projectId)}/statuses`)
+      .pipe(map((res) => (res.statuses ?? []).map(toStatus)));
+  }
+
+  createStatus(projectId: string, req: CreateStatusRequest): Observable<Status> {
+    return this.rest
+      .post<RawStatusEnvelope>(`${projectPath(projectId)}/statuses`, req)
+      .pipe(map((res) => toStatus(res.status)));
+  }
+
+  updateStatus(projectId: string, statusId: string, req: UpdateStatusRequest): Observable<Status> {
+    return this.rest
+      .patch<RawStatusEnvelope>(statusPath(projectId, statusId), req)
+      .pipe(map((res) => toStatus(res.status)));
+  }
+
+  /** Borra el estado y pasa sus issues a `moveToStatusId` (obligatorio si tiene issues). */
+  deleteStatus(projectId: string, statusId: string, moveToStatusId?: string): Observable<void> {
+    return this.rest
+      .delete<unknown>(statusPath(projectId, statusId), {
+        params: { moveToStatusId: moveToStatusId || undefined },
+      })
+      .pipe(map(() => undefined));
+  }
+
+  // ── Etiquetas ─────────────────────────────────────────────────────────────
+
+  /** Sin paginar (máximo 100), por nombre. */
+  listLabels(projectId: string): Observable<Label[]> {
+    return this.rest
+      .get<RawListLabelsResponse>(`${projectPath(projectId)}/labels`)
+      .pipe(map((res) => (res.labels ?? []).map(toLabel)));
+  }
+
+  createLabel(projectId: string, req: CreateLabelRequest): Observable<Label> {
+    return this.rest
+      .post<RawLabelEnvelope>(`${projectPath(projectId)}/labels`, req)
+      .pipe(map((res) => toLabel(res.label)));
+  }
+
+  updateLabel(projectId: string, labelId: string, req: UpdateLabelRequest): Observable<Label> {
+    return this.rest
+      .patch<RawLabelEnvelope>(labelPath(projectId, labelId), req)
+      .pipe(map((res) => toLabel(res.label)));
+  }
+
+  /** Borra la etiqueta y la quita de todos los issues. */
+  deleteLabel(projectId: string, labelId: string): Observable<void> {
+    return this.rest.delete<unknown>(labelPath(projectId, labelId)).pipe(map(() => undefined));
   }
 }
 
+function projectPath(projectId: string): string {
+  return `${PROJECTS}/${encodeURIComponent(projectId)}`;
+}
+
 function issuesPath(projectId: string): string {
-  return `${PROJECTS}/${encodeURIComponent(projectId)}/issues`;
+  return `${projectPath(projectId)}/issues`;
+}
+
+function issuePath(projectId: string, number: number): string {
+  return `${issuesPath(projectId)}/${number}`;
+}
+
+function statusPath(projectId: string, statusId: string): string {
+  return `${projectPath(projectId)}/statuses/${encodeURIComponent(statusId)}`;
+}
+
+function labelPath(projectId: string, labelId: string): string {
+  return `${projectPath(projectId)}/labels/${encodeURIComponent(labelId)}`;
 }
 
 /** grpc-gateway lee los campos de mensajes anidados con notación de punto. */

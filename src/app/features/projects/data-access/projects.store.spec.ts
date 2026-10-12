@@ -52,7 +52,14 @@ describe('ProjectsStore', () => {
     client.listAllProjects.mockReturnValue(of([project('1', 'Tekitla')]));
     client.createProject.mockReturnValue(
       throwError(
-        () => new DomainError({ status: 409, message: 'exists', details: [], traceId: null }),
+        () =>
+          new DomainError({
+            status: 409,
+            code: 'ALREADY_EXISTS',
+            message: 'exists',
+            details: [],
+            traceId: null,
+          }),
       ),
     );
     store.load();

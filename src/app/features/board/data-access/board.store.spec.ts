@@ -30,7 +30,7 @@ const issue = (number: number, patch: Partial<Issue> = {}): Issue => ({
 });
 
 const apiError = (status: number) =>
-  new DomainError({ status, message: `HTTP ${status}`, details: [], traceId: null });
+  new DomainError({ status, code: '', message: `HTTP ${status}`, details: [], traceId: null });
 
 type ClientMock = Record<
   'listAllProjects' | 'listAllIssues' | 'moveIssue' | 'createIssue' | 'getIssue',

@@ -4,9 +4,18 @@ import { HttpErrorResponse } from '@angular/common/http';
 export interface ApiError {
   /** HTTP status (0 = sin respuesta: red caída, CORS, DNS). */
   status: number;
+  /**
+   * Código del gateway (`{"error": {"code": ...}}`): el nombre del código gRPC
+   * (`FAILED_PRECONDITION`, `ALREADY_EXISTS`…) o `PAYLOAD_TOO_LARGE` /
+   * `UNSUPPORTED_MEDIA_TYPE`. Vacío si la respuesta no lo trae.
+   */
+  code: string;
   message: string;
   details: unknown[];
-  /** Header `X-Trace-Id`, para correlacionar con los logs del backend. */
+  /**
+   * Header `X-Trace-Id` o el `request_id` del gateway, para correlacionar con
+   * los logs del backend.
+   */
   traceId: string | null;
 }
 
@@ -58,6 +67,14 @@ export class DomainError extends Error {
     return this.api.status === 429;
   }
 
+  /**
+   * El estado ya no permite la operación (gRPC `FAILED_PRECONDITION`, que el
+   * gateway responde como 400): p. ej. mover con una vista vieja del tablero.
+   */
+  isFailedPrecondition(): boolean {
+    return this.api.code === 'FAILED_PRECONDITION';
+  }
+
   isServer(): boolean {
     return this.api.status >= 500;
   }
@@ -71,18 +88,43 @@ export function isDomainError(err: unknown): err is DomainError {
 export function toDomainError(err: unknown): DomainError {
   if (err instanceof DomainError) return err;
   if (err instanceof HttpErrorResponse) {
-    const body = (err.error ?? {}) as { message?: string; details?: unknown[] };
+    const body = gatewayBody(err.error);
     return new DomainError({
       status: err.status,
+      code: body.code ?? '',
       message: body.message ?? err.message ?? 'Error inesperado',
       details: body.details ?? [],
-      traceId: err.headers?.get('X-Trace-Id') ?? null,
+      traceId: err.headers?.get('X-Trace-Id') ?? body.requestId ?? null,
     });
   }
   return new DomainError({
     status: 0,
+    code: '',
     message: err instanceof Error ? err.message : 'Error inesperado',
     details: [],
     traceId: null,
   });
+}
+
+interface ErrorBody {
+  code?: string;
+  message?: string;
+  details?: unknown[];
+  requestId?: string;
+}
+
+/**
+ * El gateway responde `{"error": {"code", "message", "request_id"}}`; se
+ * acepta también el cuerpo plano (`{"message"}`) de otros backends.
+ */
+function gatewayBody(raw: unknown): ErrorBody {
+  if (!raw || typeof raw !== 'object') return {};
+  const nested = (raw as { error?: unknown }).error;
+  const body = (nested && typeof nested === 'object' ? nested : raw) as Record<string, unknown>;
+  return {
+    code: typeof body['code'] === 'string' ? body['code'] : undefined,
+    message: typeof body['message'] === 'string' ? body['message'] : undefined,
+    details: Array.isArray(body['details']) ? body['details'] : undefined,
+    requestId: typeof body['request_id'] === 'string' ? body['request_id'] : undefined,
+  };
 }
