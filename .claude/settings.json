@@ -31,7 +31,6 @@
       "Bash(firebase deploy:*)",
       "Bash(npx firebase-tools deploy:*)",
       "Bash(npm run deploy:*)",
-      "Bash(git push:*)",
       "Bash(docker push:*)",
       "Read(./**/*.pem)",
       "Read(./**/*.key)",

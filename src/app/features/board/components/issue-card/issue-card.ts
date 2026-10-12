@@ -3,24 +3,27 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { BOARD_STATES, type BoardState, type Issue } from '@/app/api';
+import type { Issue, Label, Status } from '@/app/api';
 import { Icon } from '@/app/ui/components/icon/icon';
-import { adjacentState, columnOf, issueKey } from '../../data-access/board.logic';
+import { CATEGORY_TONE, LABEL_TONE, isBoardStatus, issueKey } from '../../data-access/board.logic';
 import { KANBAN_PRIORITY, PRIORITY_LEVEL } from '../priority-badge/priority-badge';
 
-/** Pedido de mover una tarjeta, con el origen (para devolver el foco). */
-export interface MoveRequest {
-  number: number;
-  to: BoardState;
-  via: 'menu' | 'keyboard';
-}
+/**
+ * Pedido de mover una tarjeta. Desde el menú: a otro estado (conserva su
+ * rank). Con el teclado: a la columna vecina (`column`) o un lugar arriba o
+ * abajo en la suya (`row`); el tablero lo traduce a estado y posición.
+ */
+export type MoveRequest =
+  | { number: number; via: 'menu'; statusId: string }
+  | { number: number; via: 'keyboard'; axis: 'column' | 'row'; direction: -1 | 1 };
 
 /**
- * Tarjeta de un issue en el tablero (`vrb-kanban-card`). Toda la tarjeta lleva al detalle (el enlace
- * se estira con un pseudo-elemento) y tiene un botón «Mover» con menú: en
- * pantallas táctiles es LA forma de mover (arrastrar ahí es incómodo), y en
- * desktop es la alternativa accesible al drag & drop. Con el foco en la tarjeta,
- * Shift+← / Shift+→ la mueve a la columna vecina.
+ * Tarjeta de un issue en el tablero (`vrb-kanban-card`). Toda la tarjeta lleva
+ * al detalle (el enlace se estira con un pseudo-elemento) y tiene un botón
+ * «Mover» con menú: en pantallas táctiles es LA forma de mover (arrastrar ahí
+ * es incómodo), y en desktop es la alternativa accesible al drag & drop. Con
+ * el foco en la tarjeta, Shift+← / Shift+→ la pasa a la columna vecina y
+ * Shift+↑ / Shift+↓ la sube o baja en la suya.
  */
 @Component({
   selector: 'app-issue-card',
@@ -33,16 +36,31 @@ export class IssueCard {
   readonly issue = input.required<Issue>();
   readonly projectId = input.required<string>();
   readonly projectKey = input.required<string>();
+  /** Estado actual de la tarjeta (su columna). */
+  readonly statusId = input.required<string>();
+  /** Todos los estados del proyecto, en orden: los destinos del menú. */
+  readonly statuses = input.required<readonly Status[]>();
+  readonly labelsById = input.required<ReadonlyMap<string, Label>>();
   readonly pending = input(false);
 
   readonly move = output<MoveRequest>();
 
+  protected readonly categoryTone = CATEGORY_TONE;
+  protected readonly labelTone = LABEL_TONE;
   protected readonly key = computed(() => issueKey(this.projectKey(), this.issue().number));
-  protected readonly column = computed(() => columnOf(this.issue()));
   protected readonly level = computed(() => PRIORITY_LEVEL[this.issue().priority]);
   protected readonly kanbanPriority = computed(() => KANBAN_PRIORITY[this.level()]);
-  /** Destinos del menú: las otras dos columnas. */
-  protected readonly targets = computed(() => BOARD_STATES.filter((s) => s !== this.column()));
+  /** Etiquetas del issue que existen en el proyecto (ordenadas por nombre, como llegan). */
+  protected readonly labels = computed(() =>
+    this.issue()
+      .labelIds.map((id) => this.labelsById().get(id))
+      .filter((l): l is Label => !!l),
+  );
+  /** Destinos del menú: las otras columnas y, aparte, los estados de descarte. */
+  protected readonly targets = computed(() => {
+    const others = this.statuses().filter((s) => s.id !== this.statusId());
+    return { board: others.filter(isBoardStatus), closed: others.filter((s) => !isBoardStatus(s)) };
+  });
   protected readonly link = computed(() => [
     '/proyectos',
     this.projectId(),
@@ -50,17 +68,23 @@ export class IssueCard {
     this.issue().number,
   ]);
 
-  protected moveTo(to: BoardState): void {
-    this.move.emit({ number: this.issue().number, to, via: 'menu' });
+  protected moveTo(statusId: string): void {
+    this.move.emit({ number: this.issue().number, via: 'menu', statusId });
   }
 
   protected onKeydown(event: KeyboardEvent): void {
     if (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
-    const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
-    if (direction === 0) return;
+    const keys: Record<string, ['column' | 'row', -1 | 1]> = {
+      ArrowLeft: ['column', -1],
+      ArrowRight: ['column', 1],
+      ArrowUp: ['row', -1],
+      ArrowDown: ['row', 1],
+    };
+    const key = keys[event.key];
+    if (!key) return;
     event.preventDefault();
-    const column = this.column();
-    const to = column && adjacentState(column, direction);
-    if (to && !this.pending()) this.move.emit({ number: this.issue().number, to, via: 'keyboard' });
+    if (this.pending()) return;
+    const [axis, direction] = key;
+    this.move.emit({ number: this.issue().number, via: 'keyboard', axis, direction });
   }
 }

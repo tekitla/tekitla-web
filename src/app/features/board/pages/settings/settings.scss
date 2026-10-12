@@ -1,0 +1,18 @@
+// Pestañas, tarjetas y estados de la vista salen de vrb.
+.settings__skeleton {
+  height: 240px;
+  border-radius: var(--vrb-radius-card);
+}
+
+// Las pestañas son enlaces (una ruta cada una): sin subrayado, y la activa
+// con el aspecto de `.vrb-tabs__tab[aria-selected='true']` (aria-selected no
+// vale en un enlace; se marca con aria-current).
+.vrb-tabs__tab {
+  text-decoration: none;
+
+  &[aria-current='page'] {
+    background: var(--vrb-bg);
+    color: var(--vrb-fg);
+    box-shadow: var(--vrb-shadow-raise);
+  }
+}
