@@ -9,11 +9,11 @@ export const environment: AppEnvironment = {
   // Config web de Firebase (NO es secreta: termina en el bundle). Copiar de
   // Consola de Firebase › Configuración del proyecto (⚙) › General › Tus apps ›
   // app web de tekitla-app › «Configuración del SDK» (objeto firebaseConfig).
-  // Mientras queden los REEMPLAZAR, el login muestra un aviso y no intenta entrar.
+  // App web «tekitla-web», registrada el 2026-10-12 (firebase apps:sdkconfig WEB).
   firebase: {
-    apiKey: 'REEMPLAZAR_API_KEY',
+    apiKey: 'AIzaSyBkK6lhxg2dU0aX8Jqr-2VEfKGlx7319E8',
     authDomain: 'tekitla-app.firebaseapp.com',
     projectId: 'tekitla-app',
-    appId: 'REEMPLAZAR_APP_ID',
+    appId: '1:956518569612:web:a8c772d7abd450dbcc0da9',
   },
 };
