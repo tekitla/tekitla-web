@@ -16,3 +16,10 @@ paths = [
   '''(^|/)package-lock\.json$''',
   '''(^|/)gradle/verification-metadata\.xml$''',
 ]
+
+[[allowlists]]
+description = "Atributo aria-keyshortcuts (atajos de teclado como Shift+ArrowLeft, no una clave): la regla generic-api-key lo toma por el «key» del nombre"
+regexTarget = "line"
+regexes = [
+  '''aria-keyshortcuts="[A-Za-z+ ]*"''',
+]
