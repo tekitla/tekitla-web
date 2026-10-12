@@ -17,9 +17,13 @@ paths = [
   '''(^|/)gradle/verification-metadata\.xml$''',
 ]
 
+# El atributo aria-keyshortcuts (atajos de teclado como «Shift+ArrowLeft»)
+# no es una clave: generic-api-key lo toma por el «key» del nombre. Se mira
+# sólo el match del hallazgo, no la línea: una clave real en la misma línea se
+# sigue detectando.
 [[allowlists]]
-description = "Atributo aria-keyshortcuts (atajos de teclado como Shift+ArrowLeft, no una clave): la regla generic-api-key lo toma por el «key» del nombre"
-regexTarget = "line"
+description = "Atributo aria-keyshortcuts (atajos de teclado, no una clave)"
+regexTarget = "match"
 regexes = [
-  '''aria-keyshortcuts="[A-Za-z+ ]*"''',
+  '''^aria-keyshortcuts="[A-Za-z+ ]*"?$''',
 ]
