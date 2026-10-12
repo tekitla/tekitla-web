@@ -1,16 +1,7 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Injector,
-  afterNextRender,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import type { Observable } from 'rxjs';
 
-import { type DomainError, LABEL_COLORS, type Label, type LabelColor } from '@/app/api';
+import { LABEL_COLORS, type Label, type LabelColor } from '@/app/api';
 import { Button } from '@/app/ui/components/button/button';
 import { Icon } from '@/app/ui/components/icon/icon';
 import { LABEL_TONE } from '../../../data-access/board.logic';
@@ -22,12 +13,9 @@ import {
   type NameError,
   nameError,
 } from '../../../data-access/settings.logic';
-import { type SettingsError, type SettingsOperation, settingsError } from '../settings-error';
+import { SettingsSection } from '../settings-section';
 
 type Color = Exclude<LabelColor, 'LABEL_COLOR_UNSPECIFIED'>;
-
-/** Qué fila (o el alta) está ocupada o mostrando un error. */
-type Target = 'create' | string;
 
 /**
  * Ajustes › Etiquetas: crear (nombre y color, un tono del design system),
@@ -40,10 +28,9 @@ type Target = 'create' | string;
   styleUrl: '../settings-table.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LabelSettings {
+export class LabelSettings extends SettingsSection {
   private readonly board = inject(BoardStore);
   private readonly config = inject(ProjectConfigStore);
-  private readonly injector = inject(Injector);
 
   protected readonly tone = LABEL_TONE;
   protected readonly colors = LABEL_COLORS;
@@ -61,9 +48,6 @@ export class LabelSettings {
     return counts;
   });
 
-  protected readonly busy = signal<Target | null>(null);
-  protected readonly error = signal<{ target: Target; error: SettingsError } | null>(null);
-
   // Alta
   protected readonly newName = signal('');
   protected readonly newColor = signal<Color>('LABEL_COLOR_NEUTRAL');
@@ -77,11 +61,6 @@ export class LabelSettings {
 
   // Borrar
   protected readonly deletingId = signal<string | null>(null);
-
-  protected errorFor(target: Target): SettingsError | null {
-    const error = this.error();
-    return error?.target === target ? error.error : null;
-  }
 
   protected usageOf(label: Label): number {
     return this.usage().get(label.id) ?? 0;
@@ -159,42 +138,5 @@ export class LabelSettings {
       this.board.refresh();
       this.focus('label-new-name');
     });
-  }
-
-  private run<T>(
-    target: Target,
-    operation: SettingsOperation,
-    request: Observable<T>,
-    done: () => void,
-  ): void {
-    if (this.busy()) return;
-    this.busy.set(target);
-    this.clearError(target);
-    request.subscribe({
-      next: () => {
-        this.busy.set(null);
-        done();
-      },
-      error: (err: DomainError) => {
-        this.busy.set(null);
-        this.error.set({ target, error: settingsError(err, operation) });
-      },
-      complete: () => this.busy.set(null),
-    });
-  }
-
-  private clearError(target: Target): void {
-    if (this.error()?.target === target) this.error.set(null);
-  }
-
-  private focus(id: string, select = false): void {
-    afterNextRender(
-      () => {
-        const el = document.getElementById(id);
-        el?.focus();
-        if (select && el instanceof HTMLInputElement) el.select();
-      },
-      { injector: this.injector },
-    );
   }
 }

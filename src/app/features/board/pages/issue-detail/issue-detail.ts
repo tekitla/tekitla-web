@@ -71,6 +71,7 @@ export class IssueDetail {
   protected readonly store = inject(BoardStore);
   private readonly activity = inject(IssueActivityStore);
   private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly projectId = input.required<string>();
   readonly number = input.required({ transform: numberAttribute });
@@ -198,19 +199,31 @@ export class IssueDetail {
 
   protected setPriority(priority: Exclude<Priority, 'PRIORITY_UNSPECIFIED'>): void {
     if (priority === this.store.selected()?.priority) return;
-    this.save('priority', { priority });
+    this.save('priority', { priority }, undefined, () => this.syncPriority());
   }
 
   protected hasLabel(labelId: string): boolean {
     return this.store.selected()?.labelIds.includes(labelId) ?? false;
   }
 
-  protected toggleLabel(labelId: string, checked: boolean): void {
+  protected toggleLabel(input: HTMLInputElement, labelId: string): void {
     const current = this.store.selected()?.labelIds ?? [];
-    const labelIds = checked
+    const labelIds = input.checked
       ? [...new Set([...current, labelId])]
       : current.filter((id) => id !== labelId);
-    this.save('labels', { labelIds });
+    this.save('labels', { labelIds }, undefined, () => (input.checked = this.hasLabel(labelId)));
+  }
+
+  /**
+   * Vuelve a marcar la prioridad guardada. `[checked]` no se reaplica si su
+   * valor no cambió, así que tras un rechazo hay que corregir el DOM a mano.
+   */
+  private syncPriority(): void {
+    const current = this.store.selected()?.priority;
+    const radios = this.host.nativeElement.querySelectorAll<HTMLInputElement>(
+      'input[name="issue-priority"]',
+    );
+    for (const radio of radios) radio.checked = radio.value === current;
   }
 
   protected errorFor(field: Field): string | null {
@@ -218,8 +231,21 @@ export class IssueDetail {
     return error?.field === field ? error.message : null;
   }
 
-  private save(field: Field, req: UpdateIssueRequest, done?: () => void): void {
-    if (this.saving()) return;
+  /**
+   * Guarda un campo. Uno a la vez: mientras guarda, los controles de la barra
+   * lateral quedan deshabilitados. `revert` deja el control como el dato
+   * guardado si el pedido no sale o el servidor lo rechaza.
+   */
+  private save(
+    field: Field,
+    req: UpdateIssueRequest,
+    done?: () => void,
+    revert?: () => void,
+  ): void {
+    if (this.saving()) {
+      revert?.();
+      return;
+    }
     this.saving.set(field);
     this.clearError(field);
     this.store.update(this.number(), req).subscribe({
@@ -230,6 +256,7 @@ export class IssueDetail {
       error: (err: DomainError) => {
         this.saving.set(null);
         this.fieldError.set({ field, message: err.message });
+        revert?.();
       },
     });
   }

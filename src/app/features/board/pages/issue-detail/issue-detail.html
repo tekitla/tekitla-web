@@ -185,7 +185,7 @@
               class="vrb-segmented vrb-segmented--sm issue-detail__segmented"
               aria-labelledby="issue-priority-label"
               aria-describedby="issue-priority-error"
-              [disabled]="saving() === 'priority'"
+              [disabled]="saving() !== null"
               [attr.aria-busy]="saving() === 'priority' || null"
             >
               @for (priority of priorities; track priority) {
@@ -193,6 +193,7 @@
                   <input
                     type="radio"
                     name="issue-priority"
+                    [value]="priority"
                     [checked]="issue.priority === priority"
                     (change)="setPriority(priority)"
                   />
@@ -213,7 +214,7 @@
           <fieldset
             class="vrb-field issue-detail__labels"
             aria-describedby="issue-labels-error"
-            [disabled]="saving() === 'labels'"
+            [disabled]="saving() !== null"
             [attr.aria-busy]="saving() === 'labels' || null"
           >
             <legend class="vrb-field__label">{{ 'issue.labels' | translate }}</legend>
@@ -223,7 +224,7 @@
                   type="checkbox"
                   class="vrb-check__input"
                   [checked]="hasLabel(label.id)"
-                  (change)="toggleLabel(label.id, $any($event.target).checked)"
+                  (change)="toggleLabel($any($event.target), label.id)"
                 />
                 <span class="vrb-check__box" aria-hidden="true"></span>
                 <span

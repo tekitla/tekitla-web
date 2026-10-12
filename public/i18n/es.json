@@ -102,7 +102,10 @@
       "moveFailed": "No se pudo mover {{issue}}",
       "moveFailedDetail": "Volvió a {{column}}. Intenta de nuevo.",
       "stale": "El tablero cambió mientras tanto: lo recargamos. Intenta de nuevo.",
-      "created": "{{issue}} creado en {{column}}"
+      "created": "{{issue}} creado en {{column}}",
+      "refreshFailed": "No pudimos actualizar el tablero. Lo que ves puede estar desactualizado.",
+      "createdNoColumn": "{{issue}} creado",
+      "retry": "Intenta de nuevo."
     },
     "canceledHidden": "{{count}} descartados ocultos",
     "settings": "Ajustes",

@@ -1,17 +1,8 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Injector,
-  afterNextRender,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { TranslatePipe } from '@ngx-translate/core';
-import type { Observable } from 'rxjs';
 
-import { type DomainError, STATUS_CATEGORIES, type Status, type StatusCategory } from '@/app/api';
+import { STATUS_CATEGORIES, type Status, type StatusCategory } from '@/app/api';
 import { Button } from '@/app/ui/components/button/button';
 import { Icon } from '@/app/ui/components/icon/icon';
 import { CATEGORY_TONE, countByStatus, isBoardStatus } from '../../../data-access/board.logic';
@@ -25,10 +16,7 @@ import {
   isLastOfCategory,
   nameError,
 } from '../../../data-access/settings.logic';
-import { type SettingsError, settingsError } from '../settings-error';
-
-/** Qué fila (o el alta) está ocupada o mostrando un error. */
-type Target = 'create' | string;
+import { SettingsSection } from '../settings-section';
 
 /**
  * Ajustes › Estados: cada estado es una columna del tablero. Crear (nombre y
@@ -43,10 +31,9 @@ type Target = 'create' | string;
   styleUrl: '../settings-table.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class StatusSettings {
+export class StatusSettings extends SettingsSection {
   protected readonly board = inject(BoardStore);
   private readonly config = inject(ProjectConfigStore);
-  private readonly injector = inject(Injector);
 
   protected readonly tone = CATEGORY_TONE;
   protected readonly categories = STATUS_CATEGORIES;
@@ -57,9 +44,6 @@ export class StatusSettings {
   protected readonly columns = this.config.boardStatuses;
   protected readonly counts = computed(() => countByStatus(this.board.issues(), this.statuses()));
   protected readonly full = computed(() => this.statuses().length >= MAX_STATUSES);
-
-  protected readonly busy = signal<Target | null>(null);
-  protected readonly error = signal<{ target: Target; error: SettingsError } | null>(null);
 
   // Alta
   protected readonly creating = signal(false);
@@ -82,11 +66,6 @@ export class StatusSettings {
 
   protected countOf(status: Status): number {
     return this.counts().get(status.id) ?? 0;
-  }
-
-  protected errorFor(target: Target): SettingsError | null {
-    const error = this.error();
-    return error?.target === target ? error.error : null;
   }
 
   protected isBoard(status: Status): boolean {
@@ -182,52 +161,14 @@ export class StatusSettings {
   }
 
   protected remove(status: Status): void {
-    const moveTo = this.countOf(status) > 0 ? this.deleteTarget() : undefined;
+    // El destino viaja siempre: el conteo local puede estar viejo (otro
+    // cliente sumó issues) y el servidor lo ignora si el estado está vacío.
+    const moveTo = this.deleteTarget() || undefined;
     this.run(status.id, 'deleteStatus', this.config.deleteStatus(status.id, moveTo), () => {
       this.deletingId.set(null);
       // Sus issues pasaron a otro estado en el servidor: el tablero se refresca.
       this.board.refresh();
       this.focus('status-new');
     });
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-
-  private run<T>(
-    target: Target,
-    operation: Parameters<typeof settingsError>[1],
-    request: Observable<T>,
-    done: () => void,
-  ): void {
-    if (this.busy()) return;
-    this.busy.set(target);
-    this.clearError(target);
-    request.subscribe({
-      next: () => {
-        this.busy.set(null);
-        done();
-      },
-      error: (err: DomainError) => {
-        this.busy.set(null);
-        this.error.set({ target, error: settingsError(err, operation) });
-      },
-      // Se cambió de proyecto con el pedido en vuelo: completa sin emitir.
-      complete: () => this.busy.set(null),
-    });
-  }
-
-  private clearError(target: Target): void {
-    if (this.error()?.target === target) this.error.set(null);
-  }
-
-  private focus(id: string, select = false): void {
-    afterNextRender(
-      () => {
-        const el = document.getElementById(id);
-        el?.focus();
-        if (select && el instanceof HTMLInputElement) el.select();
-      },
-      { injector: this.injector },
-    );
   }
 }

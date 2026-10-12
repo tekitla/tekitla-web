@@ -117,6 +117,8 @@ export class BoardStore {
   readonly selectedNotFound = this._selectedNotFound.asReadonly();
 
   private loadRequestId = 0;
+  /** Escrituras confirmadas (mover, crear, editar): un refresco anterior a ellas es viejo. */
+  private writes = 0;
   private detailRequestId = 0;
   private moveSeq = 0;
   private noticeSeq = 0;
@@ -152,9 +154,12 @@ export class BoardStore {
       this.inFlight.clear();
       this.detailRequestId++;
     }
-    this._error.set(null);
-    this._notFound.set(false);
+    if (!sameProject) {
+      this._error.set(null);
+      this._notFound.set(false);
+    }
     const requestId = ++this.loadRequestId;
+    const versions = { board: this.writes, config: this.config.version };
 
     forkJoin({
       projects: this.client.listAllProjects(),
@@ -166,6 +171,12 @@ export class BoardStore {
       .subscribe({
         next: ({ projects, issues, statuses, labels }) => {
           if (requestId !== this.loadRequestId) return;
+          // Hubo escrituras mientras tanto: lo que trajo es anterior a ellas y
+          // las pisaría. Se pide de nuevo.
+          if (versions.board !== this.writes || versions.config !== this.config.version) {
+            this.load(projectId);
+            return;
+          }
           const project = projects.find((p) => p.id === projectId) ?? null;
           this._project.set(project);
           this._notFound.set(project === null);
@@ -179,9 +190,14 @@ export class BoardStore {
         error: (err: unknown) => {
           if (requestId !== this.loadRequestId) return;
           const error = toDomainError(err);
+          this._loading.set(false);
+          // Un refresco en segundo plano que falla no tapa el tablero que ya se ve.
+          if (sameProject && !error.isNotFound()) {
+            this.notify('error', 'board.notice.refreshFailed', '');
+            return;
+          }
           if (error.isNotFound()) this._notFound.set(true);
           else this._error.set(error.message);
-          this._loading.set(false);
         },
       });
   }
@@ -296,10 +312,12 @@ export class BoardStore {
     this.inFlight.delete(number);
     this.setPending(number, false);
     if (last.ok) {
+      this.writes++;
       // El backend es la verdad (rank, updatedAt, y por si normalizó algo).
       if (last.issue) this._issues.update((list) => upsertIssue(list, last.issue!));
       const message = last.sameColumn ? 'board.notice.reordered' : 'board.notice.moved';
-      this.notify('info', message, key, this.statusName(last.statusId));
+      const moved = this._issues().find((i) => i.number === number);
+      this.notify('info', message, key, moved && this.statusOf(moved)?.name);
       return;
     }
     const confirmed = moves.confirmed;
@@ -311,8 +329,10 @@ export class BoardStore {
       this.refresh();
       return;
     }
-    const column = this.statusName(confirmed.statusId);
-    this.notify('error', 'board.notice.moveFailed', key, column, 'board.notice.moveFailedDetail');
+    const back = this._issues().find((i) => i.number === number);
+    const column = back && this.statusOf(back)?.name;
+    const detail = column ? 'board.notice.moveFailedDetail' : 'board.notice.retry';
+    this.notify('error', 'board.notice.moveFailed', key, column, detail);
   }
 
   /** Crea un issue (el backend lo pone en el primer estado «Por hacer») y lo suma al tablero. */
@@ -321,15 +341,13 @@ export class BoardStore {
     if (!projectId) return throwError(() => new Error('BoardStore.create sin proyecto'));
     return this.client.createIssue(projectId, req).pipe(
       tap((issue) => {
+        this.writes++;
         this._issues.update((list) => upsertIssue(list, issue));
         const status = this.statusOf(issue);
         if (status) this._activeColumn.set(status.id);
-        this.notify(
-          'info',
-          'board.notice.created',
-          issueKey(this.projectKey(), issue.number),
-          status?.name,
-        );
+        // Sin estados cargados todavía (entrada directa al alta) no hay nombre.
+        const message = status ? 'board.notice.created' : 'board.notice.createdNoColumn';
+        this.notify('info', message, issueKey(this.projectKey(), issue.number), status?.name);
       }),
       catchError((err: unknown) => throwError(() => toDomainError(err))),
     );
@@ -345,6 +363,7 @@ export class BoardStore {
     return this.client.updateIssue(projectId, number, req).pipe(
       tap((issue) => {
         if (this._projectId() !== projectId) return;
+        this.writes++;
         // Un movimiento en vuelo manda sobre la posición: se conserva la optimista.
         const local = this._issues().find((i) => i.number === number);
         const keep = local && this.isPending(number);
@@ -397,10 +416,6 @@ export class BoardStore {
 
   dismissNotice(id?: number): void {
     if (id === undefined || this._notice()?.id === id) this._notice.set(null);
-  }
-
-  private statusName(statusId: string): string | undefined {
-    return this.config.statuses().find((s) => s.id === statusId)?.name;
   }
 
   private notify(

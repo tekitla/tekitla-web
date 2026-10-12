@@ -109,6 +109,60 @@ describe('BoardStore', () => {
     expect(store.loading()).toBe(false);
   });
 
+  describe('refresco en segundo plano', () => {
+    it('si hubo escrituras mientras tanto, descarta lo que trajo y vuelve a pedir', () => {
+      const stale = new Subject<Issue[]>();
+      client.listAllIssues.mockReturnValueOnce(stale);
+      client.updateIssue.mockReturnValue(of(issue(1, { title: 'Editado' })));
+
+      store.refresh();
+      store.update(1, { title: 'Editado' }).subscribe();
+      // El servidor ya tiene la edición: el reintento la trae.
+      client.listAllIssues.mockReturnValue(
+        of([issue(1, { title: 'Editado' }), issue(2, { statusId: 'doing' }), issue(3)]),
+      );
+      // El refresco salió antes de editar: trae el título viejo.
+      stale.next([issue(1), issue(2, { statusId: 'doing' }), issue(3)]);
+      stale.complete();
+
+      expect(client.listAllIssues).toHaveBeenCalledTimes(3); // carga, refresco y reintento
+      expect(store.issues().find((i) => i.number === 1)?.title).toBe('Editado');
+    });
+
+    it('lo mismo con una escritura de Ajustes (estados o etiquetas)', () => {
+      const config = TestBed.inject(ProjectConfigStore);
+      const stale = new Subject<Status[]>();
+      client.listStatuses.mockReturnValueOnce(stale);
+      (client as Record<string, ReturnType<typeof vi.fn>>)['createLabel'] = vi.fn(() =>
+        of({ id: 'l9', projectId: 'p1', name: 'Nueva', color: 'LABEL_COLOR_INFO' }),
+      );
+
+      store.refresh();
+      config.createLabel({ name: 'Nueva', color: 'LABEL_COLOR_INFO' }).subscribe();
+      expect(store.labels().map((l) => l.name)).toEqual(['Nueva']);
+      client.listLabels.mockReturnValue(
+        of([{ id: 'l9', projectId: 'p1', name: 'Nueva', color: 'LABEL_COLOR_INFO' }]),
+      );
+      stale.next(statuses);
+      stale.complete();
+
+      expect(store.labels().map((l) => l.name)).toEqual(['Nueva']);
+    });
+
+    it('si falla, el tablero sigue a la vista y se avisa', () => {
+      client.listAllIssues.mockReturnValueOnce(throwError(() => apiError(503)));
+
+      store.refresh();
+
+      expect(store.error()).toBeNull();
+      expect(numbersIn('todo')).toEqual([1, 3]);
+      expect(store.notice()).toMatchObject({
+        kind: 'error',
+        message: 'board.notice.refreshFailed',
+      });
+    });
+  });
+
   it('proyecto que no está en la lista del usuario = no encontrado', () => {
     client.listAllProjects.mockReturnValue(of([]));
     store.load('otro');

@@ -66,8 +66,9 @@ export function isBoardStatus(status: Status): boolean {
 }
 
 /**
- * Estado de un issue. Si su `statusId` no está en la lista (vino de un
- * backend viejo o el estado se acaba de borrar), el primero de su categoría;
+ * Estado de un issue. `statuses` en el orden de las columnas (como los
+ * guarda `ProjectConfigStore`). Si su `statusId` no está en la lista (vino de
+ * un backend viejo o el estado se acaba de borrar), el primero de su categoría;
  * sin categoría (UNSPECIFIED, omitida por grpc-gateway), el primero de «Por
  * hacer», como en la rebanada 1.
  */
@@ -75,19 +76,18 @@ export function statusOf(issue: Issue, statuses: readonly Status[]): Status | nu
   const category = issue.state === 'ISSUE_STATE_UNSPECIFIED' ? 'ISSUE_STATE_TODO' : issue.state;
   return (
     statuses.find((s) => s.id === issue.statusId) ??
-    sortStatuses(statuses).find((s) => s.category === category) ??
+    statuses.find((s) => s.category === category) ??
     null
   );
 }
 
 /** Columnas en orden, cada una con sus issues por `rank`. Los descartados no van. */
 export function buildColumns(issues: readonly Issue[], statuses: readonly Status[]): BoardColumn[] {
-  const columns = sortStatuses(statuses)
-    .filter(isBoardStatus)
-    .map((status) => ({ status, issues: [] as Issue[] }));
+  const sorted = sortStatuses(statuses);
+  const columns = sorted.filter(isBoardStatus).map((status) => ({ status, issues: [] as Issue[] }));
   const byId = new Map(columns.map((c) => [c.status.id, c]));
   for (const issue of issues) {
-    const status = statusOf(issue, statuses);
+    const status = statusOf(issue, sorted);
     if (status) byId.get(status.id)?.issues.push(issue);
   }
   for (const column of columns) column.issues.sort(compareIssues);

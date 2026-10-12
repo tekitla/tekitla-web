@@ -29,6 +29,15 @@ export class ProjectConfigStore {
   private readonly client = inject(IssuesClient);
 
   private projectId: string | null = null;
+  private writes = 0;
+
+  /**
+   * Cuántas escrituras confirmó el servidor. `BoardStore` lo compara antes y
+   * después de un refresco: si cambió, lo que trajo el refresco es viejo.
+   */
+  get version(): number {
+    return this.writes;
+  }
   private readonly _statuses = signal<Status[]>([]);
   private readonly _labels = signal<Label[]>([]);
 
@@ -129,6 +138,7 @@ export class ProjectConfigStore {
     return call(projectId).pipe(
       catchError((err: unknown) => throwError(() => toDomainError(err))),
       filter(() => this.projectId === projectId),
+      tap(() => this.writes++),
     );
   }
 }

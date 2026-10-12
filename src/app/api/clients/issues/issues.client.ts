@@ -154,15 +154,6 @@ export class IssuesClient {
       );
   }
 
-  /** Todo el historial de un issue (todas las páginas), del más viejo al más nuevo. */
-  listAllIssueEvents(projectId: string, number: number): Observable<IssueEvent[]> {
-    return collectPages((cursor) =>
-      this.listIssueEvents(projectId, number, { cursor, limit: BULK_PAGE_LIMIT }).pipe(
-        map((res) => ({ items: res.events, page: res.page })),
-      ),
-    );
-  }
-
   // ── Estados (columnas) ────────────────────────────────────────────────────
 
   /** Sin paginar (máximo 20), en el orden de las columnas. */
@@ -248,20 +239,49 @@ function pageParams(page: PageRequest) {
   };
 }
 
-interface Chunk<T> {
+/** Una página: sus items y la paginación que devolvió el backend. */
+export interface Chunk<T> {
   items: T[];
   page: { nextCursor: string; hasNext: boolean };
 }
 
-/** Pide páginas en serie mientras haya `hasNext` y un cursor, y junta los items. */
-function collectPages<T>(fetchPage: (cursor?: string) => Observable<Chunk<T>>): Observable<T[]> {
-  let pages = 0;
-  return fetchPage().pipe(
-    expand((chunk) => {
-      pages++;
-      const more = chunk.page.hasNext && chunk.page.nextCursor !== '' && pages < MAX_PAGES;
-      return more ? fetchPage(chunk.page.nextCursor) : EMPTY;
-    }),
-    reduce((all, chunk) => all.concat(chunk.items), [] as T[]),
+/** Varias páginas juntas: los items, cuántas se pidieron y desde dónde seguir. */
+export interface Pages<T> {
+  items: T[];
+  pages: number;
+  nextCursor: string;
+  hasNext: boolean;
+}
+
+/**
+ * Pide páginas en serie desde `cursor` (`''` = la primera) mientras haya
+ * `hasNext` y un cursor, hasta `maxPages` (nunca más de `MAX_PAGES`), y junta
+ * los items.
+ */
+export function fetchPages<T>(
+  fetchPage: (cursor: string) => Observable<Chunk<T>>,
+  cursor = '',
+  maxPages = MAX_PAGES,
+): Observable<Pages<T>> {
+  const limit = Math.min(maxPages, MAX_PAGES);
+  const more = (chunk: Chunk<T>) => chunk.page.hasNext && chunk.page.nextCursor !== '';
+  return fetchPage(cursor).pipe(
+    expand((chunk, index) =>
+      more(chunk) && index + 1 < limit ? fetchPage(chunk.page.nextCursor) : EMPTY,
+    ),
+    reduce(
+      (all, chunk) => ({
+        items: all.items.concat(chunk.items),
+        pages: all.pages + 1,
+        nextCursor: more(chunk) ? chunk.page.nextCursor : '',
+        hasNext: more(chunk),
+      }),
+      { items: [], pages: 0, nextCursor: '', hasNext: false } as Pages<T>,
+    ),
   );
+}
+
+/** Todas las páginas (hasta `MAX_PAGES`), sólo los items. */
+function collectPages<T>(fetchPage: (cursor?: string) => Observable<Chunk<T>>): Observable<T[]> {
+  return fetchPages((cursor) => fetchPage(cursor || undefined)).pipe(map((all) => all.items));
 }

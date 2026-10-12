@@ -1,18 +1,18 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EMPTY, Observable, catchError, expand, map, reduce, tap, throwError } from 'rxjs';
+import { Observable, catchError, map, tap, throwError } from 'rxjs';
 
-import { type Comment, type IssueEvent, IssuesClient, MAX_PAGES, toDomainError } from '@/app/api';
+import {
+  type Comment,
+  type IssueEvent,
+  IssuesClient,
+  type Pages,
+  fetchPages,
+  toDomainError,
+} from '@/app/api';
 
 /** Eventos por página de `ListIssueEvents`. */
 export const ACTIVITY_PAGE_SIZE = 50;
-
-interface Pages {
-  events: IssueEvent[];
-  pages: number;
-  nextCursor: string;
-  hasNext: boolean;
-}
 
 /**
  * Historial (actividad) de UN issue: `ListIssueEvents` paginado, del más
@@ -109,7 +109,7 @@ export class IssueActivityStore {
       .subscribe({
         next: (result) => {
           if (requestId !== this.requestId) return;
-          this._events.update((list) => (append ? [...list, ...result.events] : result.events));
+          this._events.update((list) => (append ? [...list, ...result.items] : result.items));
           this.pages = append ? this.pages + result.pages : result.pages;
           this.nextCursor = result.nextCursor;
           this._hasNext.set(result.hasNext);
@@ -133,31 +133,17 @@ export class IssueActivityStore {
     target: { projectId: string; number: number },
     cursor: string,
     maxPages: number,
-  ): Observable<Pages> {
-    const page = (c: string) =>
-      this.client
-        .listIssueEvents(target.projectId, target.number, { cursor: c, limit: ACTIVITY_PAGE_SIZE })
-        .pipe(
-          map((res) => ({
-            events: res.events,
-            pages: 1,
-            nextCursor: res.page.nextCursor,
-            hasNext: res.page.hasNext && res.page.nextCursor !== '',
-          })),
-        );
-    return page(cursor).pipe(
-      expand((p, i) =>
-        p.hasNext && i + 1 < Math.min(maxPages, MAX_PAGES) ? page(p.nextCursor) : EMPTY,
-      ),
-      reduce(
-        (all, p) => ({
-          events: [...all.events, ...p.events],
-          pages: all.pages + 1,
-          nextCursor: p.nextCursor,
-          hasNext: p.hasNext,
-        }),
-        { events: [], pages: 0, nextCursor: '', hasNext: false } as Pages,
-      ),
+  ): Observable<Pages<IssueEvent>> {
+    return fetchPages(
+      (c) =>
+        this.client
+          .listIssueEvents(target.projectId, target.number, {
+            cursor: c,
+            limit: ACTIVITY_PAGE_SIZE,
+          })
+          .pipe(map((res) => ({ items: res.events, page: res.page }))),
+      cursor,
+      maxPages,
     );
   }
 }
