@@ -7,7 +7,7 @@
     <p class="vrb-page-header__description">
       {{ 'issueNew.lead' | translate }}
       <span class="vrb-badge vrb-badge--neutral vrb-badge--dot">
-        {{ 'board.columns.ISSUE_STATE_TODO' | translate }}
+        {{ firstStatus()?.name ?? ('status.category.ISSUE_STATE_TODO' | translate) }}
       </span>
     </p>
   </div>

@@ -1,0 +1,252 @@
+<div class="vrb-stack">
+  <p class="settings-muted" id="labels-lead">{{ 'settings.labels.lead' | translate }}</p>
+
+  <form
+    class="vrb-card"
+    aria-labelledby="label-new-title"
+    (submit)="$event.preventDefault(); create()"
+    novalidate
+  >
+    <div class="vrb-card__body vrb-stack">
+      <h2 id="label-new-title" class="vrb-card__title">{{ 'settings.labels.new' | translate }}</h2>
+      <div class="settings-form__row">
+        <div class="vrb-field">
+          <label class="vrb-field__label" for="label-new-name">
+            {{ 'settings.fields.name' | translate }}
+          </label>
+          <input
+            id="label-new-name"
+            class="vrb-input"
+            autocomplete="off"
+            required
+            [maxLength]="nameMax"
+            [value]="newName()"
+            [disabled]="full()"
+            [attr.aria-invalid]="!!newNameError() || null"
+            aria-describedby="label-new-name-error"
+            [placeholder]="'settings.labels.namePlaceholder' | translate"
+            (input)="newName.set($any($event.target).value)"
+          />
+          <p id="label-new-name-error" class="vrb-field__error" aria-live="polite">
+            @if (newNameError(); as invalid) {
+              {{ 'settings.errors.name.' + invalid | translate: { max: nameMax } }}
+            }
+          </p>
+        </div>
+        <fieldset class="vrb-field settings-colors-field" [disabled]="full()">
+          <legend class="vrb-field__label">{{ 'settings.fields.color' | translate }}</legend>
+          <div class="settings-colors">
+            @for (color of colors; track color) {
+              <label class="vrb-check vrb-check--radio">
+                <input
+                  type="radio"
+                  name="label-new-color"
+                  class="vrb-check__input"
+                  [checked]="newColor() === color"
+                  (change)="newColor.set(color)"
+                />
+                <span class="vrb-check__box" aria-hidden="true"></span>
+                <span
+                  [class]="
+                    'vrb-check__label vrb-kanban-card__label vrb-kanban-card__label--' + tone[color]
+                  "
+                >
+                  {{ 'settings.colors.' + color | translate }}
+                </span>
+              </label>
+            }
+          </div>
+        </fieldset>
+      </div>
+      @if (full()) {
+        <p class="vrb-field__hint">{{ 'settings.labels.full' | translate: { max: maxLabels } }}</p>
+      }
+      @if (errorFor('create'); as error) {
+        <p class="vrb-field__error" role="alert">{{ error.key | translate }} {{ error.message }}</p>
+      }
+      <div class="vrb-cluster vrb-cluster--end">
+        <ui-button type="submit" size="sm" [disabled]="full()" [loading]="busy() === 'create'">
+          <ui-icon name="plus" />{{ 'settings.labels.create' | translate }}
+        </ui-button>
+      </div>
+    </div>
+  </form>
+
+  @if (labels().length) {
+    <div class="vrb-card settings-table-card">
+      <table class="tk-table" aria-describedby="labels-lead">
+        <caption class="u-visually-hidden">
+          {{
+            'settings.labels.caption' | translate
+          }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">{{ 'settings.columns.label' | translate }}</th>
+            <th scope="col" class="tk-table__num">{{ 'settings.columns.issues' | translate }}</th>
+            <th scope="col">
+              <span class="u-visually-hidden">{{ 'settings.columns.actions' | translate }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (label of labels(); track label.id) {
+            @let rowBusy = busy() === label.id;
+            @if (editingId() === label.id) {
+              <tr [attr.aria-busy]="rowBusy || null">
+                <td colspan="3">
+                  <form
+                    class="vrb-stack vrb-stack--sm"
+                    (submit)="$event.preventDefault(); save(label)"
+                    novalidate
+                  >
+                    <div class="vrb-field">
+                      <label class="vrb-field__label" [for]="'label-name-' + label.id">
+                        {{ 'settings.fields.name' | translate }}
+                      </label>
+                      <input
+                        class="vrb-input"
+                        autocomplete="off"
+                        required
+                        [id]="'label-name-' + label.id"
+                        [maxLength]="nameMax"
+                        [value]="editName()"
+                        [attr.aria-invalid]="!!editNameError() || null"
+                        [attr.aria-describedby]="'label-name-error-' + label.id"
+                        (input)="editName.set($any($event.target).value)"
+                        (keydown)="onEditKeydown($event, label)"
+                      />
+                      <p
+                        class="vrb-field__error"
+                        aria-live="polite"
+                        [id]="'label-name-error-' + label.id"
+                      >
+                        @if (editNameError(); as invalid) {
+                          {{ 'settings.errors.name.' + invalid | translate: { max: nameMax } }}
+                        }
+                      </p>
+                    </div>
+                    <fieldset class="vrb-field settings-colors-field">
+                      <legend class="vrb-field__label">
+                        {{ 'settings.fields.color' | translate }}
+                      </legend>
+                      <div class="settings-colors">
+                        @for (color of colors; track color) {
+                          <label class="vrb-check vrb-check--radio">
+                            <input
+                              type="radio"
+                              class="vrb-check__input"
+                              [name]="'label-color-' + label.id"
+                              [checked]="editColor() === color"
+                              (change)="editColor.set(color)"
+                            />
+                            <span class="vrb-check__box" aria-hidden="true"></span>
+                            <span
+                              [class]="
+                                'vrb-check__label vrb-kanban-card__label vrb-kanban-card__label--' +
+                                tone[color]
+                              "
+                            >
+                              {{ 'settings.colors.' + color | translate }}
+                            </span>
+                          </label>
+                        }
+                      </div>
+                    </fieldset>
+                    @if (errorFor(label.id); as error) {
+                      <p class="vrb-field__error" role="alert">
+                        {{ error.key | translate }} {{ error.message }}
+                      </p>
+                    }
+                    <div class="vrb-cluster vrb-cluster--sm">
+                      <ui-button type="submit" size="sm" [loading]="rowBusy">
+                        {{ 'common.save' | translate }}
+                      </ui-button>
+                      <ui-button variant="ghost" size="sm" (pressed)="stopEdit(label)">
+                        {{ 'common.cancel' | translate }}
+                      </ui-button>
+                    </div>
+                  </form>
+                </td>
+              </tr>
+            } @else {
+              <tr [attr.aria-busy]="rowBusy || null">
+                <th scope="row">
+                  <span
+                    [class]="'vrb-kanban-card__label vrb-kanban-card__label--' + tone[label.color]"
+                  >
+                    {{ label.name }}
+                  </span>
+                </th>
+                <td class="tk-table__num">{{ usageOf(label) }}</td>
+                <td class="tk-table__actions">
+                  <div class="vrb-cluster vrb-cluster--sm vrb-cluster--nowrap vrb-cluster--end">
+                    <button
+                      type="button"
+                      class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
+                      [id]="'label-edit-' + label.id"
+                      [disabled]="!!busy()"
+                      [attr.aria-label]="'settings.labels.edit' | translate: { name: label.name }"
+                      (click)="startEdit(label)"
+                    >
+                      <ui-icon name="edit" />
+                    </button>
+                    <button
+                      type="button"
+                      class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
+                      [id]="'label-delete-' + label.id"
+                      [disabled]="!!busy()"
+                      [attr.aria-label]="'settings.labels.delete' | translate: { name: label.name }"
+                      (click)="startDelete(label)"
+                    >
+                      <ui-icon name="trash" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              @if (deletingId() === label.id) {
+                <tr class="tk-table__panel">
+                  <td colspan="3">
+                    <form
+                      class="vrb-stack vrb-stack--sm"
+                      tabindex="-1"
+                      [id]="'label-delete-panel-' + label.id"
+                      [attr.aria-label]="'settings.labels.delete' | translate: { name: label.name }"
+                      (submit)="$event.preventDefault(); remove(label)"
+                      novalidate
+                    >
+                      <p class="settings-muted">
+                        {{
+                          'settings.labels.deleteConfirm'
+                            | translate: { name: label.name, count: usageOf(label) }
+                        }}
+                      </p>
+                      @if (errorFor(label.id); as error) {
+                        <p class="vrb-field__error" role="alert">
+                          {{ error.key | translate }} {{ error.message }}
+                        </p>
+                      }
+                      <div class="vrb-cluster vrb-cluster--sm">
+                        <ui-button type="submit" variant="danger" size="sm" [loading]="rowBusy">
+                          {{ 'settings.labels.confirmDelete' | translate }}
+                        </ui-button>
+                        <ui-button variant="ghost" size="sm" (pressed)="cancelDelete(label)">
+                          {{ 'common.cancel' | translate }}
+                        </ui-button>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
+              }
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="vrb-empty vrb-empty--bordered">
+      <p class="vrb-empty__title">{{ 'settings.labels.emptyTitle' | translate }}</p>
+      <p class="vrb-empty__description">{{ 'settings.labels.empty' | translate }}</p>
+    </div>
+  }
+</div>

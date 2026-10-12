@@ -1,0 +1,59 @@
+<section class="settings" aria-labelledby="settings-title">
+  <div class="vrb-page-header">
+    @if (store.project(); as project) {
+      <p class="vrb-page-header__eyebrow">// {{ project.key.toLowerCase() }} · ajustes</p>
+    }
+    <h1 id="settings-title" class="vrb-page-header__title">{{ 'settings.title' | translate }}</h1>
+    <p class="vrb-page-header__description">
+      {{
+        'settings.lead'
+          | translate: { project: store.project()?.name ?? ('settings.thisProject' | translate) }
+      }}
+    </p>
+  </div>
+
+  @if (store.loading()) {
+    <div class="vrb-stack" role="status" [attr.aria-label]="'common.loading' | translate">
+      <span class="vrb-skeleton vrb-skeleton--title"></span>
+      <span class="vrb-skeleton settings__skeleton"></span>
+    </div>
+  } @else if (store.notFound()) {
+    <div class="vrb-empty vrb-empty--bordered" role="alert">
+      <p class="vrb-empty__title">{{ 'board.notFound' | translate }}</p>
+      <div class="vrb-empty__actions">
+        <a class="vrb-button vrb-button--outline" routerLink="/proyectos">
+          {{ 'board.back' | translate }}
+        </a>
+      </div>
+    </div>
+  } @else if (store.error(); as error) {
+    <div class="vrb-empty vrb-empty--bordered vrb-empty--danger" role="alert">
+      <p class="vrb-empty__title">{{ 'settings.loadError' | translate }}</p>
+      <p class="vrb-empty__description">{{ error }}</p>
+      <div class="vrb-empty__actions">
+        <ui-button variant="outline" (pressed)="store.load(projectId())">
+          {{ 'common.retry' | translate }}
+        </ui-button>
+      </div>
+    </div>
+  } @else {
+    <div class="vrb-tabs">
+      <!-- Pestañas como navegación (cada una es una ruta), no como tablist. -->
+      <nav class="vrb-tabs__list" [attr.aria-label]="'settings.tabsLabel' | translate">
+        @for (tab of tabs; track tab.path) {
+          <a
+            class="vrb-tabs__tab"
+            [routerLink]="tab.path"
+            routerLinkActive
+            ariaCurrentWhenActive="page"
+          >
+            {{ tab.label | translate }}
+          </a>
+        }
+      </nav>
+      <div class="vrb-tabs__panel">
+        <router-outlet />
+      </div>
+    </div>
+  }
+</section>

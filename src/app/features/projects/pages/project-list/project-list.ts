@@ -119,7 +119,9 @@ export class ProjectList implements OnInit {
       },
       error: (err: DomainError) => {
         this.saving.set(false);
-        if (err.isConflict()) {
+        // Con `reason` (gateway nuevo) se distingue; sin él, todo 409 es la key.
+        const taken = err.api.reason ? err.api.reason === 'PROJECT_KEY_TAKEN' : err.isConflict();
+        if (taken) {
           this.takenKey.set(key);
           this.form.controls.key.setErrors({ taken: true });
           this.form.controls.key.markAsTouched();

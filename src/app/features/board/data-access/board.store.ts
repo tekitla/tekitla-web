@@ -3,15 +3,24 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, catchError, forkJoin, tap, throwError } from 'rxjs';
 
 import {
-  type BoardState,
   type CreateIssueRequest,
   type Issue,
-  type IssueState,
   IssuesClient,
   type Project,
+  type UpdateIssueRequest,
   toDomainError,
 } from '@/app/api';
-import { columnOf, groupByState, issueKey, upsertIssue, withState } from './board.logic';
+import {
+  type Placement,
+  buildColumns,
+  issueKey,
+  placementAt,
+  rankBetween,
+  statusOf,
+  upsertIssue,
+  withMove,
+} from './board.logic';
+import { ProjectConfigStore } from './project-config.store';
 
 /** Aviso efímero para el usuario (live region del tablero). */
 export interface BoardNotice {
@@ -20,9 +29,15 @@ export interface BoardNotice {
   message: string;
   /** `TK-42` */
   issue: string;
-  state?: BoardState;
+  /** Nombre del estado (columna) que menciona el aviso. */
+  column?: string;
+  /** Clave de traducción de una segunda línea (qué pasó después). */
+  detail?: string;
   id: number;
 }
+
+/** Dónde está un issue según el servidor: a eso se vuelve si falla un movimiento. */
+type Position = Pick<Issue, 'statusId' | 'state' | 'rank'>;
 
 /** Movimientos en vuelo de un issue. */
 interface MovesInFlight {
@@ -30,23 +45,28 @@ interface MovesInFlight {
   latest: number;
   /** Cuántas respuestas faltan. */
   count: number;
-  /** Último estado que el servidor confirmó: a ése se vuelve si falla el último. */
-  confirmed: IssueState;
+  /** Última posición que el servidor confirmó. */
+  confirmed: Position;
   /** Resultado del último movimiento, cuando ya respondió. */
   outcome: MoveOutcome | null;
 }
 
-type MoveOutcome = { ok: true; issue: Issue | null; to: BoardState } | { ok: false };
+type MoveOutcome =
+  | { ok: true; issue: Issue | null; statusId: string; sameColumn: boolean }
+  /** `stale`: el servidor rechazó los vecinos (vista vieja: hay que recargar). */
+  | { ok: false; stale: boolean };
 
 /**
- * Store del tablero de UN proyecto: proyecto, issues, mover (optimista),
- * crear y detalle. Provisto en la ruta `proyectos/:projectId` (board.routes.ts):
- * lo comparten tablero, alta y detalle, así volver del detalle no recarga en
- * blanco y lo creado/movido se ve al instante.
+ * Store del tablero de UN proyecto: proyecto, issues, columnas (de
+ * `ProjectConfigStore`), mover (optimista), crear, editar y detalle. Provisto
+ * en la ruta `proyectos/:projectId` (board.routes.ts): lo comparten tablero,
+ * alta, detalle y ajustes, así volver del detalle no recarga en blanco y lo
+ * creado/movido se ve al instante.
  */
 @Injectable()
 export class BoardStore {
   private readonly client = inject(IssuesClient);
+  private readonly config = inject(ProjectConfigStore);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly _projectId = signal<string | null>(null);
@@ -58,18 +78,28 @@ export class BoardStore {
   private readonly _notFound = signal(false);
   private readonly _pending = signal<ReadonlySet<number>>(new Set());
   private readonly _notice = signal<BoardNotice | null>(null);
-  /** Columna visible en móvil; vive acá para sobrevivir a ir y volver del detalle. */
-  private readonly _activeColumn = signal<BoardState>('ISSUE_STATE_TODO');
+  /** Columna elegida en móvil; vive acá para sobrevivir a ir y volver del detalle. */
+  private readonly _activeColumn = signal<string | null>(null);
 
   readonly project = this._project.asReadonly();
   readonly issues = this._issues.asReadonly();
   readonly loading = this._loading.asReadonly();
+  readonly loaded = this._loaded.asReadonly();
   readonly error = this._error.asReadonly();
   readonly notFound = this._notFound.asReadonly();
   readonly notice = this._notice.asReadonly();
-  readonly activeColumn = this._activeColumn.asReadonly();
-  readonly columns = computed(() => groupByState(this._issues()));
+  readonly pending = this._pending.asReadonly();
+  readonly statuses = this.config.statuses;
+  readonly labels = this.config.labels;
+  readonly labelsById = this.config.labelsById;
+  readonly columns = computed(() => buildColumns(this._issues(), this.config.statuses()));
   readonly projectKey = computed(() => this._project()?.key ?? '');
+  /** Columna visible en móvil: la elegida si sigue existiendo, si no la primera. */
+  readonly activeColumn = computed(() => {
+    const columns = this.columns();
+    const chosen = this._activeColumn();
+    return columns.find((c) => c.status.id === chosen)?.status.id ?? columns[0]?.status.id ?? null;
+  });
 
   // ── Detalle ──────────────────────────────────────────────────────────────
   private readonly _selectedNumber = signal<number | null>(null);
@@ -77,7 +107,7 @@ export class BoardStore {
   private readonly _selectedError = signal<string | null>(null);
   private readonly _selectedNotFound = signal(false);
 
-  /** El issue seleccionado sale de la lista: si se mueve, el detalle lo refleja. */
+  /** El issue seleccionado sale de la lista: si se mueve o edita, el detalle lo refleja. */
   readonly selected = computed(() => {
     const number = this._selectedNumber();
     return number === null ? null : (this._issues().find((i) => i.number === number) ?? null);
@@ -87,6 +117,8 @@ export class BoardStore {
   readonly selectedNotFound = this._selectedNotFound.asReadonly();
 
   private loadRequestId = 0;
+  /** Escrituras confirmadas (mover, crear, editar): un refresco anterior a ellas es viejo. */
+  private writes = 0;
   private detailRequestId = 0;
   private moveSeq = 0;
   private noticeSeq = 0;
@@ -97,11 +129,15 @@ export class BoardStore {
     return this._pending().has(number);
   }
 
-  readonly pending = this._pending.asReadonly();
+  /** Estado (columna) de un issue. */
+  statusOf(issue: Issue) {
+    return statusOf(issue, this.config.statuses());
+  }
 
   /**
-   * Carga proyecto + todos sus issues. Si ya hay datos del mismo proyecto
-   * (volver del detalle), refresca en segundo plano sin vaciar el tablero.
+   * Carga proyecto, issues, estados y etiquetas. Si ya hay datos del mismo
+   * proyecto (volver del detalle), refresca en segundo plano sin vaciar el
+   * tablero.
    */
   load(projectId: string): void {
     const sameProject = this._projectId() === projectId && this._loaded();
@@ -109,29 +145,42 @@ export class BoardStore {
       this._projectId.set(projectId);
       this._project.set(null);
       this._issues.set([]);
+      this.config.reset(projectId);
       this._loaded.set(false);
-      this._activeColumn.set('ISSUE_STATE_TODO');
+      this._activeColumn.set(null);
       this._loading.set(true);
       // Lo que esté en vuelo es del proyecto anterior: sus respuestas se ignoran.
       this._pending.set(new Set());
       this.inFlight.clear();
       this.detailRequestId++;
     }
-    this._error.set(null);
-    this._notFound.set(false);
+    if (!sameProject) {
+      this._error.set(null);
+      this._notFound.set(false);
+    }
     const requestId = ++this.loadRequestId;
+    const versions = { board: this.writes, config: this.config.version };
 
     forkJoin({
       projects: this.client.listAllProjects(),
       issues: this.client.listAllIssues(projectId),
+      statuses: this.client.listStatuses(projectId),
+      labels: this.client.listLabels(projectId),
     })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ projects, issues }) => {
+        next: ({ projects, issues, statuses, labels }) => {
           if (requestId !== this.loadRequestId) return;
+          // Hubo escrituras mientras tanto: lo que trajo es anterior a ellas y
+          // las pisaría. Se pide de nuevo.
+          if (versions.board !== this.writes || versions.config !== this.config.version) {
+            this.load(projectId);
+            return;
+          }
           const project = projects.find((p) => p.id === projectId) ?? null;
           this._project.set(project);
           this._notFound.set(project === null);
+          this.config.set(projectId, statuses, labels);
           // Un movimiento en vuelo manda sobre lo que trajo el refresco.
           const pending = this._issues().filter((i) => this._pending().has(i.number));
           this._issues.set(pending.reduce(upsertIssue, issues));
@@ -141,64 +190,108 @@ export class BoardStore {
         error: (err: unknown) => {
           if (requestId !== this.loadRequestId) return;
           const error = toDomainError(err);
+          this._loading.set(false);
+          // Un refresco en segundo plano que falla no tapa el tablero que ya se ve.
+          if (sameProject && !error.isNotFound()) {
+            this.notify('error', 'board.notice.refreshFailed', '');
+            return;
+          }
           if (error.isNotFound()) this._notFound.set(true);
           else this._error.set(error.message);
-          this._loading.set(false);
         },
       });
   }
 
-  /** Carga si todavía no hay datos de este proyecto (entrada directa al detalle). */
+  /** Carga si todavía no hay datos de este proyecto (entrada directa al detalle o a ajustes). */
   ensureLoaded(projectId: string): void {
     if (this._projectId() !== projectId || (!this._loaded() && !this._loading())) {
       this.load(projectId);
     }
   }
 
+  /** Vuelve a pedir todo en segundo plano (p. ej. después de borrar un estado). */
+  refresh(): void {
+    const projectId = this._projectId();
+    if (projectId) this.load(projectId);
+  }
+
   /**
-   * Mueve un issue de columna con actualización OPTIMISTA: la tarjeta cambia de
-   * columna al instante y, si el backend falla, vuelve a donde estaba y se avisa.
+   * Mueve un issue al estado `statusId` con actualización OPTIMISTA: la
+   * tarjeta cambia al instante y, si el backend falla, vuelve a donde estaba y
+   * se avisa.
+   *
+   * Con `index`, también la ubica en esa posición de la columna destino (tal
+   * como se ve): el backend recibe los vecinos y calcula el rank. Sin `index`
+   * conserva su rank. Si el servidor responde que los vecinos ya no cuadran
+   * (FAILED_PRECONDITION: la vista está vieja), se recarga el tablero.
+   *
    * Si el mismo issue se mueve de nuevo antes de que responda el primero, se
    * espera a que respondan todos y decide el último: si salió bien queda donde
-   * está; si falló, vuelve al último estado que el servidor confirmó (que puede
-   * venir de un movimiento anterior que respondió después).
+   * está; si falló, vuelve a la última posición que el servidor confirmó.
    */
-  move(number: number, to: BoardState): void {
+  move(number: number, statusId: string, index?: number): void {
     const projectId = this._projectId();
     const current = this._issues().find((i) => i.number === number);
-    if (!projectId || !current || columnOf(current) === to) return;
+    const status = this.config.statuses().find((s) => s.id === statusId);
+    if (!projectId || !current || !status) return;
+
+    const fromStatusId = this.statusOf(current)?.id ?? current.statusId;
+    const column = this.columns().find((c) => c.status.id === statusId)?.issues ?? [];
+    const placement = index === undefined ? null : placementAt(column, number, index);
+    if (fromStatusId === statusId) {
+      const now = column.findIndex((i) => i.number === number);
+      if (!placement || samePlacement(placement, placementAt(column, number, now))) return;
+    }
+
+    const rankOf = (n: number) => column.find((i) => i.number === n)?.rank ?? null;
+    const rank = placement
+      ? (rankBetween(
+          placement.afterNumber ? rankOf(placement.afterNumber) : null,
+          placement.beforeNumber ? rankOf(placement.beforeNumber) : null,
+        ) ?? undefined)
+      : undefined;
 
     const seq = ++this.moveSeq;
-    // Sin movimientos en vuelo, el estado actual es el que tiene el servidor.
+    // Sin movimientos en vuelo, la posición actual es la que tiene el servidor.
     const moves = this.inFlight.get(number) ?? {
       latest: seq,
       count: 0,
-      confirmed: current.state,
+      confirmed: { statusId: current.statusId, state: current.state, rank: current.rank },
       outcome: null,
     };
     moves.latest = seq;
     moves.count++;
     this.inFlight.set(number, moves);
-    this._issues.update((list) => withState(list, number, to));
+    this._issues.update((list) => withMove(list, number, status, rank));
     this.setPending(number, true);
     const key = issueKey(this.projectKey(), number);
+    const sameColumn = fromStatusId === statusId;
     // Se cambió de proyecto (o se volvió a él) mientras estaba en vuelo.
     const stale = () => this._projectId() !== projectId || this.inFlight.get(number) !== moves;
 
     this.client
-      .moveIssue(projectId, number, to)
+      .moveIssue(projectId, number, { statusId, ...placement })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (issue) => {
           if (stale()) return;
           // Aunque lo haya superado otro movimiento, el servidor ya lo aplicó.
           const confirmed = issue.number === number ? issue : null;
-          moves.confirmed = confirmed?.state ?? to;
-          this.settle(number, moves, seq, { ok: true, issue: confirmed, to }, key);
+          moves.confirmed = confirmed
+            ? { statusId: confirmed.statusId, state: confirmed.state, rank: confirmed.rank }
+            : { statusId, state: status.category, rank: rank ?? moves.confirmed.rank };
+          this.settle(
+            number,
+            moves,
+            seq,
+            { ok: true, issue: confirmed, statusId, sameColumn },
+            key,
+          );
         },
-        error: () => {
+        error: (err: unknown) => {
           if (stale()) return;
-          this.settle(number, moves, seq, { ok: false }, key);
+          const outcome = { ok: false, stale: toDomainError(err).isStaleOrder() } as const;
+          this.settle(number, moves, seq, outcome, key);
         },
       });
   }
@@ -219,32 +312,69 @@ export class BoardStore {
     this.inFlight.delete(number);
     this.setPending(number, false);
     if (last.ok) {
-      // El backend es la verdad (updatedAt, y por si normalizó algo).
+      this.writes++;
+      // El backend es la verdad (rank, updatedAt, y por si normalizó algo).
       if (last.issue) this._issues.update((list) => upsertIssue(list, last.issue!));
-      this.notify('info', 'board.notice.moved', key, last.to);
+      const message = last.sameColumn ? 'board.notice.reordered' : 'board.notice.moved';
+      const moved = this._issues().find((i) => i.number === number);
+      this.notify('info', message, key, moved && this.statusOf(moved)?.name);
       return;
     }
     const confirmed = moves.confirmed;
     this._issues.update((list) =>
-      list.map((i) => (i.number === number ? { ...i, state: confirmed } : i)),
+      list.map((i) => (i.number === number ? { ...i, ...confirmed } : i)),
     );
-    this.notify(
-      'error',
-      'board.notice.moveFailed',
-      key,
-      columnOf({ state: confirmed }) ?? undefined,
-    );
+    if (last.stale) {
+      this.notify('error', 'board.notice.moveFailed', key, undefined, 'board.notice.stale');
+      this.refresh();
+      return;
+    }
+    const back = this._issues().find((i) => i.number === number);
+    const column = back && this.statusOf(back)?.name;
+    const detail = column ? 'board.notice.moveFailedDetail' : 'board.notice.retry';
+    this.notify('error', 'board.notice.moveFailed', key, column, detail);
   }
 
-  /** Crea un issue (el backend lo pone en «Por hacer») y lo suma al tablero. */
+  /** Crea un issue (el backend lo pone en el primer estado «Por hacer») y lo suma al tablero. */
   create(req: CreateIssueRequest): Observable<Issue> {
     const projectId = this._projectId();
     if (!projectId) return throwError(() => new Error('BoardStore.create sin proyecto'));
     return this.client.createIssue(projectId, req).pipe(
       tap((issue) => {
+        this.writes++;
         this._issues.update((list) => upsertIssue(list, issue));
-        this._activeColumn.set(columnOf(issue) ?? 'ISSUE_STATE_TODO');
-        this.notify('info', 'board.notice.created', issueKey(this.projectKey(), issue.number));
+        const status = this.statusOf(issue);
+        if (status) this._activeColumn.set(status.id);
+        // Sin estados cargados todavía (entrada directa al alta) no hay nombre.
+        const message = status ? 'board.notice.created' : 'board.notice.createdNoColumn';
+        this.notify('info', message, issueKey(this.projectKey(), issue.number), status?.name);
+      }),
+      catchError((err: unknown) => throwError(() => toDomainError(err))),
+    );
+  }
+
+  /**
+   * Edita título, descripción, prioridad o etiquetas (solo lo que viene). Espera
+   * al servidor: la página muestra el error junto al campo.
+   */
+  update(number: number, req: UpdateIssueRequest): Observable<Issue> {
+    const projectId = this._projectId();
+    if (!projectId) return throwError(() => new Error('BoardStore.update sin proyecto'));
+    return this.client.updateIssue(projectId, number, req).pipe(
+      tap((issue) => {
+        if (this._projectId() !== projectId) return;
+        this.writes++;
+        // Un movimiento en vuelo manda sobre la posición: se conserva la optimista.
+        const local = this._issues().find((i) => i.number === number);
+        const keep = local && this.isPending(number);
+        this._issues.update((list) =>
+          upsertIssue(
+            list,
+            keep
+              ? { ...issue, statusId: local.statusId, state: local.state, rank: local.rank }
+              : issue,
+          ),
+        );
       }),
       catchError((err: unknown) => throwError(() => toDomainError(err))),
     );
@@ -266,7 +396,7 @@ export class BoardStore {
       .subscribe({
         next: (issue) => {
           if (requestId !== this.detailRequestId) return;
-          // Si hay un movimiento en vuelo, su estado optimista manda.
+          // Si hay un movimiento en vuelo, su posición optimista manda.
           if (!this.isPending(number)) this._issues.update((list) => upsertIssue(list, issue));
           this._selectedLoading.set(false);
         },
@@ -280,8 +410,8 @@ export class BoardStore {
       });
   }
 
-  setActiveColumn(state: BoardState): void {
-    this._activeColumn.set(state);
+  setActiveColumn(statusId: string): void {
+    this._activeColumn.set(statusId);
   }
 
   dismissNotice(id?: number): void {
@@ -292,9 +422,10 @@ export class BoardStore {
     kind: BoardNotice['kind'],
     message: string,
     issue: string,
-    state?: BoardState,
+    column?: string,
+    detail?: string,
   ): void {
-    this._notice.set({ kind, message, issue, state, id: ++this.noticeSeq });
+    this._notice.set({ kind, message, issue, column, detail, id: ++this.noticeSeq });
   }
 
   private setPending(number: number, pending: boolean): void {
@@ -305,4 +436,8 @@ export class BoardStore {
       return next;
     });
   }
+}
+
+function samePlacement(a: Placement, b: Placement): boolean {
+  return a.afterNumber === b.afterNumber && a.beforeNumber === b.beforeNumber;
 }

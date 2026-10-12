@@ -14,13 +14,13 @@ import {
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
-import { BOARD_STATES, type BoardState, type Issue } from '@/app/api';
+import type { Issue } from '@/app/api';
 import { Viewport } from '@/app/core/layout/viewport';
 import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { Button } from '@/app/ui/components/button/button';
 import { Icon } from '@/app/ui/components/icon/icon';
 import { IssueCard, type MoveRequest } from '../../components/issue-card/issue-card';
-import { STATE_TONE } from '../../data-access/board.logic';
+import { CATEGORY_TONE } from '../../data-access/board.logic';
 import { boardNav } from '../../board-nav';
 import { BoardStore } from '../../data-access/board.store';
 
@@ -28,11 +28,14 @@ import { BoardStore } from '../../data-access/board.store';
 const INFO_NOTICE_MS = 5000;
 
 /**
- * Tablero de un proyecto (`vrb-kanban`): 3 columnas (Por hacer / En curso /
- * Hecho), ordenadas por `rank`; los descartados no se muestran.
+ * Tablero de un proyecto (`vrb-kanban`): una columna por estado del proyecto
+ * (`ListStatuses`, en orden de rank), con el tono de su categoría; los estados
+ * de categoría CANCELED (descartados) no se muestran. Cada columna, por rank.
  *
- * - Desktop (≥ 768px): las 3 columnas lado a lado, con drag & drop (CDK) entre
- *   columnas, además del menú «Mover» de cada tarjeta y Shift+← / Shift+→.
+ * - Desktop (≥ 768px): las columnas lado a lado, con drag & drop (CDK) para
+ *   cambiar de columna y reordenar dentro de una, además del menú «Mover» de
+ *   cada tarjeta, Shift+← / Shift+→ (columna vecina) y Shift+↑ / Shift+↓
+ *   (subir o bajar en la columna).
  * - Móvil (< 768px): PESTAÑAS, una columna por vez, con el conteo de cada una
  *   a la vista. Se mueve con el menú «Mover» (el drag queda deshabilitado: en
  *   táctil compite con el scroll y no hay otra columna visible donde soltar).
@@ -61,10 +64,13 @@ export class Board {
   /** Path `:projectId` (withComponentInputBinding + paramsInheritanceStrategy 'always'). */
   readonly projectId = input.required<string>();
 
-  protected readonly states = BOARD_STATES;
-  protected readonly tone = STATE_TONE;
+  protected readonly tone = CATEGORY_TONE;
+  /** Ningún issue en el tablero (los descartados no cuentan). */
+  protected readonly empty = computed(() => this.store.columns().every((c) => !c.issues.length));
   protected readonly canceledCount = computed(
-    () => this.store.issues().filter((i) => i.state === 'ISSUE_STATE_CANCELED').length,
+    () =>
+      this.store.issues().filter((i) => this.store.statusOf(i)?.category === 'ISSUE_STATE_CANCELED')
+        .length,
   );
 
   constructor() {
@@ -91,25 +97,46 @@ export class Board {
     inject(DestroyRef).onDestroy(() => clearTimeout(timer));
   }
 
-  protected onDrop(event: CdkDragDrop<BoardState, BoardState, Issue>): void {
-    if (event.previousContainer === event.container) return;
-    this.store.move(event.item.data.number, event.container.data);
+  /** Soltar: la posición es `currentIndex` en la columna destino (CDK). */
+  protected onDrop(event: CdkDragDrop<string, string, Issue>): void {
+    const sameList = event.previousContainer === event.container;
+    if (sameList && event.previousIndex === event.currentIndex) return;
+    this.store.move(event.item.data.number, event.container.data, event.currentIndex);
   }
 
   protected onMove(request: MoveRequest): void {
-    this.store.move(request.number, request.to);
+    if (request.via === 'menu') {
+      this.store.move(request.number, request.statusId);
+    } else {
+      const columns = this.store.columns();
+      const from = columns.findIndex((c) => c.issues.some((i) => i.number === request.number));
+      const column = columns[from];
+      if (!column) return;
+      if (request.axis === 'column') {
+        const target = columns[from + request.direction];
+        if (!target) return;
+        this.store.move(request.number, target.status.id);
+      } else {
+        const index = column.issues.findIndex((i) => i.number === request.number);
+        const to = index + request.direction;
+        if (to < 0 || to >= column.issues.length) return;
+        this.store.move(request.number, column.status.id, to);
+      }
+    }
     this.restoreFocus(request);
   }
 
   /**
-   * La tarjeta movida se vuelve a crear en otra columna y el foco se perdería.
-   * En desktop sigue a la tarjeta; en móvil (la tarjeta se fue a otra pestaña)
-   * queda en la pestaña actual. El live region anuncia a dónde fue.
+   * La tarjeta movida se vuelve a crear en otra columna (o en otro lugar) y el
+   * foco se perdería. Sigue a la tarjeta si se ve; en móvil, si se fue a otra
+   * pestaña, queda en la pestaña actual. El live region anuncia a dónde fue.
    */
   private restoreFocus(request: MoveRequest): void {
     afterNextRender(
       () => {
-        const target = this.isMobile()
+        const active = this.store.columns().find((c) => c.status.id === this.store.activeColumn());
+        const hidden = this.isMobile() && !active?.issues.some((i) => i.number === request.number);
+        const target = hidden
           ? document.getElementById(`board-tab-${this.store.activeColumn()}`)
           : document.getElementById(`issue-link-${request.number}`);
         target?.focus();
@@ -118,13 +145,14 @@ export class Board {
     );
   }
 
-  protected selectTab(state: BoardState): void {
-    this.store.setActiveColumn(state);
+  protected selectTab(statusId: string): void {
+    this.store.setActiveColumn(statusId);
   }
 
   /** Patrón de pestañas ARIA: ←/→ (circular), Inicio y Fin activan y enfocan. */
   protected onTabKeydown(event: KeyboardEvent, index: number): void {
-    const last = this.states.length - 1;
+    const columns = this.store.columns();
+    const last = columns.length - 1;
     const next =
       event.key === 'ArrowRight'
         ? index === last
@@ -141,8 +169,8 @@ export class Board {
               : null;
     if (next === null) return;
     event.preventDefault();
-    const state = this.states[next]!;
-    this.selectTab(state);
-    document.getElementById(`board-tab-${state}`)?.focus();
+    const statusId = columns[next]!.status.id;
+    this.selectTab(statusId);
+    document.getElementById(`board-tab-${statusId}`)?.focus();
   }
 }

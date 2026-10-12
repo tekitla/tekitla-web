@@ -2,15 +2,62 @@
   @if (store.selected(); as issue) {
     <div class="vrb-page-header">
       <p class="vrb-page-header__eyebrow">// {{ key().toLowerCase() }}</p>
-      <h1 id="issue-detail-title" class="vrb-page-header__title">{{ issue.title }}</h1>
+      @if (editingTitle()) {
+        <form
+          class="vrb-field issue-detail__title-form"
+          (submit)="$event.preventDefault(); saveTitle()"
+          novalidate
+        >
+          <label class="u-visually-hidden" for="issue-title-input">
+            {{ 'issueDetail.titleLabel' | translate }}
+          </label>
+          <h1 id="issue-detail-title" class="u-visually-hidden">{{ issue.title }}</h1>
+          <div class="vrb-cluster vrb-cluster--sm">
+            <input
+              #titleInput
+              id="issue-title-input"
+              class="vrb-input issue-detail__title-input"
+              autocomplete="off"
+              required
+              [maxLength]="titleMax"
+              [value]="titleDraft()"
+              [attr.aria-invalid]="titleEmpty() || !!errorFor('title') || null"
+              aria-describedby="issue-title-error"
+              (input)="titleDraft.set($any($event.target).value)"
+              (keydown)="onTitleKeydown($event)"
+            />
+            <ui-button type="submit" size="sm" [loading]="saving() === 'title'">
+              {{ 'common.save' | translate }}
+            </ui-button>
+            <ui-button variant="ghost" size="sm" (pressed)="editingTitle.set(false)">
+              {{ 'common.cancel' | translate }}
+            </ui-button>
+          </div>
+          <p id="issue-title-error" class="vrb-field__error" aria-live="polite">
+            @if (titleEmpty()) {
+              {{ 'issueDetail.errors.titleRequired' | translate }}
+            } @else if (errorFor('title'); as error) {
+              {{ 'issueDetail.errors.save' | translate }} {{ error }}
+            }
+          </p>
+        </form>
+      } @else {
+        <div class="vrb-cluster vrb-cluster--sm vrb-cluster--nowrap issue-detail__title-row">
+          <h1 id="issue-detail-title" class="vrb-page-header__title">{{ issue.title }}</h1>
+          <button
+            type="button"
+            class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
+            [attr.aria-label]="'issueDetail.editTitle' | translate"
+            (click)="editTitle()"
+          >
+            <ui-icon name="edit" />
+          </button>
+        </div>
+      }
       <div class="vrb-page-header__description vrb-cluster vrb-cluster--sm">
-        @if (column(); as state) {
-          <span [class]="'vrb-badge vrb-badge--dot vrb-badge--' + tone[state]">
-            {{ 'board.columns.' + state | translate }}
-          </span>
-        } @else if (canceled()) {
-          <span class="vrb-badge vrb-badge--dot vrb-badge--neutral">
-            {{ 'board.canceled' | translate }}
+        @if (status(); as current) {
+          <span [class]="'vrb-badge vrb-badge--dot vrb-badge--' + categoryTone[current.category]">
+            {{ current.name }}
           </span>
         }
         <app-priority-badge [priority]="issue.priority" />
@@ -24,72 +71,192 @@
     </div>
 
     <div class="issue-detail__layout">
-      <article class="vrb-card issue-detail__main" aria-labelledby="issue-description-title">
-        <header class="vrb-card__header">
-          <h2 id="issue-description-title" class="vrb-card__title">
-            {{ 'issueDetail.description' | translate }}
-          </h2>
-        </header>
-        <div class="vrb-card__body">
-          @if (issue.description.trim()) {
-            <ui-markdown [source]="issue.description" />
-          } @else {
-            <p class="issue-detail__empty">{{ 'issueDetail.noDescription' | translate }}</p>
-          }
-        </div>
-      </article>
+      <div class="vrb-stack vrb-stack--lg issue-detail__main">
+        <article class="vrb-card" aria-labelledby="issue-description-title">
+          <header class="vrb-card__header issue-detail__card-header">
+            <h2 id="issue-description-title" class="vrb-card__title">
+              {{ 'issueDetail.description' | translate }}
+            </h2>
+            @if (!editingDescription()) {
+              <button
+                type="button"
+                class="vrb-button vrb-button--ghost vrb-button--sm"
+                (click)="editDescription()"
+              >
+                <ui-icon name="edit" />{{ 'common.edit' | translate }}
+                <span class="u-visually-hidden">{{ 'issueDetail.description' | translate }}</span>
+              </button>
+            }
+          </header>
+          <div class="vrb-card__body">
+            @if (editingDescription()) {
+              <form
+                class="vrb-field"
+                (submit)="$event.preventDefault(); saveDescription()"
+                novalidate
+              >
+                <label class="u-visually-hidden" for="issue-description-input">
+                  {{ 'issueDetail.description' | translate }}
+                </label>
+                <ui-markdown-editor
+                  inputId="issue-description-input"
+                  describedBy="issue-description-hint issue-description-error"
+                  [maxLength]="descriptionMax"
+                  [(value)]="descriptionDraft"
+                />
+                <p id="issue-description-hint" class="vrb-field__hint">
+                  {{ 'issueNew.markdownHint' | translate }}
+                </p>
+                <p id="issue-description-error" class="vrb-field__error" aria-live="polite">
+                  @if (errorFor('description'); as error) {
+                    {{ 'issueDetail.errors.save' | translate }} {{ error }}
+                  }
+                </p>
+                <div class="vrb-cluster vrb-cluster--end vrb-cluster--sm">
+                  <ui-button variant="ghost" size="sm" (pressed)="editingDescription.set(false)">
+                    {{ 'common.cancel' | translate }}
+                  </ui-button>
+                  <ui-button type="submit" size="sm" [loading]="saving() === 'description'">
+                    {{ 'common.save' | translate }}
+                  </ui-button>
+                </div>
+              </form>
+            } @else if (issue.description.trim()) {
+              <ui-markdown [source]="issue.description" />
+            } @else {
+              <p class="issue-detail__empty">{{ 'issueDetail.noDescription' | translate }}</p>
+            }
+          </div>
+        </article>
+
+        <app-issue-activity />
+      </div>
 
       <aside class="vrb-card issue-detail__aside">
-        <div class="vrb-card__body">
+        <div class="vrb-card__body vrb-stack">
           <div class="vrb-field">
-            <span class="vrb-field__label" id="issue-state-label">
+            <label class="vrb-field__label" for="issue-status">
               {{ 'issueDetail.state' | translate }}
-            </span>
-            <fieldset
-              class="vrb-segmented vrb-segmented--sm issue-detail__states"
-              aria-labelledby="issue-state-label"
-              [disabled]="pending()"
-              [attr.aria-busy]="pending() || null"
-            >
-              @for (state of states; track state) {
-                <label class="vrb-segmented__option">
-                  <input
-                    type="radio"
-                    name="issue-state"
-                    [checked]="column() === state"
-                    (change)="move(state)"
-                  />
-                  <span [class]="'vrb-segmented__dot vrb-segmented__dot--' + tone[state]"></span>
-                  {{ 'board.columns.' + state | translate }}
-                </label>
-              }
-            </fieldset>
+            </label>
+            <div class="vrb-select">
+              <select
+                id="issue-status"
+                class="vrb-input"
+                [disabled]="pending()"
+                [attr.aria-busy]="pending() || null"
+                (change)="moveTo($any($event.target).value)"
+              >
+                @for (option of statusGroups().board; track option.id) {
+                  <option [value]="option.id" [selected]="option.id === status()?.id">
+                    {{ option.name }}
+                  </option>
+                }
+                @if (statusGroups().closed.length) {
+                  <optgroup [label]="'issueDetail.closedStatuses' | translate">
+                    @for (option of statusGroups().closed; track option.id) {
+                      <option [value]="option.id" [selected]="option.id === status()?.id">
+                        {{ option.name }}
+                      </option>
+                    }
+                  </optgroup>
+                }
+              </select>
+            </div>
             @if (canceled()) {
               <p class="vrb-field__hint">{{ 'issueDetail.canceledHint' | translate }}</p>
             }
             @if (store.notice(); as notice) {
               @if (notice.kind === 'error') {
                 <p class="vrb-field__error" role="alert">
-                  {{
-                    notice.message
-                      | translate
-                        : {
-                            issue: notice.issue,
-                            column: notice.state
-                              ? ('board.columns.' + notice.state | translate)
-                              : ('board.canceled' | translate),
-                          }
-                  }}
+                  {{ notice.message | translate: { issue: notice.issue, column: notice.column } }}
+                  @if (notice.detail) {
+                    {{ notice.detail | translate: { issue: notice.issue, column: notice.column } }}
+                  }
                 </p>
               }
             }
           </div>
 
+          <div class="vrb-field">
+            <span class="vrb-field__label" id="issue-priority-label">
+              {{ 'issue.priorityLabel' | translate }}
+            </span>
+            <fieldset
+              class="vrb-segmented vrb-segmented--sm issue-detail__segmented"
+              aria-labelledby="issue-priority-label"
+              aria-describedby="issue-priority-error"
+              [disabled]="saving() !== null"
+              [attr.aria-busy]="saving() === 'priority' || null"
+            >
+              @for (priority of priorities; track priority) {
+                <label class="vrb-segmented__option">
+                  <input
+                    type="radio"
+                    name="issue-priority"
+                    [value]="priority"
+                    [checked]="issue.priority === priority"
+                    (change)="setPriority(priority)"
+                  />
+                  <span
+                    [class]="'vrb-segmented__dot vrb-segmented__dot--' + priorityDot(priority)"
+                  ></span>
+                  {{ 'issue.priorityByEnum.' + priority | translate }}
+                </label>
+              }
+            </fieldset>
+            <p id="issue-priority-error" class="vrb-field__error" aria-live="polite">
+              @if (errorFor('priority'); as error) {
+                {{ 'issueDetail.errors.save' | translate }} {{ error }}
+              }
+            </p>
+          </div>
+
+          <fieldset
+            class="vrb-field issue-detail__labels"
+            aria-describedby="issue-labels-error"
+            [disabled]="saving() !== null"
+            [attr.aria-busy]="saving() === 'labels' || null"
+          >
+            <legend class="vrb-field__label">{{ 'issue.labels' | translate }}</legend>
+            @for (label of store.labels(); track label.id) {
+              <label class="vrb-check">
+                <input
+                  type="checkbox"
+                  class="vrb-check__input"
+                  [checked]="hasLabel(label.id)"
+                  (change)="toggleLabel($any($event.target), label.id)"
+                />
+                <span class="vrb-check__box" aria-hidden="true"></span>
+                <span
+                  [class]="
+                    'vrb-check__label vrb-kanban-card__label vrb-kanban-card__label--' +
+                    labelTone[label.color]
+                  "
+                  >{{ label.name }}</span
+                >
+              </label>
+            } @empty {
+              <p class="vrb-field__hint">
+                {{ 'issueDetail.noLabels' | translate }}
+                <a [routerLink]="['/proyectos', projectId(), 'ajustes', 'etiquetas']">
+                  {{ 'issueDetail.createLabels' | translate }}
+                </a>
+              </p>
+            }
+            <p id="issue-labels-error" class="vrb-field__error" aria-live="polite">
+              @if (errorFor('labels'); as error) {
+                {{ 'issueDetail.errors.save' | translate }} {{ error }}
+              }
+            </p>
+          </fieldset>
+
           <dl class="issue-detail__facts">
             @if (store.project(); as project) {
               <dt>{{ 'issueDetail.project' | translate }}</dt>
               <dd class="vrb-cluster vrb-cluster--sm">
-                <span class="tk-avatar" aria-hidden="true">{{ project.key.slice(0, 2) }}</span>
+                <span class="tk-avatar tk-avatar--accent" aria-hidden="true">{{
+                  project.key.slice(0, 2)
+                }}</span>
                 {{ project.name }}
               </dd>
             }
@@ -102,7 +269,7 @@
               </dd>
             }
             @if (issue.updatedAt) {
-              <dt>{{ 'issueDetail.updated' | translate }}</dt>
+              <dt>{{ 'issueDetail.lastChange' | translate }}</dt>
               <dd>
                 <time [attr.datetime]="issue.updatedAt">{{ issue.updatedAt | date: 'short' }}</time>
               </dd>

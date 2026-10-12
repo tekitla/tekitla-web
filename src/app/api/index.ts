@@ -7,14 +7,28 @@ export { DomainError, isDomainError, toDomainError } from './http/http-errors';
 export { SKIP_AUTH } from './http/tokens';
 
 // IssueService de Tekitla (proyectos e issues), compartido por varias features.
-export { IssuesClient } from './clients/issues/issues.client';
-export { BOARD_STATES, PRIORITIES } from './clients/issues/issues.contracts';
+export { IssuesClient, fetchPages } from './clients/issues/issues.client';
+export type { Pages } from './clients/issues/issues.client';
+export { LABEL_COLORS, PRIORITIES, STATUS_CATEGORIES } from './clients/issues/issues.contracts';
 export type {
-  BoardState,
+  Comment,
   CreateIssueRequest,
+  CreateLabelRequest,
   CreateProjectRequest,
+  CreateStatusRequest,
   Issue,
+  IssueChange,
+  IssueEvent,
+  ListIssueEventsResponse,
   IssueState,
+  Label,
+  LabelColor,
+  MoveIssueRequest,
   Priority,
   Project,
+  Status,
+  StatusCategory,
+  UpdateIssueRequest,
+  UpdateLabelRequest,
+  UpdateStatusRequest,
 } from './clients/issues/issues.contracts';

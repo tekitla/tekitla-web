@@ -22,12 +22,22 @@
     class="vrb-kanban-card__title issue-card__link"
     [id]="'issue-link-' + issue().number"
     [routerLink]="link()"
-    aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight"
+    aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp Shift+ArrowDown"
     aria-describedby="board-shortcut-hint"
     (keydown)="onKeydown($event)"
   >
     <span class="u-visually-hidden">{{ key() }}: </span>{{ issue().title }}
   </a>
+
+  @if (labels().length) {
+    <ul class="vrb-kanban-card__labels" [attr.aria-label]="'issue.labels' | translate">
+      @for (label of labels(); track label.id) {
+        <li [class]="'vrb-kanban-card__label vrb-kanban-card__label--' + labelTone[label.color]">
+          {{ label.name }}
+        </li>
+      }
+    </ul>
+  }
 
   <div class="vrb-kanban-card__meta">
     <span class="vrb-kanban-card__priority">
@@ -39,15 +49,31 @@
 
 <ng-template #moveMenu>
   <div class="vrb-menu" cdkMenu>
-    @for (state of targets(); track state) {
+    @for (status of targets().board; track status.id) {
       <button
         type="button"
         class="vrb-menu__item"
         cdkMenuItem
-        (cdkMenuItemTriggered)="moveTo(state)"
+        (cdkMenuItemTriggered)="moveTo(status.id)"
       >
-        {{ 'board.card.moveTo' | translate: { column: ('board.columns.' + state | translate) } }}
+        <span
+          [class]="'vrb-segmented__dot vrb-segmented__dot--' + categoryTone[status.category]"
+        ></span>
+        {{ 'board.card.moveTo' | translate: { column: status.name } }}
       </button>
+    }
+    @if (targets().closed.length) {
+      <div class="vrb-menu__separator" role="separator"></div>
+      @for (status of targets().closed; track status.id) {
+        <button
+          type="button"
+          class="vrb-menu__item vrb-menu__item--danger"
+          cdkMenuItem
+          (cdkMenuItemTriggered)="moveTo(status.id)"
+        >
+          {{ 'board.card.moveTo' | translate: { column: status.name } }}
+        </button>
+      }
     }
   </div>
 </ng-template>

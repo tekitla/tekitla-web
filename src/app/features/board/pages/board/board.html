@@ -7,8 +7,11 @@
         <p class="vrb-page-header__description">{{ project.description }}</p>
       }
       <div class="vrb-page-header__actions">
+        <a class="vrb-button vrb-button--outline vrb-button--sm board__link" routerLink="ajustes">
+          <ui-icon name="settings" />{{ 'board.settings' | translate }}
+        </a>
         <a
-          class="vrb-button vrb-button--primary vrb-button--sm board__new"
+          class="vrb-button vrb-button--primary vrb-button--sm board__link"
           routerLink="issues/nuevo"
         >
           <ui-icon name="plus" />{{ 'board.newIssue' | translate }}
@@ -25,7 +28,7 @@
       role="status"
       [attr.aria-label]="'common.loading' | translate"
     >
-      @for (state of states; track state) {
+      @for (placeholder of [1, 2, 3]; track placeholder) {
         <div class="vrb-kanban__column board__column-skeleton">
           <span class="vrb-skeleton vrb-skeleton--text"></span>
           <span class="vrb-skeleton board__card-skeleton"></span>
@@ -43,20 +46,44 @@
       </div>
     </div>
   } @else if (store.error(); as error) {
-    <div class="vrb-empty vrb-empty--bordered vrb-empty--danger" role="alert">
-      <p class="vrb-empty__title">{{ 'board.loadError' | translate }}</p>
-      <p class="vrb-empty__description">{{ error }}</p>
+    <div class="vrb-alert vrb-alert--danger" role="alert">
+      <ui-icon name="alert" />
+      <div class="vrb-alert__body">
+        <p class="vrb-alert__title">{{ 'board.loadError' | translate }}</p>
+        <p class="vrb-alert__description">
+          {{ 'board.loadErrorHint' | translate }}
+          <span class="u-visually-hidden">({{ error }})</span>
+        </p>
+        <div class="vrb-alert__actions">
+          <ui-button size="sm" (pressed)="store.load(projectId())">
+            {{ 'common.retry' | translate }}
+          </ui-button>
+          <a class="vrb-button vrb-button--ghost vrb-button--sm" routerLink="/proyectos">
+            {{ 'board.backToProjects' | translate }}
+          </a>
+        </div>
+      </div>
+    </div>
+  } @else if (empty()) {
+    <div class="vrb-empty vrb-empty--bordered">
+      <p class="vrb-empty__title">{{ 'board.emptyTitle' | translate }}</p>
+      <p class="vrb-empty__description">
+        {{ 'board.emptyText' | translate: { column: store.columns()[0]?.status?.name ?? '' } }}
+      </p>
       <div class="vrb-empty__actions">
-        <ui-button variant="outline" (pressed)="store.load(projectId())">
-          {{ 'common.retry' | translate }}
-        </ui-button>
+        <a class="vrb-button vrb-button--primary board__link" routerLink="issues/nuevo">
+          <ui-icon name="plus" />{{ 'board.newIssue' | translate }}
+        </a>
       </div>
     </div>
   } @else {
     <div class="vrb-cluster vrb-cluster--lg board__info">
       @if (canceledCount(); as canceled) {
         <span class="vrb-cluster vrb-cluster--sm">
-          <ui-icon name="filter" />{{ 'board.canceledHidden' | translate: { count: canceled } }}
+          <ui-icon name="filter" />{{
+            (canceled === 1 ? 'board.canceledHiddenOne' : 'board.canceledHidden')
+              | translate: { count: canceled }
+          }}
         </span>
       }
       <span id="board-shortcut-hint">
@@ -70,42 +97,51 @@
         role="tablist"
         [attr.aria-label]="'board.columnsLabel' | translate"
       >
-        @for (state of states; track state; let i = $index) {
-          @let selected = store.activeColumn() === state;
+        @for (column of store.columns(); track column.status.id; let i = $index) {
+          @let selected = store.activeColumn() === column.status.id;
           <button
             type="button"
             role="tab"
             class="vrb-tabs__tab"
-            [id]="'board-tab-' + state"
+            [id]="'board-tab-' + column.status.id"
             [attr.aria-selected]="selected"
-            [attr.aria-controls]="'board-panel-' + state"
+            [attr.aria-controls]="'board-panel-' + column.status.id"
             [tabIndex]="selected ? 0 : -1"
-            (click)="selectTab(state)"
+            (click)="selectTab(column.status.id)"
             (keydown)="onTabKeydown($event, i)"
           >
-            {{ 'board.columns.' + state | translate }}
-            <span class="board__tab-count">{{ store.columns()[state].length }}</span>
+            {{ column.status.name }}
+            <span class="board__tab-count">{{ column.issues.length }}</span>
           </button>
         }
       </div>
     }
 
     <div class="vrb-kanban board__kanban" cdkDropListGroup>
-      @for (state of states; track state) {
-        @let issues = store.columns()[state];
+      @for (column of store.columns(); track column.status.id) {
+        @let status = column.status;
+        @let category = 'status.category.' + status.category | translate;
         <section
-          [class]="'vrb-kanban__column board__column vrb-kanban__column--' + tone[state]"
-          [id]="'board-panel-' + state"
-          [hidden]="isMobile() && store.activeColumn() !== state"
+          [class]="'vrb-kanban__column board__column vrb-kanban__column--' + tone[status.category]"
+          [id]="'board-panel-' + status.id"
+          [hidden]="isMobile() && store.activeColumn() !== status.id"
           [attr.role]="isMobile() ? 'tabpanel' : null"
-          [attr.aria-labelledby]="isMobile() ? 'board-tab-' + state : 'board-heading-' + state"
+          [attr.aria-labelledby]="
+            isMobile() ? 'board-tab-' + status.id : 'board-heading-' + status.id
+          "
         >
           <header class="vrb-kanban__header">
-            <h2 class="vrb-kanban__title" [id]="'board-heading-' + state">
-              {{ 'board.columns.' + state | translate }}
+            <h2 class="vrb-kanban__title" [id]="'board-heading-' + status.id">
+              {{ status.name }}
             </h2>
+            @if (category !== status.name) {
+              <span class="vrb-kanban__category">
+                <span class="u-visually-hidden">{{ 'status.categoryLabel' | translate }}: </span
+                >{{ category }}
+              </span>
+            }
             <span class="vrb-kanban__count">
-              <span class="u-visually-hidden">(</span>{{ issues.length
+              <span class="u-visually-hidden">(</span>{{ column.issues.length
               }}<span class="u-visually-hidden">)</span>
             </span>
           </header>
@@ -113,12 +149,11 @@
           <ul
             class="vrb-kanban__list board__list"
             cdkDropList
-            [cdkDropListData]="state"
-            [cdkDropListSortingDisabled]="true"
+            [cdkDropListData]="status.id"
             [cdkDropListDisabled]="isMobile()"
             (cdkDropListDropped)="onDrop($event)"
           >
-            @for (issue of issues; track issue.id) {
+            @for (issue of column.issues; track issue.id) {
               <li
                 class="vrb-kanban__item board__item"
                 cdkDrag
@@ -130,6 +165,9 @@
                   [issue]="issue"
                   [projectId]="projectId()"
                   [projectKey]="store.projectKey()"
+                  [statusId]="status.id"
+                  [statuses]="store.statuses()"
+                  [labelsById]="store.labelsById()"
                   [pending]="store.pending().has(issue.number)"
                   (move)="onMove($event)"
                 />
@@ -153,17 +191,13 @@
       >
         <div class="vrb-toast__body">
           <p class="vrb-toast__title">
-            {{
-              notice.message
-                | translate
-                  : {
-                      issue: notice.issue,
-                      column: notice.state
-                        ? ('board.columns.' + notice.state | translate)
-                        : ('board.canceled' | translate),
-                    }
-            }}
+            {{ notice.message | translate: { issue: notice.issue, column: notice.column } }}
           </p>
+          @if (notice.detail) {
+            <p class="vrb-toast__description">
+              {{ notice.detail | translate: { issue: notice.issue, column: notice.column } }}
+            </p>
+          }
         </div>
         <button
           type="button"

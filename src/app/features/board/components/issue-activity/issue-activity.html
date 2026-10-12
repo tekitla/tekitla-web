@@ -1,0 +1,193 @@
+<article class="vrb-card" aria-labelledby="issue-activity-title">
+  <header class="vrb-card__header activity__header">
+    <h2 id="issue-activity-title" class="vrb-card__title">
+      {{ 'activity.title' | translate }}
+    </h2>
+    <fieldset class="vrb-segmented vrb-segmented--sm">
+      <legend class="u-visually-hidden">{{ 'activity.filter' | translate }}</legend>
+      @for (option of filters; track option) {
+        <label class="vrb-segmented__option">
+          <input
+            type="radio"
+            name="activity-filter"
+            [checked]="filter() === option"
+            (change)="filter.set(option)"
+          />
+          {{ 'activity.filters.' + option | translate }}
+        </label>
+      }
+    </fieldset>
+  </header>
+
+  <div class="vrb-card__body vrb-stack">
+    @if (store.loading()) {
+      <div
+        class="vrb-stack vrb-stack--sm"
+        role="status"
+        [attr.aria-label]="'common.loading' | translate"
+      >
+        <span class="vrb-skeleton vrb-skeleton--text"></span>
+        <span class="vrb-skeleton vrb-skeleton--text"></span>
+      </div>
+    } @else {
+      @if (store.error(); as error) {
+        <div class="vrb-alert vrb-alert--danger" role="alert">
+          <div class="vrb-alert__body">
+            <p class="vrb-alert__title">{{ 'activity.loadError' | translate }}</p>
+            <p class="vrb-alert__description">{{ error }}</p>
+          </div>
+          <div class="vrb-alert__actions">
+            <ui-button variant="outline" size="sm" (pressed)="store.refresh()">
+              {{ 'common.retry' | translate }}
+            </ui-button>
+          </div>
+        </div>
+      }
+
+      <ol class="activity">
+        @for (event of visible(); track event.id) {
+          @let change = event.change;
+          <li class="activity__item">
+            <span
+              class="tk-avatar tk-avatar--round activity__avatar"
+              [class.tk-avatar--muted]="!isMe(event)"
+              aria-hidden="true"
+              >{{ initials(event) }}</span
+            >
+            <div class="activity__body">
+              <p class="activity__line">
+                <b class="activity__actor" [class.activity__actor--uid]="!isMe(event)">
+                  {{ isMe(event) ? ('activity.me' | translate) : event.actorId }}
+                </b>
+                @switch (change.kind) {
+                  @case ('created') {
+                    {{ 'activity.created' | translate }}
+                  }
+                  @case ('statusChanged') {
+                    {{ 'activity.statusChanged' | translate }}
+                    <span class="vrb-badge vrb-badge--sm vrb-badge--neutral">{{
+                      change.fromStatusName
+                    }}</span>
+                    <ui-icon name="arrowRight" />
+                    <span class="u-visually-hidden">{{ 'activity.to' | translate }}</span>
+                    <span
+                      [class]="'vrb-badge vrb-badge--sm vrb-badge--' + categoryTone[change.toState]"
+                      >{{ change.toStatusName }}</span
+                    >
+                  }
+                  @case ('titleChanged') {
+                    {{ 'activity.titleChanged' | translate }}
+                    <s class="activity__old">{{ change.from }}</s>
+                    <ui-icon name="arrowRight" />
+                    <span class="u-visually-hidden">{{ 'activity.to' | translate }}</span>
+                    <span>{{ change.to }}</span>
+                  }
+                  @case ('descriptionChanged') {
+                    {{ 'activity.descriptionChanged' | translate }}
+                  }
+                  @case ('priorityChanged') {
+                    {{ 'activity.priorityChanged' | translate }}
+                    <span class="vrb-badge vrb-badge--sm vrb-badge--neutral">{{
+                      'issue.priority.' + priorityLevel[change.from] | translate
+                    }}</span>
+                    <ui-icon name="arrowRight" />
+                    <span class="u-visually-hidden">{{ 'activity.to' | translate }}</span>
+                    <span
+                      [class]="
+                        'vrb-badge vrb-badge--sm vrb-badge--' +
+                        priorityTone[priorityLevel[change.to]]
+                      "
+                      >{{ 'issue.priority.' + priorityLevel[change.to] | translate }}</span
+                    >
+                  }
+                  @case ('labelsChanged') {
+                    @if (change.addedLabelNames.length) {
+                      {{ 'activity.labelsAdded' | translate }}
+                      @for (name of change.addedLabelNames; track $index) {
+                        <span class="vrb-badge vrb-badge--sm vrb-badge--neutral">{{ name }}</span>
+                      }
+                    }
+                    @if (change.removedLabelNames.length) {
+                      @if (change.addedLabelNames.length) {
+                        {{ 'activity.and' | translate }}
+                      }
+                      {{ 'activity.labelsRemoved' | translate }}
+                      @for (name of change.removedLabelNames; track $index) {
+                        <s class="vrb-badge vrb-badge--sm vrb-badge--neutral">{{ name }}</s>
+                      }
+                    }
+                  }
+                  @case ('commented') {
+                    {{ 'activity.commented' | translate }}
+                  }
+                  @default {
+                    {{ 'activity.unknown' | translate }}
+                  }
+                }
+              </p>
+              @if (change.kind === 'commented') {
+                <div class="activity__comment">
+                  <ui-markdown [source]="change.comment.body" />
+                </div>
+              }
+              @if (event.createdAt) {
+                <time class="activity__time" [attr.datetime]="event.createdAt">{{
+                  isToday(event.createdAt)
+                    ? ('activity.today' | translate) + ' ' + (event.createdAt | date: 'HH:mm')
+                    : (event.createdAt | date: 'd MMM, HH:mm')
+                }}</time>
+              }
+            </div>
+          </li>
+        } @empty {
+          @if (!store.error()) {
+            <li class="activity__empty">{{ 'activity.empty' | translate }}</li>
+          }
+        }
+      </ol>
+
+      @if (store.hasNext()) {
+        <div>
+          <ui-button
+            variant="outline"
+            size="sm"
+            [loading]="store.loadingMore()"
+            (pressed)="store.loadMore()"
+          >
+            {{ 'activity.more' | translate }}
+          </ui-button>
+        </div>
+      }
+    }
+
+    <form class="vrb-field" (submit)="$event.preventDefault(); submit()" novalidate>
+      <label class="vrb-field__label" for="issue-comment">{{
+        'activity.comment' | translate
+      }}</label>
+      <textarea
+        id="issue-comment"
+        class="vrb-input activity__input"
+        rows="3"
+        [formControl]="body"
+        [maxLength]="commentMax"
+        [placeholder]="'activity.commentPlaceholder' | translate"
+        aria-describedby="issue-comment-hint issue-comment-error"
+        [attr.aria-invalid]="!!postError() || null"
+        (keydown)="onKeydown($event)"
+      ></textarea>
+      <p id="issue-comment-hint" class="vrb-field__hint">
+        {{ 'activity.commentHint' | translate }}
+      </p>
+      <p id="issue-comment-error" class="vrb-field__error" aria-live="polite">
+        @if (postError(); as error) {
+          {{ 'activity.commentError' | translate }} {{ error }}
+        }
+      </p>
+      <div class="vrb-cluster vrb-cluster--end">
+        <ui-button type="submit" size="sm" [loading]="posting()" [disabled]="!body.value.trim()">
+          {{ 'activity.send' | translate }}
+        </ui-button>
+      </div>
+    </form>
+  </div>
+</article>

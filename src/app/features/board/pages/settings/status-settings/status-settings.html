@@ -1,0 +1,341 @@
+<div class="settings-layout">
+  <div class="vrb-stack settings-layout__main">
+    <div class="vrb-cluster vrb-cluster--between">
+      <p class="settings-muted" id="statuses-lead">{{ 'settings.statuses.lead' | translate }}</p>
+      <button
+        type="button"
+        id="status-new"
+        class="vrb-button vrb-button--primary vrb-button--sm"
+        [disabled]="full() || creating()"
+        (click)="startCreate()"
+      >
+        <ui-icon name="plus" />{{ 'settings.statuses.new' | translate }}
+      </button>
+    </div>
+    @if (full()) {
+      <p class="vrb-field__hint">
+        {{ 'settings.statuses.full' | translate: { max: maxStatuses } }}
+      </p>
+    }
+
+    @if (creating()) {
+      <form
+        class="vrb-card settings-form"
+        aria-labelledby="status-new-title"
+        (submit)="$event.preventDefault(); create()"
+        novalidate
+      >
+        <div class="vrb-card__body vrb-stack">
+          <h2 id="status-new-title" class="vrb-card__title">
+            {{ 'settings.statuses.new' | translate }}
+          </h2>
+          <div class="settings-form__row">
+            <div class="vrb-field">
+              <label class="vrb-field__label" for="status-new-name">
+                {{ 'settings.fields.name' | translate }}
+              </label>
+              <input
+                id="status-new-name"
+                class="vrb-input"
+                autocomplete="off"
+                required
+                [maxLength]="nameMax"
+                [value]="newName()"
+                [attr.aria-invalid]="!!newNameError() || null"
+                aria-describedby="status-new-name-error"
+                (input)="newName.set($any($event.target).value)"
+              />
+              <p id="status-new-name-error" class="vrb-field__error" aria-live="polite">
+                @if (newNameError(); as invalid) {
+                  {{ 'settings.errors.name.' + invalid | translate: { max: nameMax } }}
+                }
+              </p>
+            </div>
+            <div class="vrb-field">
+              <label class="vrb-field__label" for="status-new-category">
+                {{ 'settings.fields.category' | translate }}
+              </label>
+              <div class="vrb-select">
+                <select
+                  id="status-new-category"
+                  class="vrb-input"
+                  aria-describedby="status-new-category-hint"
+                  (change)="newCategory.set($any($event.target).value)"
+                >
+                  @for (category of categories; track category) {
+                    <option [value]="category" [selected]="category === newCategory()">
+                      {{ 'status.category.' + category | translate }}
+                    </option>
+                  }
+                </select>
+              </div>
+              <p id="status-new-category-hint" class="vrb-field__hint">
+                {{ 'settings.statuses.categoryHint' | translate }}
+              </p>
+            </div>
+          </div>
+          @if (errorFor('create'); as error) {
+            <p class="vrb-field__error" role="alert">
+              {{ error.key | translate }} {{ error.message }}
+            </p>
+          }
+          <div class="vrb-cluster vrb-cluster--end vrb-cluster--sm">
+            <ui-button variant="ghost" size="sm" (pressed)="creating.set(false)">
+              {{ 'common.cancel' | translate }}
+            </ui-button>
+            <ui-button type="submit" size="sm" [loading]="busy() === 'create'">
+              {{ 'settings.statuses.create' | translate }}
+            </ui-button>
+          </div>
+        </div>
+      </form>
+    }
+
+    <div class="vrb-card settings-table-card">
+      <table class="tk-table" aria-describedby="statuses-lead">
+        <caption class="u-visually-hidden">
+          {{
+            'settings.statuses.caption' | translate
+          }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">
+              <span class="u-visually-hidden">{{ 'settings.columns.order' | translate }}</span>
+            </th>
+            <th scope="col">{{ 'settings.columns.status' | translate }}</th>
+            <th scope="col">{{ 'settings.columns.category' | translate }}</th>
+            <th scope="col" class="tk-table__num">{{ 'settings.columns.issues' | translate }}</th>
+            <th scope="col">
+              <span class="u-visually-hidden">{{ 'settings.columns.actions' | translate }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (status of statuses(); track status.id; let first = $first; let last = $last) {
+            @let rowBusy = busy() === status.id;
+            <tr [attr.aria-busy]="rowBusy || null">
+              <td class="tk-table__order">
+                <div class="vrb-cluster vrb-cluster--nowrap">
+                  <button
+                    type="button"
+                    class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
+                    [id]="'status-up-' + status.id"
+                    [disabled]="first || !!busy()"
+                    [attr.aria-label]="
+                      'settings.statuses.moveUp' | translate: { name: status.name }
+                    "
+                    (click)="move(status, -1)"
+                  >
+                    <ui-icon name="arrowUp" />
+                  </button>
+                  <button
+                    type="button"
+                    class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
+                    [id]="'status-down-' + status.id"
+                    [disabled]="last || !!busy()"
+                    [attr.aria-label]="
+                      'settings.statuses.moveDown' | translate: { name: status.name }
+                    "
+                    (click)="move(status, 1)"
+                  >
+                    <ui-icon name="arrowDown" />
+                  </button>
+                </div>
+              </td>
+              <th scope="row">
+                @if (renamingId() === status.id) {
+                  <form
+                    class="vrb-cluster vrb-cluster--sm"
+                    (submit)="$event.preventDefault(); rename(status)"
+                    novalidate
+                  >
+                    <label class="u-visually-hidden" [for]="'status-name-' + status.id">
+                      {{ 'settings.statuses.renameLabel' | translate: { name: status.name } }}
+                    </label>
+                    <input
+                      class="vrb-input settings-inline-input"
+                      autocomplete="off"
+                      required
+                      [id]="'status-name-' + status.id"
+                      [maxLength]="nameMax"
+                      [value]="renameDraft()"
+                      [attr.aria-invalid]="!!renameError() || null"
+                      [attr.aria-describedby]="'status-name-error-' + status.id"
+                      (input)="renameDraft.set($any($event.target).value)"
+                      (keydown)="onRenameKeydown($event, status)"
+                    />
+                    <ui-button type="submit" size="sm" [loading]="rowBusy">
+                      {{ 'common.save' | translate }}
+                    </ui-button>
+                    <ui-button variant="ghost" size="sm" (pressed)="renamingId.set(null)">
+                      {{ 'common.cancel' | translate }}
+                    </ui-button>
+                    <p
+                      class="vrb-field__error settings-inline-error"
+                      aria-live="polite"
+                      [id]="'status-name-error-' + status.id"
+                    >
+                      @if (renameError(); as invalid) {
+                        {{ 'settings.errors.name.' + invalid | translate: { max: nameMax } }}
+                      }
+                    </p>
+                  </form>
+                } @else {
+                  <span class="vrb-cluster vrb-cluster--sm vrb-cluster--nowrap">
+                    <span
+                      [class]="'vrb-segmented__dot vrb-segmented__dot--' + tone[status.category]"
+                    ></span>
+                    <b>{{ status.name }}</b>
+                    @if (!isBoard(status)) {
+                      <span class="settings-muted">{{
+                        'settings.statuses.hidden' | translate
+                      }}</span>
+                    }
+                  </span>
+                }
+              </th>
+              <td>
+                <span class="vrb-badge vrb-badge--sm vrb-badge--neutral">
+                  {{ 'status.category.' + status.category | translate }}
+                </span>
+              </td>
+              <td class="tk-table__num">{{ countOf(status) }}</td>
+              <td class="tk-table__actions">
+                <button
+                  type="button"
+                  class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
+                  [id]="'status-actions-' + status.id"
+                  [disabled]="!!busy()"
+                  [cdkMenuTriggerFor]="actions"
+                  [cdkMenuTriggerData]="{ $implicit: status }"
+                  [attr.aria-label]="'settings.statuses.actions' | translate: { name: status.name }"
+                >
+                  <ui-icon name="more" />
+                </button>
+              </td>
+            </tr>
+            @if (deletingId() === status.id) {
+              <tr class="tk-table__panel">
+                <td colspan="5">
+                  <form
+                    class="vrb-stack vrb-stack--sm"
+                    tabindex="-1"
+                    [id]="'status-delete-panel-' + status.id"
+                    [attr.aria-label]="
+                      'settings.statuses.delete' | translate: { name: status.name }
+                    "
+                    (submit)="$event.preventDefault(); remove(status)"
+                    novalidate
+                  >
+                    @if (countOf(status) > 0) {
+                      <div class="vrb-field">
+                        <label class="vrb-field__label" [for]="'status-move-to-' + status.id">
+                          {{
+                            'settings.statuses.moveIssuesTo'
+                              | translate: { count: countOf(status), name: status.name }
+                          }}
+                        </label>
+                        <div class="vrb-select">
+                          <select
+                            class="vrb-input"
+                            [id]="'status-move-to-' + status.id"
+                            (change)="deleteTarget.set($any($event.target).value)"
+                          >
+                            @for (option of destinations(status); track option.id) {
+                              <option [value]="option.id" [selected]="option.id === deleteTarget()">
+                                {{ option.name }} ·
+                                {{ 'status.category.' + option.category | translate }}
+                              </option>
+                            }
+                          </select>
+                        </div>
+                      </div>
+                    } @else {
+                      <p class="settings-muted">
+                        {{ 'settings.statuses.deleteEmpty' | translate: { name: status.name } }}
+                      </p>
+                    }
+                    @if (errorFor(status.id); as error) {
+                      <p class="vrb-field__error" role="alert">
+                        {{ error.key | translate }} {{ error.message }}
+                      </p>
+                    }
+                    <div class="vrb-cluster vrb-cluster--sm">
+                      <ui-button type="submit" variant="danger" size="sm" [loading]="rowBusy">
+                        {{ 'settings.statuses.confirmDelete' | translate }}
+                      </ui-button>
+                      <ui-button variant="ghost" size="sm" (pressed)="cancelDelete(status)">
+                        {{ 'common.cancel' | translate }}
+                      </ui-button>
+                    </div>
+                  </form>
+                </td>
+              </tr>
+            } @else if (errorFor(status.id); as error) {
+              <tr class="tk-table__panel">
+                <td colspan="5">
+                  <p class="vrb-field__error" role="alert">
+                    {{ error.key | translate }} {{ error.message }}
+                  </p>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <p id="status-last-hint" class="vrb-field__hint">
+      {{ 'settings.statuses.lastHint' | translate }}
+    </p>
+  </div>
+
+  <aside class="settings-layout__aside" aria-labelledby="status-preview-title">
+    <p id="status-preview-title" class="vrb-page-header__eyebrow">
+      {{ 'settings.statuses.preview' | translate }}
+    </p>
+    <ol class="vrb-stack vrb-stack--sm settings-preview">
+      @for (status of columns(); track status.id) {
+        <li
+          [class]="
+            'vrb-kanban__column settings-preview__column vrb-kanban__column--' +
+            tone[status.category]
+          "
+        >
+          <header class="vrb-kanban__header">
+            @let category = 'status.category.' + status.category | translate;
+            <span class="vrb-kanban__title">{{ status.name }}</span>
+            <!-- Como en el tablero: la categoría sólo si el nombre no la dice. -->
+            @if (category !== status.name) {
+              <span class="vrb-kanban__category">{{ category }}</span>
+            }
+          </header>
+        </li>
+      }
+    </ol>
+    <p class="vrb-field__hint">{{ 'settings.statuses.canceledNote' | translate }}</p>
+  </aside>
+</div>
+
+<ng-template #actions let-status>
+  <div class="vrb-menu" cdkMenu>
+    <button
+      type="button"
+      class="vrb-menu__item"
+      cdkMenuItem
+      (cdkMenuItemTriggered)="startRename(status)"
+    >
+      <ui-icon name="edit" />{{ 'settings.statuses.renameItem' | translate }}
+    </button>
+    <button
+      type="button"
+      class="vrb-menu__item vrb-menu__item--danger"
+      cdkMenuItem
+      [cdkMenuItemDisabled]="isLast(status)"
+      [attr.aria-describedby]="isLast(status) ? 'status-last-hint' : null"
+      (cdkMenuItemTriggered)="startDelete(status)"
+    >
+      <ui-icon name="trash" />{{ 'settings.statuses.deleteItem' | translate }}
+    </button>
+  </div>
+</ng-template>

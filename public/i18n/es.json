@@ -4,14 +4,17 @@
     "login": "Iniciar sesión · Tekitla",
     "noAccess": "Sin acceso · Tekitla",
     "projects": "Proyectos · Tekitla",
-    "board": "Tablero · Tekitla"
+    "board": "Tablero · Tekitla",
+    "settings": "Ajustes · Tekitla"
   },
   "common": {
     "loading": "Cargando…",
     "retry": "Reintentar",
     "cancel": "Cancelar",
     "close": "Cerrar",
-    "optional": "(opcional)"
+    "optional": "(opcional)",
+    "save": "Guardar",
+    "edit": "Editar"
   },
   "shell": {
     "skip": "Saltar al contenido",
@@ -22,7 +25,8 @@
       "label": "Navegación",
       "workspace": "Espacio de trabajo",
       "projects": "Proyectos",
-      "board": "Tablero"
+      "board": "Tablero",
+      "settings": "Ajustes"
     },
     "logout": "Cerrar sesión"
   },
@@ -82,28 +86,34 @@
     "back": "Proyectos",
     "newIssue": "Nuevo issue",
     "columnsLabel": "Columnas del tablero",
-    "hintDesktop": "Arrastra las tarjetas entre columnas, o usa «Mover». Con el teclado: Shift + ← / → mueve la tarjeta enfocada.",
+    "hintDesktop": "Arrastra las tarjetas para cambiarlas de columna o de lugar, o usa «Mover». Con el teclado: Shift + ← / → cambia de columna y Shift + ↑ / ↓ sube o baja la tarjeta enfocada.",
     "hintMobile": "Usa «Mover» en cada tarjeta para cambiarla de columna.",
     "emptyColumn": "Sin issues",
     "notFound": "No encontramos este proyecto.",
-    "loadError": "No pudimos cargar el tablero.",
-    "columns": {
-      "ISSUE_STATE_TODO": "Por hacer",
-      "ISSUE_STATE_IN_PROGRESS": "En curso",
-      "ISSUE_STATE_DONE": "Hecho"
-    },
+    "loadError": "No pudimos cargar el tablero",
     "card": {
       "move": "Mover",
       "moveLabel": "Mover {{issue}} a otra columna",
       "moveTo": "Mover a {{column}}"
     },
     "notice": {
-      "moved": "{{issue}} pasó a {{column}}.",
-      "moveFailed": "No se pudo mover {{issue}}: volvió a {{column}}. Intenta de nuevo.",
-      "created": "{{issue}} creado en Por hacer."
+      "moved": "{{issue}} pasó a {{column}}",
+      "reordered": "{{issue}} cambió de lugar en {{column}}",
+      "moveFailed": "No se pudo mover {{issue}}",
+      "moveFailedDetail": "Volvió a {{column}}. Intenta de nuevo.",
+      "stale": "El tablero cambió mientras tanto: lo recargamos. Intenta de nuevo.",
+      "created": "{{issue}} creado en {{column}}",
+      "refreshFailed": "No pudimos actualizar el tablero. Lo que ves puede estar desactualizado.",
+      "createdNoColumn": "{{issue}} creado",
+      "retry": "Intenta de nuevo."
     },
-    "canceledHidden": "Descartados ocultos: {{count}}",
-    "canceled": "Descartado"
+    "canceledHidden": "{{count}} descartados ocultos",
+    "settings": "Ajustes",
+    "loadErrorHint": "Revisa tu conexión e intenta de nuevo.",
+    "backToProjects": "Volver a proyectos",
+    "emptyTitle": "Todavía no hay issues",
+    "emptyText": "Crea el primero y aparecerá en {{column}}.",
+    "canceledHiddenOne": "1 descartado oculto"
   },
   "issue": {
     "priorityLabel": "Prioridad",
@@ -118,7 +128,8 @@
       "PRIORITY_MEDIUM": "Media",
       "PRIORITY_HIGH": "Alta",
       "PRIORITY_URGENT": "Urgente"
-    }
+    },
+    "labels": "Etiquetas"
   },
   "issueNew": {
     "title": "Nuevo issue",
@@ -150,6 +161,148 @@
     "notFound": "No encontramos este issue.",
     "loadError": "No pudimos cargar el issue.",
     "project": "Proyecto",
-    "canceledHint": "Este issue está descartado. Elegir un estado lo reabre."
+    "canceledHint": "Este issue está descartado: no se ve en el tablero. Elegir otro estado lo reabre.",
+    "titleLabel": "Título",
+    "editTitle": "Editar el título",
+    "closedStatuses": "Descartar",
+    "noLabels": "Este proyecto todavía no tiene etiquetas.",
+    "createLabels": "Crear etiquetas",
+    "errors": {
+      "titleRequired": "Escribe un título.",
+      "save": "No se pudo guardar."
+    },
+    "lastChange": "Último cambio"
+  },
+  "editor": {
+    "mode": "Modo del editor",
+    "write": "Escribir",
+    "preview": "Vista previa",
+    "previewEmpty": "Nada para previsualizar todavía."
+  },
+  "status": {
+    "categoryLabel": "Categoría",
+    "category": {
+      "ISSUE_STATE_UNSPECIFIED": "Sin categoría",
+      "ISSUE_STATE_TODO": "Por hacer",
+      "ISSUE_STATE_IN_PROGRESS": "En curso",
+      "ISSUE_STATE_DONE": "Hecho",
+      "ISSUE_STATE_CANCELED": "Cancelado"
+    }
+  },
+  "activity": {
+    "title": "Actividad",
+    "filter": "Filtrar actividad",
+    "filters": {
+      "all": "Todo",
+      "changes": "Cambios",
+      "comments": "Comentarios"
+    },
+    "me": "Tú",
+    "to": "a",
+    "and": "y",
+    "created": "creó el issue",
+    "statusChanged": "movió el issue",
+    "titleChanged": "cambió el título",
+    "descriptionChanged": "editó la descripción",
+    "priorityChanged": "cambió la prioridad",
+    "labelsAdded": "agregó",
+    "labelsRemoved": "quitó",
+    "commented": "comentó",
+    "unknown": "hizo un cambio",
+    "empty": "Todavía no hay actividad.",
+    "loadError": "No pudimos cargar la actividad.",
+    "more": "Ver más actividad",
+    "comment": "Comentar",
+    "commentPlaceholder": "Escribe un comentario",
+    "commentHint": "Admite Markdown. Ctrl + Enter para enviar.",
+    "commentError": "No se pudo comentar.",
+    "send": "Comentar",
+    "today": "Hoy"
+  },
+  "settings": {
+    "title": "Ajustes del proyecto",
+    "lead": "Lo que cambies aquí aplica a todos los issues de {{project}}.",
+    "loadError": "No pudimos cargar los ajustes.",
+    "tabsLabel": "Secciones de ajustes",
+    "tabs": {
+      "statuses": "Estados",
+      "labels": "Etiquetas"
+    },
+    "fields": {
+      "name": "Nombre",
+      "category": "Categoría",
+      "color": "Color"
+    },
+    "columns": {
+      "order": "Orden",
+      "status": "Estado",
+      "category": "Categoría",
+      "issues": "Issues",
+      "actions": "Acciones",
+      "label": "Etiqueta"
+    },
+    "colors": {
+      "LABEL_COLOR_UNSPECIFIED": "Neutro",
+      "LABEL_COLOR_NEUTRAL": "Neutro",
+      "LABEL_COLOR_INFO": "Azul",
+      "LABEL_COLOR_SUCCESS": "Verde",
+      "LABEL_COLOR_WARNING": "Ámbar",
+      "LABEL_COLOR_DANGER": "Rojo",
+      "LABEL_COLOR_ACCENT": "Violeta",
+      "LABEL_COLOR_BRAND": "Marca"
+    },
+    "statuses": {
+      "lead": "Cada estado es una columna del tablero. Su categoría no cambia: la usan la CLI y los reportes.",
+      "caption": "Estados del proyecto, en el orden de las columnas",
+      "new": "Nuevo estado",
+      "create": "Crear estado",
+      "categoryHint": "No se puede cambiar después.",
+      "full": "El proyecto ya tiene el máximo de {{max}} estados.",
+      "hidden": "(no se ve en el tablero)",
+      "moveUp": "Subir {{name}}",
+      "moveDown": "Bajar {{name}}",
+      "rename": "Renombrar {{name}}",
+      "renameLabel": "Nuevo nombre de {{name}}",
+      "delete": "Eliminar {{name}}",
+      "confirmDelete": "Eliminar estado",
+      "moveIssuesTo": "Sus {{count}} issues pasan a",
+      "deleteEmpty": "{{name}} no tiene issues.",
+      "lastHint": "Cada categoría necesita al menos un estado: el último de una categoría no se puede eliminar.",
+      "preview": "// columnas resultantes",
+      "canceledNote": "Los estados de categoría Cancelado (como Descartado) nunca se muestran en el tablero.",
+      "actions": "Más acciones para {{name}}",
+      "renameItem": "Renombrar",
+      "deleteItem": "Eliminar"
+    },
+    "labels": {
+      "lead": "Las etiquetas clasifican los issues; se ven en las tarjetas del tablero.",
+      "caption": "Etiquetas del proyecto, por nombre",
+      "new": "Nueva etiqueta",
+      "create": "Crear etiqueta",
+      "namePlaceholder": "Ej. Frontend",
+      "full": "El proyecto ya tiene el máximo de {{max}} etiquetas.",
+      "edit": "Editar {{name}}",
+      "delete": "Eliminar {{name}}",
+      "confirmDelete": "Eliminar etiqueta",
+      "deleteConfirm": "¿Eliminar {{name}}? Se quita de los {{count}} issues que la tienen.",
+      "emptyTitle": "Todavía no hay etiquetas",
+      "empty": "Crea la primera para clasificar los issues."
+    },
+    "errors": {
+      "name": {
+        "required": "Escribe un nombre.",
+        "tooLong": "Máximo {{max}} caracteres.",
+        "taken": "Ya hay uno con ese nombre."
+      },
+      "nameTaken": "Ya hay uno con ese nombre.",
+      "statusLimit": "El proyecto ya tiene el máximo de estados.",
+      "labelLimit": "El proyecto ya tiene el máximo de etiquetas.",
+      "cannotDelete": "No se puede eliminar: es el último de su categoría o falta elegir a dónde pasan sus issues.",
+      "notFound": "Ya no existe: recarga la página.",
+      "generic": "No se pudo guardar.",
+      "lastOfCategory": "No se puede eliminar: es el último estado de su categoría.",
+      "statusHasIssues": "Tiene issues: elige a qué estado pasan."
+    },
+    "thisProject": "este proyecto"
   }
 }

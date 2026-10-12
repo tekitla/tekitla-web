@@ -1,5 +1,6 @@
-// Tarjetas, badges y el selector de estado salen de vrb; acá solo las dos
-// columnas (descripción y datos), que en celular se apilan.
+// Tarjetas, badges, selectores y editor salen de vrb; acá las dos columnas
+// (descripción + actividad y datos), que en celular se apilan, y la edición
+// del título en el lugar.
 .issue-detail__layout {
   display: flex;
   flex-wrap: wrap;
@@ -14,10 +15,6 @@
 
 .issue-detail__aside {
   flex: 1 1 300px;
-}
-
-.issue-detail__states {
-  width: 100%;
 }
 
 .issue-detail__facts {
@@ -44,4 +41,40 @@
 .issue-detail__skeleton {
   height: 160px;
   border-radius: var(--vrb-radius-card);
+}
+
+.issue-detail__segmented {
+  width: 100%;
+}
+
+.issue-detail__title-row {
+  align-items: flex-start;
+}
+
+.issue-detail__title-form {
+  margin-bottom: var(--space-2);
+}
+
+.issue-detail__title-input {
+  flex: 1 1 280px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+// Fieldset sin el borde del navegador: es un grupo de casillas.
+.issue-detail__labels {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+// .vrb-card__header es grid: el título y su acción, en una fila.
+.issue-detail__card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
 }

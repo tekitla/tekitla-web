@@ -4,6 +4,7 @@ import {
   ElementRef,
   Injector,
   afterNextRender,
+  computed,
   effect,
   inject,
   input,
@@ -46,6 +47,10 @@ export class IssueNew {
   private readonly titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
 
   protected readonly priorities = PRIORITIES;
+  /** El backend crea el issue en el primer estado de la categoría «Por hacer». */
+  protected readonly firstStatus = computed(() =>
+    this.store.statuses().find((s) => s.category === 'ISSUE_STATE_TODO'),
+  );
   /** Color del punto de cada prioridad en el selector. */
   protected readonly priorityDot = (priority: Priority) => PRIORITY_TONE[PRIORITY_LEVEL[priority]];
   protected readonly titleMax = TITLE_MAX;

@@ -1,0 +1,77 @@
+// Línea de tiempo de la actividad (como en el diseño): avatar + texto, con el
+// comentario en un bloque aparte. Badges, filtro y campo salen de vrb.
+.activity {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activity__item {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.activity__avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.activity__body {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.activity__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+// Sin nombres hasta la rebanada 3b: el uid, en mono y cortado.
+.activity__actor--uid {
+  max-width: 12ch;
+  overflow: hidden;
+  font: 500 12px/1.4 var(--vrb-font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity__old {
+  color: var(--vrb-muted-fg);
+}
+
+.activity__comment {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--vrb-radius-control);
+  background: var(--vrb-fill);
+}
+
+.activity__time,
+.activity__empty {
+  color: var(--vrb-muted-fg);
+  font-size: 12px;
+}
+
+.activity__input {
+  height: auto;
+  min-height: calc(var(--touch-target) * 2);
+  padding-block: var(--space-2);
+  resize: vertical;
+}
+
+// .vrb-card__header es grid: el título y el filtro, en una fila.
+.activity__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
