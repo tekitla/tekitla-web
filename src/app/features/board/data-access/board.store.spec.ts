@@ -22,6 +22,9 @@ const status = (id: string, category: Status['category'], rank: string, name: st
   name,
   category,
   rank,
+  color: 'LABEL_COLOR_UNSPECIFIED',
+  wipLimit: 0,
+  hidden: category === 'ISSUE_STATE_CANCELED',
 });
 
 const statuses: Status[] = [
@@ -53,6 +56,7 @@ const issue = (number: number, patch: Partial<Issue> = {}): Issue => {
     rank: `0|a${number}`,
     statusId,
     labelIds: [],
+    discard: null,
     ...patch,
   };
 };

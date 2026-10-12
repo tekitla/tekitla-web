@@ -18,6 +18,9 @@ const status = (id: string, category: Status['category'], rank: string, name = i
   name,
   category,
   rank,
+  color: 'LABEL_COLOR_UNSPECIFIED',
+  wipLimit: 0,
+  hidden: category === 'ISSUE_STATE_CANCELED',
 });
 
 // Desordenados a propósito: las columnas salen por rank.
@@ -42,6 +45,7 @@ const issue = (number: number, patch: Partial<Issue> = {}): Issue => ({
   rank: `r${number}`,
   statusId: 'todo',
   labelIds: [],
+  discard: null,
   ...patch,
 });
 

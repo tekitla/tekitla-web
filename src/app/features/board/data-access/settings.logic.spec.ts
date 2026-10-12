@@ -9,6 +9,9 @@ const status = (id: string, category: Status['category']): Status => ({
   name: id,
   category,
   rank: id,
+  color: 'LABEL_COLOR_UNSPECIFIED',
+  wipLimit: 0,
+  hidden: category === 'ISSUE_STATE_CANCELED',
 });
 
 const statuses = [

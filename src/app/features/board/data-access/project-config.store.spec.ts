@@ -11,6 +11,9 @@ const status = (id: string, category: Status['category'], rank: string): Status 
   name: id,
   category,
   rank,
+  color: 'LABEL_COLOR_UNSPECIFIED',
+  wipLimit: 0,
+  hidden: category === 'ISSUE_STATE_CANCELED',
 });
 
 const label = (id: string, name: string): Label => ({

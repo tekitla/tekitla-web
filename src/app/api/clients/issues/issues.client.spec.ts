@@ -95,6 +95,106 @@ describe('IssuesClient', () => {
     expect(issues[2]).toMatchObject({ state: 'ISSUE_STATE_CANCELED', rank: '0|hzzzzz:' });
   });
 
+  it('listIssues manda búsqueda, filtros (repitiendo el parámetro) y orden', () => {
+    client
+      .listIssues('p1', {
+        query: '  tk-12 ',
+        states: ['ISSUE_STATE_TODO', 'ISSUE_STATE_IN_PROGRESS'],
+        statusIds: ['s1'],
+        priorities: ['PRIORITY_HIGH', 'PRIORITY_URGENT'],
+        labelIds: ['l1', 'l2'],
+        orderBy: 'ISSUE_ORDER_UPDATED_DESC',
+        page: { cursor: 'n1', limit: 50 },
+      })
+      .subscribe();
+
+    const req = httpMock.expectOne((r) => r.url === url('/v1/projects/p1/issues'));
+    const params = req.request.params;
+    expect(params.get('query')).toBe('tk-12');
+    expect(params.getAll('states')).toEqual(['ISSUE_STATE_TODO', 'ISSUE_STATE_IN_PROGRESS']);
+    expect(params.getAll('status_ids')).toEqual(['s1']);
+    expect(params.getAll('priorities')).toEqual(['PRIORITY_HIGH', 'PRIORITY_URGENT']);
+    expect(params.getAll('label_ids')).toEqual(['l1', 'l2']);
+    expect(params.get('order_by')).toBe('ISSUE_ORDER_UPDATED_DESC');
+    expect(params.get('page.cursor')).toBe('n1');
+    expect(params.has('state')).toBe(false);
+    req.flush({});
+  });
+
+  it('listIssues no manda filtros vacíos ni el orden por defecto', () => {
+    client
+      .listIssues('p1', { query: '  ', states: [], labelIds: [], orderBy: 'ISSUE_ORDER_RANK' })
+      .subscribe();
+
+    const req = httpMock.expectOne((r) => r.url === url('/v1/projects/p1/issues'));
+    expect(req.request.params.keys()).toEqual([]);
+    req.flush({});
+  });
+
+  it('descartar con motivo y restaurar', () => {
+    let issue: Issue | undefined;
+    client.discardIssue('p1', 42, { reason: 'Duplicado de TK-4' }).subscribe((i) => (issue = i));
+    const discard = httpMock.expectOne(url('/v1/projects/p1/issues/42:discard'));
+    expect(discard.request.method).toBe('POST');
+    expect(discard.request.body).toEqual({ reason: 'Duplicado de TK-4' });
+    discard.flush({
+      issue: {
+        number: 42,
+        state: 'ISSUE_STATE_CANCELED',
+        discard: {
+          reason: 'Duplicado de TK-4',
+          actorId: 'u1',
+          discardedAt: '2026-10-12T10:00:00Z',
+        },
+      },
+    });
+    expect(issue?.discard).toEqual({
+      reason: 'Duplicado de TK-4',
+      actorId: 'u1',
+      discardedAt: '2026-10-12T10:00:00Z',
+    });
+
+    client.discardIssue('p1', 42, { reason: 'x', statusId: 's-wont' }).subscribe();
+    const withStatus = httpMock.expectOne(url('/v1/projects/p1/issues/42:discard'));
+    expect(withStatus.request.body).toEqual({ reason: 'x', statusId: 's-wont' });
+    withStatus.flush({ issue: { number: 42 } });
+
+    client.restoreIssue('p1', 42).subscribe((i) => (issue = i));
+    const restore = httpMock.expectOne(url('/v1/projects/p1/issues/42:restore'));
+    expect(restore.request.method).toBe('POST');
+    expect(restore.request.body).toEqual({});
+    // Sin `discard`: grpc-gateway lo omite.
+    restore.flush({ issue: { number: 42, state: 'ISSUE_STATE_TODO' } });
+    expect(issue?.discard).toBeNull();
+  });
+
+  it('batchUpdateStatuses manda la lista completa y devuelve los estados', () => {
+    let statuses: Status[] = [];
+    client
+      .batchUpdateStatuses('p1', {
+        statuses: [
+          {
+            id: 's1',
+            name: 'Por hacer',
+            category: 'ISSUE_STATE_UNSPECIFIED',
+            color: 'LABEL_COLOR_INFO',
+            wipLimit: 4,
+            hidden: false,
+          },
+        ],
+        deletions: [{ statusId: 's2', moveToStatusId: 's1' }],
+      })
+      .subscribe((res) => (statuses = res));
+    const req = httpMock.expectOne(url('/v1/projects/p1/statuses:batchUpdate'));
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.deletions).toEqual([{ statusId: 's2', moveToStatusId: 's1' }]);
+    expect(req.request.body.statuses[0]).toMatchObject({ wipLimit: 4, hidden: false });
+    req.flush({
+      statuses: [{ id: 's1', name: 'Por hacer', color: 'LABEL_COLOR_INFO', wipLimit: 4 }],
+    });
+    expect(statuses[0]).toMatchObject({ color: 'LABEL_COLOR_INFO', wipLimit: 4, hidden: false });
+  });
+
   it('listIssues sin estado no manda el parámetro', () => {
     client.listIssues('p1', { state: 'ISSUE_STATE_UNSPECIFIED' }).subscribe();
 
@@ -208,8 +308,18 @@ describe('IssuesClient', () => {
     httpMock.expectOne(url('/v1/projects/p1/statuses')).flush({
       statuses: [{ id: 's1', name: 'Por hacer', category: 'ISSUE_STATE_TODO', rank: 'a' }],
     });
+    // Un backend de v0.3 no manda color, WIP ni hidden.
     expect(statuses).toEqual([
-      { id: 's1', projectId: '', name: 'Por hacer', category: 'ISSUE_STATE_TODO', rank: 'a' },
+      {
+        id: 's1',
+        projectId: '',
+        name: 'Por hacer',
+        category: 'ISSUE_STATE_TODO',
+        rank: 'a',
+        color: 'LABEL_COLOR_UNSPECIFIED',
+        wipLimit: 0,
+        hidden: false,
+      },
     ]);
 
     client.createStatus('p1', { name: 'QA', category: 'ISSUE_STATE_IN_PROGRESS' }).subscribe();
@@ -285,7 +395,16 @@ describe('IssuesClient', () => {
         { id: 'e5', priorityChanged: { to: 'PRIORITY_URGENT' } },
         { id: 'e6', labelsChanged: { addedLabelNames: ['API'] } },
         { id: 'e7', commented: { id: 'c1', body: 'Hola', authorId: 'u1' } },
-        { id: 'e8', algoNuevo: {} },
+        {
+          id: 'e8',
+          discarded: {
+            reason: 'Duplicado',
+            fromStatusName: 'En curso',
+            toStatusName: 'Descartado',
+          },
+        },
+        { id: 'e9', restored: { fromStatusName: 'Descartado', toStatusName: 'Backlog' } },
+        { id: 'e10', algoNuevo: {} },
       ],
     });
 
@@ -297,8 +416,16 @@ describe('IssuesClient', () => {
       'priorityChanged',
       'labelsChanged',
       'commented',
+      'discarded',
+      'restored',
       'unknown',
     ]);
+    expect(events[7]!.change).toMatchObject({
+      reason: 'Duplicado',
+      fromState: 'ISSUE_STATE_UNSPECIFIED',
+      toStatusName: 'Descartado',
+    });
+    expect(events[8]!.change).toMatchObject({ toStatusName: 'Backlog', fromStatusId: '' });
     expect(events[1]!.change).toMatchObject({
       fromState: 'ISSUE_STATE_UNSPECIFIED',
       toState: 'ISSUE_STATE_DONE',
