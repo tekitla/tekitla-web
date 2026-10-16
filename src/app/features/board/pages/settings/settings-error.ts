@@ -1,10 +1,6 @@
 import type { DomainError } from '@/app/api';
 
-export type SettingsOperation =
-  | 'saveStatuses'
-  | 'createLabel'
-  | 'updateLabel'
-  | 'deleteLabel';
+export type SettingsOperation = 'saveStatuses' | 'createLabel' | 'updateLabel' | 'deleteLabel';
 
 /** Error de Ajustes para mostrar: clave de traducción y el mensaje del servidor. */
 export interface SettingsError {

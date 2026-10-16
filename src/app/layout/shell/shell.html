@@ -48,6 +48,18 @@
             <li>
               <a
                 class="vrb-sidebar__link"
+                [routerLink]="['/proyectos', project.id, 'issues']"
+                routerLinkActive
+                [routerLinkActiveOptions]="{ exact: true }"
+                ariaCurrentWhenActive="page"
+              >
+                <ui-icon name="list" />
+                <span class="vrb-sidebar__text">{{ 'shell.nav.issues' | translate }}</span>
+              </a>
+            </li>
+            <li>
+              <a
+                class="vrb-sidebar__link"
                 [routerLink]="['/proyectos', project.id, 'ajustes']"
                 routerLinkActive
                 ariaCurrentWhenActive="page"

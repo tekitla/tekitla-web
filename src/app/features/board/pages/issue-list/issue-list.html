@@ -8,7 +8,10 @@
     </h1>
     <p class="vrb-page-header__description">{{ 'issueList.lead' | translate }}</p>
     <div class="vrb-page-header__actions">
-      <a class="vrb-button vrb-button--outline vrb-button--sm" [routerLink]="['/proyectos', projectId()]">
+      <a
+        class="vrb-button vrb-button--outline vrb-button--sm"
+        [routerLink]="['/proyectos', projectId()]"
+      >
         <ui-icon name="board" />{{ 'issueList.toBoard' | translate }}
       </a>
       <a
@@ -22,7 +25,10 @@
 
   <div class="vrb-stack vrb-stack--md">
     <div class="vrb-cluster vrb-cluster--between">
-      <fieldset class="vrb-segmented vrb-segmented--sm" [attr.aria-label]="'issueList.scopeLabel' | translate">
+      <fieldset
+        class="vrb-segmented vrb-segmented--sm"
+        [attr.aria-label]="'issueList.scopeLabel' | translate"
+      >
         @for (scope of scopes; track scope) {
           <label class="vrb-segmented__option">
             <input
@@ -43,7 +49,11 @@
       </span>
     </div>
 
-    <form class="vrb-cluster vrb-cluster--md issue-list__filters" role="search" (submit)="$event.preventDefault(); searchNow()">
+    <form
+      class="vrb-cluster vrb-cluster--md issue-list__filters"
+      role="search"
+      (submit)="$event.preventDefault(); searchNow()"
+    >
       <div class="vrb-input-group issue-list__search">
         <span class="vrb-input-group__addon"><ui-icon name="search" /></span>
         <input
@@ -54,7 +64,9 @@
           autocomplete="off"
           aria-keyshortcuts="/"
           [maxLength]="queryMax"
-          [placeholder]="'issueList.searchPlaceholder' | translate: { key: board.projectKey() || 'TK' }"
+          [placeholder]="
+            'issueList.searchPlaceholder' | translate: { key: board.projectKey() || 'TK' }
+          "
           [attr.aria-label]="'issueList.searchLabel' | translate"
           [value]="queryDraft()"
           (input)="onQueryInput($any($event.target).value)"
@@ -66,7 +78,9 @@
           [attr.aria-label]="'issue.priorityLabel' | translate"
           (change)="setPriority($any($event.target).value)"
         >
-          <option value="" [selected]="!filters().priority">{{ 'issueList.anyPriority' | translate }}</option>
+          <option value="" [selected]="!filters().priority">
+            {{ 'issueList.anyPriority' | translate }}
+          </option>
           @for (priority of priorities; track priority) {
             <option [value]="priorityParam[priority]" [selected]="filters().priority === priority">
               {{ 'issue.priorityByEnum.' + priority | translate }}
@@ -80,9 +94,13 @@
           [attr.aria-label]="'issue.labels' | translate"
           (change)="setLabel($any($event.target).value)"
         >
-          <option value="" [selected]="!filters().labelId">{{ 'issueList.anyLabel' | translate }}</option>
+          <option value="" [selected]="!filters().labelId">
+            {{ 'issueList.anyLabel' | translate }}
+          </option>
           @for (label of board.labels(); track label.id) {
-            <option [value]="label.id" [selected]="filters().labelId === label.id">{{ label.name }}</option>
+            <option [value]="label.id" [selected]="filters().labelId === label.id">
+              {{ label.name }}
+            </option>
           }
         </select>
       </div>
@@ -92,9 +110,13 @@
           [attr.aria-label]="'issueDetail.state' | translate"
           (change)="setStatus($any($event.target).value)"
         >
-          <option value="" [selected]="!filters().statusId">{{ 'issueList.anyStatus' | translate }}</option>
+          <option value="" [selected]="!filters().statusId">
+            {{ 'issueList.anyStatus' | translate }}
+          </option>
           @for (status of board.statuses(); track status.id) {
-            <option [value]="status.id" [selected]="filters().statusId === status.id">{{ status.name }}</option>
+            <option [value]="status.id" [selected]="filters().statusId === status.id">
+              {{ status.name }}
+            </option>
           }
         </select>
       </div>
@@ -112,7 +134,11 @@
         </select>
       </div>
       @if (filtered()) {
-        <button type="button" class="vrb-button vrb-button--ghost vrb-button--sm" (click)="clearFilters()">
+        <button
+          type="button"
+          class="vrb-button vrb-button--ghost vrb-button--sm"
+          (click)="clearFilters()"
+        >
           {{ 'issueList.clear' | translate }}
         </button>
       }
@@ -144,7 +170,10 @@
             </p>
             <ul class="issue-list__failures">
               @for (failure of result.failed; track failure.key) {
-                <li><b>{{ failure.key }}</b>: {{ failure.message }}</li>
+                <li>
+                  <b>{{ failure.key }}</b
+                  >: {{ failure.message }}
+                </li>
               }
             </ul>
           }
@@ -167,7 +196,9 @@
           <p class="vrb-alert__title">{{ 'issueList.loadError' | translate }}</p>
           <p class="vrb-alert__description">{{ error }}</p>
           <div class="vrb-alert__actions">
-            <ui-button size="sm" (pressed)="list.reload()">{{ 'common.retry' | translate }}</ui-button>
+            <ui-button size="sm" (pressed)="list.reload()">{{
+              'common.retry' | translate
+            }}</ui-button>
           </div>
         </div>
       </div>
@@ -176,7 +207,9 @@
         <div class="issue-list__scroll">
           <table class="tk-table issue-list__table">
             <caption class="u-visually-hidden">
-              {{ 'issueList.caption' | translate }}
+              {{
+                'issueList.caption' | translate
+              }}
             </caption>
             <thead>
               <tr>
@@ -196,7 +229,9 @@
                 <th scope="col">{{ 'issueList.columns.issue' | translate }}</th>
                 <th scope="col">{{ 'issueDetail.state' | translate }}</th>
                 <th scope="col">{{ 'issue.priorityLabel' | translate }}</th>
-                <th scope="col" class="issue-list__right">{{ 'issueDetail.lastChange' | translate }}</th>
+                <th scope="col" class="issue-list__right">
+                  {{ 'issueDetail.lastChange' | translate }}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -231,19 +266,37 @@
                   </td>
                   <th scope="row" class="issue-list__main">
                     <span class="vrb-cluster vrb-cluster--sm">
-                      <a class="issue-list__key" [routerLink]="['/proyectos', projectId(), 'issues', issue.number]">{{ key(issue) }}</a>
-                      <a class="issue-list__title" [routerLink]="['/proyectos', projectId(), 'issues', issue.number]">{{ issue.title }}</a>
+                      <a
+                        class="issue-list__key"
+                        [routerLink]="['/proyectos', projectId(), 'issues', issue.number]"
+                        >{{ key(issue) }}</a
+                      >
+                      <a
+                        class="issue-list__title"
+                        [routerLink]="['/proyectos', projectId(), 'issues', issue.number]"
+                        >{{ issue.title }}</a
+                      >
                       @for (label of labelsOf(issue); track label.id) {
-                        <span [class]="'vrb-badge vrb-badge--sm vrb-badge--' + labelTone[label.color]">{{ label.name }}</span>
+                        <span
+                          [class]="'vrb-badge vrb-badge--sm vrb-badge--' + labelTone[label.color]"
+                          >{{ label.name }}</span
+                        >
                       }
                     </span>
                     @if (off) {
-                      <span class="issue-list__discard"><app-discard-note [discard]="issue.discard" /></span>
+                      <span class="issue-list__discard"
+                        ><app-discard-note [discard]="issue.discard"
+                      /></span>
                     }
                   </th>
                   <td>
                     @if (status) {
-                      <span [class]="'vrb-badge vrb-badge--sm vrb-badge--dot vrb-badge--' + tone(status)">{{ status.name }}</span>
+                      <span
+                        [class]="
+                          'vrb-badge vrb-badge--sm vrb-badge--dot vrb-badge--' + tone(status)
+                        "
+                        >{{ status.name }}</span
+                      >
                     }
                   </td>
                   <td><app-priority-badge [priority]="issue.priority" /></td>
@@ -253,13 +306,17 @@
                         type="button"
                         class="vrb-button vrb-button--outline vrb-button--sm"
                         [disabled]="!!list.bulk()"
-                        [attr.aria-label]="'issueList.restoreOne' | translate: { issue: key(issue) }"
+                        [attr.aria-label]="
+                          'issueList.restoreOne' | translate: { issue: key(issue) }
+                        "
                         (click)="restoreOne(issue)"
                       >
                         {{ 'issueDetail.restore' | translate }}
                       </button>
                     } @else if (issue.updatedAt) {
-                      <time class="issue-list__muted" [attr.datetime]="issue.updatedAt">{{ issue.updatedAt | date: 'd MMM, HH:mm' }}</time>
+                      <time class="issue-list__muted" [attr.datetime]="issue.updatedAt">{{
+                        issue.updatedAt | date: 'd MMM, HH:mm'
+                      }}</time>
                     }
                   </td>
                 </tr>
@@ -273,12 +330,18 @@
               <p class="vrb-empty__title">{{ 'issueList.noMatchTitle' | translate }}</p>
               <p class="vrb-empty__description">{{ 'issueList.noMatchText' | translate }}</p>
               <div class="vrb-empty__actions">
-                <button type="button" class="vrb-button vrb-button--outline vrb-button--sm" (click)="clearFilters()">
+                <button
+                  type="button"
+                  class="vrb-button vrb-button--outline vrb-button--sm"
+                  (click)="clearFilters()"
+                >
                   {{ 'issueList.clear' | translate }}
                 </button>
               </div>
             } @else {
-              <p class="vrb-empty__title">{{ 'issueList.emptyTitle.' + filters().scope | translate }}</p>
+              <p class="vrb-empty__title">
+                {{ 'issueList.emptyTitle.' + filters().scope | translate }}
+              </p>
             }
           </div>
         }
@@ -289,7 +352,12 @@
             }
           </span>
           @if (list.hasNext()) {
-            <ui-button variant="ghost" size="sm" [loading]="list.loadingMore()" (pressed)="list.loadMore()">
+            <ui-button
+              variant="ghost"
+              size="sm"
+              [loading]="list.loadingMore()"
+              (pressed)="list.loadMore()"
+            >
               {{ 'issueList.more' | translate }}
             </ui-button>
           }
@@ -303,13 +371,22 @@
     }
 
     @if (list.selected().size || list.bulk()) {
-      <div class="issue-list__bulk" role="region" [attr.aria-label]="'issueList.bulk.label' | translate">
+      <div
+        class="issue-list__bulk"
+        role="region"
+        [attr.aria-label]="'issueList.bulk.label' | translate"
+      >
         @if (list.bulk(); as bulk) {
           <b class="issue-list__bulk-count" role="status">
-            {{ 'issueList.bulk.progress.' + bulk.action | translate: { done: bulk.done, total: bulk.total } }}
+            {{
+              'issueList.bulk.progress.' + bulk.action
+                | translate: { done: bulk.done, total: bulk.total }
+            }}
           </b>
         } @else {
-          <b class="issue-list__bulk-count">{{ 'issueList.bulk.selected' | translate: { count: list.selected().size } }}</b>
+          <b class="issue-list__bulk-count">{{
+            'issueList.bulk.selected' | translate: { count: list.selected().size }
+          }}</b>
           <span class="issue-list__bulk-spacer"></span>
           <button
             type="button"
@@ -319,12 +396,22 @@
             <ui-icon name="move" />{{ 'issueList.bulk.move' | translate }}
           </button>
           @if (selectedDiscarded()) {
-            <button type="button" class="vrb-button vrb-button--ghost vrb-button--sm" (click)="restoreSelected()">
-              <ui-icon name="restore" />{{ 'issueList.bulk.restore' | translate: { count: selectedDiscarded() } }}
+            <button
+              type="button"
+              class="vrb-button vrb-button--ghost vrb-button--sm"
+              (click)="restoreSelected()"
+            >
+              <ui-icon name="restore" />{{
+                'issueList.bulk.restore' | translate: { count: selectedDiscarded() }
+              }}
             </button>
           }
           @if (selectedDiscarded() < list.selected().size) {
-            <button type="button" class="vrb-button vrb-button--ghost vrb-button--sm" (click)="openDiscard()">
+            <button
+              type="button"
+              class="vrb-button vrb-button--ghost vrb-button--sm"
+              (click)="openDiscard()"
+            >
               <ui-icon name="trash" />{{ 'issueList.bulk.discard' | translate }}
             </button>
           }
@@ -342,7 +429,9 @@
   </div>
 
   <app-discard-dialog
-    [subject]="'issueList.bulk.subject' | translate: { count: list.selected().size - selectedDiscarded() }"
+    [subject]="
+      'issueList.bulk.subject' | translate: { count: list.selected().size - selectedDiscarded() }
+    "
     [statuses]="canceledStatuses()"
     [error]="discardError()"
     (confirmed)="discardSelected($event)"
@@ -352,7 +441,12 @@
 <ng-template #moveMenu>
   <div class="vrb-menu" cdkMenu>
     @for (status of statusOptions(); track status.id) {
-      <button type="button" class="vrb-menu__item" cdkMenuItem (cdkMenuItemTriggered)="moveSelected(status.id)">
+      <button
+        type="button"
+        class="vrb-menu__item"
+        cdkMenuItem
+        (cdkMenuItemTriggered)="moveSelected(status.id)"
+      >
         <span [class]="'vrb-segmented__dot vrb-segmented__dot--' + tone(status)"></span>
         {{ 'board.card.moveTo' | translate: { column: status.name } }}
       </button>

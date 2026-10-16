@@ -210,7 +210,9 @@
                 <div class="vrb-select settings-cell-select">
                   <select
                     class="vrb-input"
-                    [attr.aria-label]="'settings.statuses.colorOf' | translate: { name: status.name }"
+                    [attr.aria-label]="
+                      'settings.statuses.colorOf' | translate: { name: status.name }
+                    "
                     (change)="setColor(status, $any($event.target).value)"
                   >
                     @for (color of colors; track color) {
@@ -301,14 +303,19 @@
                       (change)="setDestination(removal.status.id, $any($event.target).value)"
                     >
                       @for (option of destinations(removal.status.id); track option.id) {
-                        <option [value]="option.id" [selected]="option.id === removal.moveToStatusId">
+                        <option
+                          [value]="option.id"
+                          [selected]="option.id === removal.moveToStatusId"
+                        >
                           {{ option.name }}
                         </option>
                       }
                     </select>
                   </div>
                 } @else {
-                  <span class="settings-muted">{{ 'settings.statuses.removedEmpty' | translate }}</span>
+                  <span class="settings-muted">{{
+                    'settings.statuses.removedEmpty' | translate
+                  }}</span>
                 }
                 <button
                   type="button"
@@ -360,11 +367,7 @@
       </p>
     </div>
     <div class="vrb-cluster vrb-cluster--sm">
-      <ui-button
-        [disabled]="!dirty()"
-        [loading]="busy() === 'save'"
-        (pressed)="save()"
-      >
+      <ui-button [disabled]="!dirty()" [loading]="busy() === 'save'" (pressed)="save()">
         {{ 'settings.statuses.save' | translate }}
       </ui-button>
       <ui-button variant="ghost" [disabled]="!dirty() || !!busy()" (pressed)="discard()">

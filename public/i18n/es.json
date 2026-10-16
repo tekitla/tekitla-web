@@ -5,7 +5,8 @@
     "noAccess": "Sin acceso · Tekitla",
     "projects": "Proyectos · Tekitla",
     "board": "Tablero · Tekitla",
-    "settings": "Ajustes · Tekitla"
+    "settings": "Ajustes · Tekitla",
+    "issues": "Issues · Tekitla"
   },
   "common": {
     "loading": "Cargando…",
@@ -27,7 +28,8 @@
       "workspace": "Espacio de trabajo",
       "projects": "Proyectos",
       "board": "Tablero",
-      "settings": "Ajustes"
+      "settings": "Ajustes",
+      "issues": "Issues"
     },
     "logout": "Cerrar sesión"
   },
@@ -95,7 +97,8 @@
     "card": {
       "move": "Mover",
       "moveLabel": "Mover {{issue}} a otra columna",
-      "moveTo": "Mover a {{column}}"
+      "moveTo": "Mover a {{column}}",
+      "discard": "Descartar…"
     },
     "notice": {
       "moved": "{{issue}} pasó a {{column}}",
@@ -106,15 +109,22 @@
       "created": "{{issue}} creado en {{column}}",
       "refreshFailed": "No pudimos actualizar el tablero. Lo que ves puede estar desactualizado.",
       "createdNoColumn": "{{issue}} creado",
-      "retry": "Intenta de nuevo."
+      "retry": "Intenta de nuevo.",
+      "discarded": "{{issue}} descartado",
+      "restored": "{{issue}} restaurado en {{column}}"
     },
-    "canceledHidden": "{{count}} descartados ocultos",
     "settings": "Ajustes",
     "loadErrorHint": "Revisa tu conexión e intenta de nuevo.",
     "backToProjects": "Volver a proyectos",
     "emptyTitle": "Todavía no hay issues",
     "emptyText": "Crea el primero y aparecerá en {{column}}.",
-    "canceledHiddenOne": "1 descartado oculto"
+    "list": "Lista",
+    "hidden": "{{count}} issues en columnas ocultas",
+    "hiddenOne": "1 issue en una columna oculta",
+    "seeInList": "Ver en la lista",
+    "wipOf": "de un máximo de",
+    "wipOver": "WIP excedido",
+    "wipFull": "En el límite"
   },
   "issue": {
     "priorityLabel": "Prioridad",
@@ -162,17 +172,20 @@
     "notFound": "No encontramos este issue.",
     "loadError": "No pudimos cargar el issue.",
     "project": "Proyecto",
-    "canceledHint": "Este issue está descartado: no se ve en el tablero. Elegir otro estado lo reabre.",
     "titleLabel": "Título",
     "editTitle": "Editar el título",
-    "closedStatuses": "Descartar",
     "noLabels": "Este proyecto todavía no tiene etiquetas.",
     "createLabels": "Crear etiquetas",
     "errors": {
       "titleRequired": "Escribe un título.",
-      "save": "No se pudo guardar."
+      "save": "No se pudo guardar.",
+      "restore": "No se pudo restaurar."
     },
-    "lastChange": "Último cambio"
+    "lastChange": "Último cambio",
+    "discard": "Descartar…",
+    "discarded": "Descartado",
+    "restore": "Restaurar",
+    "restoreHint": "Restaurar lo regresa al primer estado de Por hacer, al final de la columna."
   },
   "editor": {
     "mode": "Modo del editor",
@@ -218,7 +231,9 @@
     "commentHint": "Admite Markdown. Ctrl + Enter para enviar.",
     "commentError": "No se pudo comentar.",
     "send": "Comentar",
-    "today": "Hoy"
+    "today": "Hoy",
+    "discarded": "descartó el issue",
+    "restored": "restauró el issue en"
   },
   "settings": {
     "title": "Ajustes del proyecto",
@@ -322,5 +337,88 @@
       "statusRules": "No se pudo guardar: revisa que cada categoría tenga un estado y que los eliminados tengan a dónde pasar sus issues."
     },
     "thisProject": "este proyecto"
+  },
+  "discard": {
+    "title": "Descartar {{subject}}",
+    "description": "Sale del tablero y queda en la pestaña Descartados de la lista, con el motivo. Se puede restaurar.",
+    "reason": "Motivo",
+    "reasonPlaceholder": "Ej. Duplicado de TK-4",
+    "reasonHint": "{{count}} / {{max}} caracteres",
+    "status": "Estado de descarte",
+    "confirm": "Descartar",
+    "by": "Descartado por {{actor}}:",
+    "withoutReason": "Descartado sin motivo",
+    "errors": {
+      "required": "Escribe por qué se descarta.",
+      "tooLong": "Máximo {{max}} caracteres."
+    }
+  },
+  "issueList": {
+    "title": "Issues",
+    "eyebrow": "// {{key}} · lista",
+    "lead": "Todos los issues del proyecto, también los hechos y los descartados. Mismo orden que el tablero, salvo que lo cambies.",
+    "toBoard": "Ver tablero",
+    "scopeLabel": "Qué issues mostrar",
+    "scopes": {
+      "activos": "Activos",
+      "hechos": "Hechos",
+      "descartados": "Descartados",
+      "todos": "Todos"
+    },
+    "slashBefore": "Pulsa",
+    "slashAfter": "para buscar",
+    "searchLabel": "Buscar issues",
+    "searchPlaceholder": "Buscar por título o clave ({{key}}-9)",
+    "anyPriority": "Cualquier prioridad",
+    "anyLabel": "Cualquier etiqueta",
+    "anyStatus": "Cualquier estado",
+    "sortLabel": "Ordenar",
+    "sorts": {
+      "tablero": "Orden del tablero",
+      "cambio": "Último cambio",
+      "prioridad": "Prioridad"
+    },
+    "clear": "Limpiar filtros",
+    "discardedTitle": "Los descartados no aparecen en el tablero",
+    "discardedText": "Quedan aquí con quién los descartó y por qué. Restaurar uno lo regresa al primer estado de Por hacer, al final de la columna.",
+    "loadError": "No pudimos cargar los issues",
+    "caption": "Issues del proyecto",
+    "columns": {
+      "issue": "Issue"
+    },
+    "selectAll": "Seleccionar todos",
+    "select": "Seleccionar {{issue}}",
+    "restoreOne": "Restaurar {{issue}}",
+    "noMatchTitle": "Ningún issue coincide",
+    "noMatchText": "Prueba con otra palabra o quita algún filtro.",
+    "emptyTitle": {
+      "activos": "No hay issues activos",
+      "hechos": "Todavía no hay issues hechos",
+      "descartados": "No hay issues descartados",
+      "todos": "Todavía no hay issues"
+    },
+    "shown": "Mostrando {{count}}",
+    "more": "Cargar más",
+    "moreError": "No se pudo cargar más.",
+    "bulk": {
+      "label": "Acciones para los seleccionados",
+      "selected": "{{count}} seleccionados",
+      "move": "Mover a…",
+      "discard": "Descartar…",
+      "restore": "Restaurar ({{count}})",
+      "clear": "Quitar selección",
+      "subject": "{{count}} issues",
+      "progress": {
+        "move": "Moviendo {{done}} de {{total}}…",
+        "discard": "Descartando {{done}} de {{total}}…",
+        "restore": "Restaurando {{done}} de {{total}}…"
+      },
+      "done": {
+        "move": "Se movieron {{count}}",
+        "discard": "Se descartaron {{count}}",
+        "restore": "Se restauraron {{count}}"
+      },
+      "failed": "Fallaron {{count}}; siguen seleccionados para reintentar:"
+    }
   }
 }

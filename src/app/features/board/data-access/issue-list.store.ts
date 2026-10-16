@@ -52,9 +52,7 @@ export class IssueListStore {
   private readonly _moreError = signal<string | null>(null);
   private readonly _hasNext = signal(false);
   private readonly _selected = signal<ReadonlySet<number>>(new Set());
-  private readonly _bulk = signal<{ action: BulkAction; done: number; total: number } | null>(
-    null,
-  );
+  private readonly _bulk = signal<{ action: BulkAction; done: number; total: number } | null>(null);
   private readonly _bulkResult = signal<BulkResult | null>(null);
 
   readonly items = this._items.asReadonly();
@@ -201,9 +199,7 @@ export class IssueListStore {
 
   /** Solo los seleccionados que están descartados (`discarded`: según su estado). */
   restoreSelected(discarded: (issue: Issue) => boolean): void {
-    this.runBulk('restore', this.selectedIssues().filter(discarded), (n) =>
-      this.board.restore(n),
-    );
+    this.runBulk('restore', this.selectedIssues().filter(discarded), (n) => this.board.restore(n));
   }
 
   /**

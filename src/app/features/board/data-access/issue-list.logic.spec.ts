@@ -32,9 +32,7 @@ describe('issue-list.logic', () => {
       statusId: 's1',
       sort: 'cambio',
     });
-    expect(filtersFromParams({ ver: 'otra', prioridad: 'x', orden: 'y' })).toEqual(
-      DEFAULT_FILTERS,
-    );
+    expect(filtersFromParams({ ver: 'otra', prioridad: 'x', orden: 'y' })).toEqual(DEFAULT_FILTERS);
     expect(filtersFromParams({ q: 'x'.repeat(300) }).query).toHaveLength(200);
   });
 

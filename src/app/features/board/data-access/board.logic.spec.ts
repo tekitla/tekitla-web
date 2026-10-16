@@ -63,7 +63,11 @@ describe('board.logic', () => {
 
     it('oculto es `hidden`, no la categoría: un descarte visible es columna', () => {
       const custom = statuses.map((s) =>
-        s.id === 'canceled' ? { ...s, hidden: false } : s.id === 'review' ? { ...s, hidden: true } : s,
+        s.id === 'canceled'
+          ? { ...s, hidden: false }
+          : s.id === 'review'
+            ? { ...s, hidden: true }
+            : s,
       );
       const columns = buildColumns([], custom);
       expect(columns.map((c) => c.status.id)).toEqual(['todo', 'doing', 'done', 'canceled']);
@@ -120,9 +124,9 @@ describe('board.logic', () => {
   });
 
   it('isDiscarded: en un estado CANCELED, con o sin motivo', () => {
-    expect(isDiscarded(issue(1, { statusId: 'canceled', state: 'ISSUE_STATE_CANCELED' }), statuses)).toBe(
-      true,
-    );
+    expect(
+      isDiscarded(issue(1, { statusId: 'canceled', state: 'ISSUE_STATE_CANCELED' }), statuses),
+    ).toBe(true);
     expect(isDiscarded(issue(2), statuses)).toBe(false);
   });
 

@@ -87,7 +87,9 @@ export function filtersFromParams(params: IssueListParams): IssueFilters {
  * Filtros como query params: solo lo que difiere del valor por defecto
  * (`null` borra el parámetro de la URL, con `queryParamsHandling: 'merge'`).
  */
-export function filtersToParams(filters: IssueFilters): Record<keyof IssueListParams, string | null> {
+export function filtersToParams(
+  filters: IssueFilters,
+): Record<keyof IssueListParams, string | null> {
   const priority = Object.entries(PRIORITY_PARAM).find(([, p]) => p === filters.priority)?.[0];
   const query = filters.query.trim();
   return {

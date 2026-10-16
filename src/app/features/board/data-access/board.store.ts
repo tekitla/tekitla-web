@@ -342,9 +342,7 @@ export class BoardStore {
    * `DomainError` (`ISSUE_ALREADY_DISCARDED` si ya estaba descartado).
    */
   discard(number: number, req: DiscardIssueRequest): Observable<Issue> {
-    return this.write(number, (projectId) =>
-      this.client.discardIssue(projectId, number, req),
-    ).pipe(
+    return this.write(number, (projectId) => this.client.discardIssue(projectId, number, req)).pipe(
       tap((issue) => {
         const status = this.statusOf(issue);
         this.notify('info', 'board.notice.discarded', this.keyOf(number), status?.name);
@@ -382,10 +380,7 @@ export class BoardStore {
    * toca el store. Un movimiento optimista en vuelo del mismo issue es más
    * nuevo: su posición se respeta hasta que responda.
    */
-  private write(
-    number: number,
-    call: (projectId: string) => Observable<Issue>,
-  ): Observable<Issue> {
+  private write(number: number, call: (projectId: string) => Observable<Issue>): Observable<Issue> {
     const projectId = this._projectId();
     if (!projectId) return throwError(() => new Error('BoardStore sin proyecto'));
     return call(projectId).pipe(
