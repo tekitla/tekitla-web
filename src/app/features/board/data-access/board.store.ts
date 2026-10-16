@@ -4,6 +4,7 @@ import { Observable, catchError, forkJoin, tap, throwError } from 'rxjs';
 
 import {
   type CreateIssueRequest,
+  type DiscardIssueRequest,
   type Issue,
   IssuesClient,
   type Project,
@@ -333,6 +334,72 @@ export class BoardStore {
     const column = back && this.statusOf(back)?.name;
     const detail = column ? 'board.notice.moveFailedDetail' : 'board.notice.retry';
     this.notify('error', 'board.notice.moveFailed', key, column, detail);
+  }
+
+  /**
+   * Descarta un issue con motivo (lo pasa a un estado CANCELED). Espera al
+   * servidor: la página muestra el error en el diálogo. Errores como
+   * `DomainError` (`ISSUE_ALREADY_DISCARDED` si ya estaba descartado).
+   */
+  discard(number: number, req: DiscardIssueRequest): Observable<Issue> {
+    return this.write(number, (projectId) =>
+      this.client.discardIssue(projectId, number, req),
+    ).pipe(
+      tap((issue) => {
+        const status = this.statusOf(issue);
+        this.notify('info', 'board.notice.discarded', this.keyOf(number), status?.name);
+      }),
+    );
+  }
+
+  /**
+   * Restaura un issue descartado: vuelve al primer estado «Por hacer», al
+   * final de la columna. `ISSUE_NOT_DISCARDED` si no estaba descartado.
+   */
+  restore(number: number): Observable<Issue> {
+    return this.write(number, (projectId) => this.client.restoreIssue(projectId, number)).pipe(
+      tap((issue) => {
+        const status = this.statusOf(issue);
+        this.notify('info', 'board.notice.restored', this.keyOf(number), status?.name);
+      }),
+    );
+  }
+
+  /**
+   * Mueve un issue a otro estado esperando al servidor (sin aviso ni
+   * actualización optimista): para las acciones en lote de la lista, que
+   * reportan juntos los que fallaron.
+   */
+  moveTo(number: number, statusId: string): Observable<Issue> {
+    return this.write(number, (projectId) =>
+      this.client.moveIssue(projectId, number, { statusId }),
+    );
+  }
+
+  /**
+   * Una escritura de un issue que espera al servidor y deja su respuesta en
+   * la lista. Si se cambió de proyecto con el pedido en vuelo, la respuesta no
+   * toca el store. Un movimiento optimista en vuelo del mismo issue es más
+   * nuevo: su posición se respeta hasta que responda.
+   */
+  private write(
+    number: number,
+    call: (projectId: string) => Observable<Issue>,
+  ): Observable<Issue> {
+    const projectId = this._projectId();
+    if (!projectId) return throwError(() => new Error('BoardStore sin proyecto'));
+    return call(projectId).pipe(
+      tap((issue) => {
+        if (this._projectId() !== projectId || this.isPending(number)) return;
+        this.writes++;
+        this._issues.update((list) => upsertIssue(list, issue));
+      }),
+      catchError((err: unknown) => throwError(() => toDomainError(err))),
+    );
+  }
+
+  private keyOf(number: number): string {
+    return issueKey(this.projectKey(), number);
   }
 
   /** Crea un issue (el backend lo pone en el primer estado «Por hacer») y lo suma al tablero. */

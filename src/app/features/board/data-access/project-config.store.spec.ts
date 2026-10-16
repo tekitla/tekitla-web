@@ -29,7 +29,7 @@ const done = status('done', 'ISSUE_STATE_DONE', 'c');
 const canceled = status('canceled', 'ISSUE_STATE_CANCELED', 'd');
 
 type ClientMock = Record<
-  'createStatus' | 'updateStatus' | 'deleteStatus' | 'createLabel' | 'updateLabel' | 'deleteLabel',
+  'batchUpdateStatuses' | 'listStatuses' | 'createLabel' | 'updateLabel' | 'deleteLabel',
   ReturnType<typeof vi.fn>
 >;
 
@@ -39,9 +39,8 @@ describe('ProjectConfigStore', () => {
 
   beforeEach(() => {
     client = {
-      createStatus: vi.fn(),
-      updateStatus: vi.fn(),
-      deleteStatus: vi.fn(),
+      batchUpdateStatuses: vi.fn(),
+      listStatuses: vi.fn(),
       createLabel: vi.fn(),
       updateLabel: vi.fn(),
       deleteLabel: vi.fn(),
@@ -53,23 +52,22 @@ describe('ProjectConfigStore', () => {
     store.set('p1', [done, canceled, todo, doing], [label('l2', 'web'), label('l1', 'API')]);
   });
 
-  it('ordena estados por rank, etiquetas por nombre y separa las columnas', () => {
+  it('ordena estados por rank, etiquetas por nombre y deja fuera del tablero los ocultos', () => {
     expect(store.statuses().map((s) => s.id)).toEqual(['todo', 'doing', 'done', 'canceled']);
     expect(store.boardStatuses().map((s) => s.id)).toEqual(['todo', 'doing', 'done']);
     expect(store.labels().map((l) => l.name)).toEqual(['API', 'web']);
     expect(store.labelsById().get('l2')?.name).toBe('web');
   });
 
-  it('createStatus agrega el estado en su lugar', () => {
+  it('saveStatuses manda el lote y queda con lo que devolvió el servidor', () => {
     const review = status('review', 'ISSUE_STATE_IN_PROGRESS', 'b5');
-    client.createStatus.mockReturnValue(of(review));
+    client.batchUpdateStatuses.mockReturnValue(of([canceled, review, todo, doing, done]));
+    const req = { statuses: [], deletions: [] };
+    const version = store.version;
 
-    store.createStatus({ name: 'review', category: 'ISSUE_STATE_IN_PROGRESS' }).subscribe();
+    store.saveStatuses(req).subscribe();
 
-    expect(client.createStatus).toHaveBeenCalledWith('p1', {
-      name: 'review',
-      category: 'ISSUE_STATE_IN_PROGRESS',
-    });
+    expect(client.batchUpdateStatuses).toHaveBeenCalledWith('p1', req);
     expect(store.statuses().map((s) => s.id)).toEqual([
       'todo',
       'doing',
@@ -77,52 +75,24 @@ describe('ProjectConfigStore', () => {
       'done',
       'canceled',
     ]);
+    expect(store.version).toBe(version + 1);
   });
 
-  describe('moveStatus', () => {
-    it('subir pide quedar después del que está dos lugares arriba', () => {
-      client.updateStatus.mockReturnValue(of({ ...done, rank: 'a5' }));
-
-      store.moveStatus('done', -1)!.subscribe();
-
-      expect(client.updateStatus).toHaveBeenCalledWith('p1', 'done', { afterStatusId: 'todo' });
-      expect(store.statuses().map((s) => s.id)).toEqual(['todo', 'done', 'doing', 'canceled']);
-    });
-
-    it('al principio va con afterStatusId vacío; bajar, después del siguiente', () => {
-      client.updateStatus.mockReturnValue(of(doing));
-      store.moveStatus('doing', -1)!.subscribe();
-      expect(client.updateStatus).toHaveBeenLastCalledWith('p1', 'doing', { afterStatusId: '' });
-
-      store.moveStatus('todo', 1)!.subscribe();
-      expect(client.updateStatus).toHaveBeenLastCalledWith('p1', 'todo', {
-        afterStatusId: 'doing',
-      });
-    });
-
-    it('en los bordes no hace nada', () => {
-      expect(store.moveStatus('todo', -1)).toBeNull();
-      expect(store.moveStatus('canceled', 1)).toBeNull();
-    });
-  });
-
-  it('deleteStatus manda el destino y lo saca de la lista', () => {
-    client.deleteStatus.mockReturnValue(of(undefined));
-
-    store.deleteStatus('doing', 'todo').subscribe();
-
-    expect(client.deleteStatus).toHaveBeenCalledWith('p1', 'doing', 'todo');
-    expect(store.statuses().map((s) => s.id)).not.toContain('doing');
+  it('reloadStatuses trae los estados de nuevo', () => {
+    client.listStatuses.mockReturnValue(of([todo, done]));
+    store.reloadStatuses().subscribe();
+    expect(client.listStatuses).toHaveBeenCalledWith('p1');
+    expect(store.statuses().map((s) => s.id)).toEqual(['todo', 'done']);
   });
 
   it('un error llega como DomainError y no cambia nada', () => {
-    client.updateStatus.mockReturnValue(
+    client.batchUpdateStatuses.mockReturnValue(
       throwError(
         () =>
           new DomainError({
-            status: 409,
-            code: 'ALREADY_EXISTS',
-            reason: 'STATUS_NAME_TAKEN',
+            status: 400,
+            code: 'FAILED_PRECONDITION',
+            reason: 'STALE_STATUSES',
             message: 'x',
             details: [],
             traceId: null,
@@ -131,10 +101,12 @@ describe('ProjectConfigStore', () => {
     );
     let error: unknown;
 
-    store.renameStatus('todo', 'doing').subscribe({ error: (e: unknown) => (error = e) });
+    store
+      .saveStatuses({ statuses: [], deletions: [] })
+      .subscribe({ error: (e: unknown) => (error = e) });
 
-    expect((error as DomainError).api.code).toBe('ALREADY_EXISTS');
-    expect(store.statuses()[0]!.name).toBe('todo');
+    expect((error as DomainError).api.reason).toBe('STALE_STATUSES');
+    expect(store.statuses().map((s) => s.id)).toEqual(['todo', 'doing', 'done', 'canceled']);
   });
 
   it('etiquetas: crear, editar (reordena por nombre) y borrar', () => {

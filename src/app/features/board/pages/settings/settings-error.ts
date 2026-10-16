@@ -1,10 +1,7 @@
 import type { DomainError } from '@/app/api';
 
 export type SettingsOperation =
-  | 'createStatus'
-  | 'renameStatus'
-  | 'moveStatus'
-  | 'deleteStatus'
+  | 'saveStatuses'
   | 'createLabel'
   | 'updateLabel'
   | 'deleteLabel';
@@ -21,13 +18,15 @@ const BY_REASON: Record<string, string> = {
   LABEL_NAME_TAKEN: 'settings.errors.nameTaken',
   LAST_STATUS_OF_CATEGORY: 'settings.errors.lastOfCategory',
   STATUS_HAS_ISSUES: 'settings.errors.statusHasIssues',
+  STALE_STATUSES: 'settings.errors.staleStatuses',
 };
 
 /**
  * Traduce el error del backend a un texto de Ajustes. Primero por `reason`
  * (si el gateway lo expone); si no vino, por código y operación:
  * ALREADY_EXISTS = nombre repetido; FAILED_PRECONDITION = máximo del proyecto
- * al crear, o último de su categoría / falta destino al borrar un estado.
+ * al crear una etiqueta o, al guardar los estados, alguna de sus reglas
+ * (máximo, último de su categoría, destino o vista vieja).
  */
 export function settingsError(err: DomainError, operation: SettingsOperation): SettingsError {
   const message = err.message;
@@ -36,8 +35,7 @@ export function settingsError(err: DomainError, operation: SettingsOperation): S
   const code = err.api.code;
   if (code === 'ALREADY_EXISTS') return { key: 'settings.errors.nameTaken', message };
   if (code === 'FAILED_PRECONDITION') {
-    if (operation === 'createStatus') return { key: 'settings.errors.statusLimit', message };
-    if (operation === 'deleteStatus') return { key: 'settings.errors.cannotDelete', message };
+    if (operation === 'saveStatuses') return { key: 'settings.errors.statusRules', message };
     if (operation === 'createLabel') return { key: 'settings.errors.labelLimit', message };
   }
   if (err.isNotFound()) return { key: 'settings.errors.notFound', message };

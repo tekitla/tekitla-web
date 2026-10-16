@@ -56,7 +56,7 @@
       }
       <div class="vrb-page-header__description vrb-cluster vrb-cluster--sm">
         @if (status(); as current) {
-          <span [class]="'vrb-badge vrb-badge--dot vrb-badge--' + categoryTone[current.category]">
+          <span [class]="'vrb-badge vrb-badge--dot vrb-badge--' + tone(current)">
             {{ current.name }}
           </span>
         }
@@ -146,25 +146,16 @@
                 [attr.aria-busy]="pending() || null"
                 (change)="moveTo($any($event.target).value)"
               >
-                @for (option of statusGroups().board; track option.id) {
+                @if (canceled()) {
+                  <option value="" selected disabled>{{ status()?.name }}</option>
+                }
+                @for (option of statusOptions(); track option.id) {
                   <option [value]="option.id" [selected]="option.id === status()?.id">
                     {{ option.name }}
                   </option>
                 }
-                @if (statusGroups().closed.length) {
-                  <optgroup [label]="'issueDetail.closedStatuses' | translate">
-                    @for (option of statusGroups().closed; track option.id) {
-                      <option [value]="option.id" [selected]="option.id === status()?.id">
-                        {{ option.name }}
-                      </option>
-                    }
-                  </optgroup>
-                }
               </select>
             </div>
-            @if (canceled()) {
-              <p class="vrb-field__hint">{{ 'issueDetail.canceledHint' | translate }}</p>
-            }
             @if (store.notice(); as notice) {
               @if (notice.kind === 'error') {
                 <p class="vrb-field__error" role="alert">
@@ -250,6 +241,49 @@
             </p>
           </fieldset>
 
+          @if (canceled()) {
+            <div class="vrb-alert vrb-alert--danger" role="status">
+              <div class="vrb-alert__body">
+                <p class="vrb-alert__title">{{ 'issueDetail.discarded' | translate }}</p>
+                <p class="vrb-alert__description">
+                  <app-discard-note [discard]="issue.discard" />
+                </p>
+                <p class="vrb-alert__description">
+                  {{ 'issueDetail.restoreHint' | translate }}
+                </p>
+                <div class="vrb-alert__actions">
+                  <button
+                    type="button"
+                    id="issue-restore"
+                    class="vrb-button vrb-button--outline vrb-button--sm"
+                    [disabled]="restoring() || pending()"
+                    [attr.aria-busy]="restoring() || null"
+                    (click)="restore()"
+                  >
+                    <ui-icon name="restore" />{{ 'issueDetail.restore' | translate }}
+                  </button>
+                </div>
+                @if (restoreError(); as error) {
+                  <p class="vrb-field__error" role="alert">
+                    {{ 'issueDetail.errors.restore' | translate }} {{ error }}
+                  </p>
+                }
+              </div>
+            </div>
+          } @else {
+            <div>
+              <button
+                type="button"
+                id="issue-discard"
+                class="vrb-button vrb-button--ghost vrb-button--sm issue-detail__discard"
+                [disabled]="pending()"
+                (click)="openDiscard()"
+              >
+                <ui-icon name="trash" />{{ 'issueDetail.discard' | translate }}
+              </button>
+            </div>
+          }
+
           <dl class="issue-detail__facts">
             @if (store.project(); as project) {
               <dt>{{ 'issueDetail.project' | translate }}</dt>
@@ -278,6 +312,14 @@
         </div>
       </aside>
     </div>
+    <app-discard-dialog
+      [subject]="key()"
+      [statuses]="canceledStatuses()"
+      [busy]="discarding()"
+      [error]="discardError()"
+      (confirmed)="discard($event)"
+      (closed)="discardError.set(null)"
+    />
   } @else if (store.selectedLoading()) {
     <div class="vrb-stack" role="status" [attr.aria-label]="'common.loading' | translate">
       <span class="vrb-skeleton vrb-skeleton--title"></span>

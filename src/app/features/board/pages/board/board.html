@@ -7,6 +7,9 @@
         <p class="vrb-page-header__description">{{ project.description }}</p>
       }
       <div class="vrb-page-header__actions">
+        <a class="vrb-button vrb-button--outline vrb-button--sm board__link" routerLink="issues">
+          <ui-icon name="list" />{{ 'board.list' | translate }}
+        </a>
         <a class="vrb-button vrb-button--outline vrb-button--sm board__link" routerLink="ajustes">
           <ui-icon name="settings" />{{ 'board.settings' | translate }}
         </a>
@@ -78,12 +81,14 @@
     </div>
   } @else {
     <div class="vrb-cluster vrb-cluster--lg board__info">
-      @if (canceledCount(); as canceled) {
+      @if (hiddenCount(); as hidden) {
         <span class="vrb-cluster vrb-cluster--sm">
           <ui-icon name="filter" />{{
-            (canceled === 1 ? 'board.canceledHiddenOne' : 'board.canceledHidden')
-              | translate: { count: canceled }
+            (hidden === 1 ? 'board.hiddenOne' : 'board.hidden') | translate: { count: hidden }
           }}
+          <a routerLink="issues" [queryParams]="{ ver: 'todos' }">{{
+            'board.seeInList' | translate
+          }}</a>
         </span>
       }
       <span id="board-shortcut-hint">
@@ -121,8 +126,10 @@
       @for (column of store.columns(); track column.status.id) {
         @let status = column.status;
         @let category = 'status.category.' + status.category | translate;
+        @let limit = wip(column);
         <section
-          [class]="'vrb-kanban__column board__column vrb-kanban__column--' + tone[status.category]"
+          [class]="'vrb-kanban__column board__column vrb-kanban__column--' + tone(status)"
+          [attr.data-over-limit]="limit === 'over' || null"
           [id]="'board-panel-' + status.id"
           [hidden]="isMobile() && store.activeColumn() !== status.id"
           [attr.role]="isMobile() ? 'tabpanel' : null"
@@ -141,9 +148,23 @@
               </span>
             }
             <span class="vrb-kanban__count">
-              <span class="u-visually-hidden">(</span>{{ column.issues.length
-              }}<span class="u-visually-hidden">)</span>
+              <span class="u-visually-hidden">(</span>{{ column.issues.length }}
+              @if (status.wipLimit) {
+                <span class="vrb-kanban__limit"
+                  ><span aria-hidden="true">/ </span
+                  ><span class="u-visually-hidden">{{ 'board.wipOf' | translate }} </span
+                  >{{ status.wipLimit }}</span
+                >
+              }
+              <span class="u-visually-hidden">)</span>
             </span>
+            @if (limit === 'over') {
+              <span class="vrb-kanban__status">{{ 'board.wipOver' | translate }}</span>
+            } @else if (limit === 'full') {
+              <span class="vrb-kanban__status vrb-kanban__status--full">{{
+                'board.wipFull' | translate
+              }}</span>
+            }
           </header>
 
           <ul

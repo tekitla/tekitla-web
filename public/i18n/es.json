@@ -14,7 +14,8 @@
     "close": "Cerrar",
     "optional": "(opcional)",
     "save": "Guardar",
-    "edit": "Editar"
+    "edit": "Editar",
+    "ok": "Listo"
   },
   "shell": {
     "skip": "Saltar al contenido",
@@ -239,7 +240,9 @@
       "category": "Categoría",
       "issues": "Issues",
       "actions": "Acciones",
-      "label": "Etiqueta"
+      "label": "Etiqueta",
+      "wip": "Límite WIP",
+      "onBoard": "En tablero"
     },
     "colors": {
       "LABEL_COLOR_UNSPECIFIED": "Neutro",
@@ -255,24 +258,39 @@
       "lead": "Cada estado es una columna del tablero. Su categoría no cambia: la usan la CLI y los reportes.",
       "caption": "Estados del proyecto, en el orden de las columnas",
       "new": "Nuevo estado",
-      "create": "Crear estado",
       "categoryHint": "No se puede cambiar después.",
       "full": "El proyecto ya tiene el máximo de {{max}} estados.",
-      "hidden": "(no se ve en el tablero)",
       "moveUp": "Subir {{name}}",
       "moveDown": "Bajar {{name}}",
-      "rename": "Renombrar {{name}}",
       "renameLabel": "Nuevo nombre de {{name}}",
-      "delete": "Eliminar {{name}}",
-      "confirmDelete": "Eliminar estado",
       "moveIssuesTo": "Sus {{count}} issues pasan a",
-      "deleteEmpty": "{{name}} no tiene issues.",
       "lastHint": "Cada categoría necesita al menos un estado: el último de una categoría no se puede eliminar.",
       "preview": "// columnas resultantes",
-      "canceledNote": "Los estados de categoría Cancelado (como Descartado) nunca se muestran en el tablero.",
       "actions": "Más acciones para {{name}}",
       "renameItem": "Renombrar",
-      "deleteItem": "Eliminar"
+      "deleteItem": "Eliminar",
+      "add": "Agregar",
+      "unsaved": "Nuevo",
+      "colorOf": "Color de {{name}}",
+      "defaultColor": "De su categoría",
+      "wipOf": "Límite WIP de {{name}} (vacío: sin límite)",
+      "visibleOf": "{{name}}: mostrar en el tablero",
+      "wipPreview": "máx. {{limit}}",
+      "removedTitle": "Se eliminan al guardar",
+      "removedEmpty": "No tiene issues.",
+      "undoRemove": "Deshacer",
+      "undoRemoveOf": "No eliminar {{name}}",
+      "save": "Guardar cambios",
+      "discard": "Descartar cambios",
+      "saved": "Cambios guardados.",
+      "rebased": "Otra persona cambió los estados mientras tanto. Los trajimos de nuevo con tus cambios encima: revísalos y guarda otra vez.",
+      "unsavedChanges": "Tienes cambios sin guardar.",
+      "hiddenNote": "Las columnas ocultas no se ven en el tablero; sus issues siguen en la lista de issues.",
+      "problems": {
+        "tooMany": "Puede haber hasta {{max}} estados.",
+        "lastOfCategory": "Falta un estado de categoría {{category}}: cada categoría necesita al menos uno.",
+        "destination": "Elige a qué estado pasan los issues de {{name}}."
+      }
     },
     "labels": {
       "lead": "Las etiquetas clasifican los issues; se ven en las tarjetas del tablero.",
@@ -295,13 +313,13 @@
         "taken": "Ya hay uno con ese nombre."
       },
       "nameTaken": "Ya hay uno con ese nombre.",
-      "statusLimit": "El proyecto ya tiene el máximo de estados.",
       "labelLimit": "El proyecto ya tiene el máximo de etiquetas.",
-      "cannotDelete": "No se puede eliminar: es el último de su categoría o falta elegir a dónde pasan sus issues.",
       "notFound": "Ya no existe: recarga la página.",
       "generic": "No se pudo guardar.",
       "lastOfCategory": "No se puede eliminar: es el último estado de su categoría.",
-      "statusHasIssues": "Tiene issues: elige a qué estado pasan."
+      "statusHasIssues": "Tiene issues: elige a qué estado pasan.",
+      "staleStatuses": "Otra persona cambió los estados: recarga e intenta de nuevo.",
+      "statusRules": "No se pudo guardar: revisa que cada categoría tenga un estado y que los eliminados tengan a dónde pasar sus issues."
     },
     "thisProject": "este proyecto"
   }

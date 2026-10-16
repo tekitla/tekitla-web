@@ -1,0 +1,361 @@
+<section class="issue-list" aria-labelledby="issue-list-title">
+  <div class="vrb-page-header">
+    <p class="vrb-page-header__eyebrow">
+      {{ 'issueList.eyebrow' | translate: { key: board.projectKey().toLowerCase() } }}
+    </p>
+    <h1 id="issue-list-title" class="vrb-page-header__title">
+      {{ 'issueList.title' | translate }}
+    </h1>
+    <p class="vrb-page-header__description">{{ 'issueList.lead' | translate }}</p>
+    <div class="vrb-page-header__actions">
+      <a class="vrb-button vrb-button--outline vrb-button--sm" [routerLink]="['/proyectos', projectId()]">
+        <ui-icon name="board" />{{ 'issueList.toBoard' | translate }}
+      </a>
+      <a
+        class="vrb-button vrb-button--primary vrb-button--sm"
+        [routerLink]="['/proyectos', projectId(), 'issues', 'nuevo']"
+      >
+        <ui-icon name="plus" />{{ 'board.newIssue' | translate }}
+      </a>
+    </div>
+  </div>
+
+  <div class="vrb-stack vrb-stack--md">
+    <div class="vrb-cluster vrb-cluster--between">
+      <fieldset class="vrb-segmented vrb-segmented--sm" [attr.aria-label]="'issueList.scopeLabel' | translate">
+        @for (scope of scopes; track scope) {
+          <label class="vrb-segmented__option">
+            <input
+              type="radio"
+              name="issue-scope"
+              [value]="scope"
+              [checked]="filters().scope === scope"
+              (change)="setScope(scope)"
+            />
+            <span [class]="'vrb-segmented__dot vrb-segmented__dot--' + scopeTone[scope]"></span>
+            {{ 'issueList.scopes.' + scope | translate }}
+          </label>
+        }
+      </fieldset>
+      <span class="issue-list__hint" aria-hidden="true">
+        {{ 'issueList.slashBefore' | translate }} <kbd class="issue-list__kbd">/</kbd>
+        {{ 'issueList.slashAfter' | translate }}
+      </span>
+    </div>
+
+    <form class="vrb-cluster vrb-cluster--md issue-list__filters" role="search" (submit)="$event.preventDefault(); searchNow()">
+      <div class="vrb-input-group issue-list__search">
+        <span class="vrb-input-group__addon"><ui-icon name="search" /></span>
+        <input
+          #search
+          id="issue-search"
+          class="vrb-input-group__control"
+          type="search"
+          autocomplete="off"
+          aria-keyshortcuts="/"
+          [maxLength]="queryMax"
+          [placeholder]="'issueList.searchPlaceholder' | translate: { key: board.projectKey() || 'TK' }"
+          [attr.aria-label]="'issueList.searchLabel' | translate"
+          [value]="queryDraft()"
+          (input)="onQueryInput($any($event.target).value)"
+        />
+      </div>
+      <div class="vrb-select issue-list__select">
+        <select
+          class="vrb-input"
+          [attr.aria-label]="'issue.priorityLabel' | translate"
+          (change)="setPriority($any($event.target).value)"
+        >
+          <option value="" [selected]="!filters().priority">{{ 'issueList.anyPriority' | translate }}</option>
+          @for (priority of priorities; track priority) {
+            <option [value]="priorityParam[priority]" [selected]="filters().priority === priority">
+              {{ 'issue.priorityByEnum.' + priority | translate }}
+            </option>
+          }
+        </select>
+      </div>
+      <div class="vrb-select issue-list__select">
+        <select
+          class="vrb-input"
+          [attr.aria-label]="'issue.labels' | translate"
+          (change)="setLabel($any($event.target).value)"
+        >
+          <option value="" [selected]="!filters().labelId">{{ 'issueList.anyLabel' | translate }}</option>
+          @for (label of board.labels(); track label.id) {
+            <option [value]="label.id" [selected]="filters().labelId === label.id">{{ label.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="vrb-select issue-list__select">
+        <select
+          class="vrb-input"
+          [attr.aria-label]="'issueDetail.state' | translate"
+          (change)="setStatus($any($event.target).value)"
+        >
+          <option value="" [selected]="!filters().statusId">{{ 'issueList.anyStatus' | translate }}</option>
+          @for (status of board.statuses(); track status.id) {
+            <option [value]="status.id" [selected]="filters().statusId === status.id">{{ status.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="vrb-select issue-list__select issue-list__sort">
+        <select
+          class="vrb-input"
+          [attr.aria-label]="'issueList.sortLabel' | translate"
+          (change)="setSort($any($event.target).value)"
+        >
+          @for (sort of sorts; track sort) {
+            <option [value]="sort" [selected]="filters().sort === sort">
+              {{ 'issueList.sorts.' + sort | translate }}
+            </option>
+          }
+        </select>
+      </div>
+      @if (filtered()) {
+        <button type="button" class="vrb-button vrb-button--ghost vrb-button--sm" (click)="clearFilters()">
+          {{ 'issueList.clear' | translate }}
+        </button>
+      }
+    </form>
+
+    @if (filters().scope === 'descartados') {
+      <div class="vrb-alert vrb-alert--info">
+        <div class="vrb-alert__body">
+          <p class="vrb-alert__title">{{ 'issueList.discardedTitle' | translate }}</p>
+          <p class="vrb-alert__description">{{ 'issueList.discardedText' | translate }}</p>
+        </div>
+      </div>
+    }
+
+    @if (list.bulkResult(); as result) {
+      <div
+        class="vrb-alert"
+        [class.vrb-alert--success]="!result.failed.length"
+        [class.vrb-alert--danger]="result.failed.length"
+        role="status"
+      >
+        <div class="vrb-alert__body">
+          <p class="vrb-alert__title">
+            {{ 'issueList.bulk.done.' + result.action | translate: { count: result.ok } }}
+          </p>
+          @if (result.failed.length) {
+            <p class="vrb-alert__description">
+              {{ 'issueList.bulk.failed' | translate: { count: result.failed.length } }}
+            </p>
+            <ul class="issue-list__failures">
+              @for (failure of result.failed; track failure.key) {
+                <li><b>{{ failure.key }}</b>: {{ failure.message }}</li>
+              }
+            </ul>
+          }
+        </div>
+        <button
+          type="button"
+          class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
+          [attr.aria-label]="'common.close' | translate"
+          (click)="list.dismissBulkResult()"
+        >
+          <ui-icon name="close" />
+        </button>
+      </div>
+    }
+
+    @if (list.error(); as error) {
+      <div class="vrb-alert vrb-alert--danger" role="alert">
+        <ui-icon name="alert" />
+        <div class="vrb-alert__body">
+          <p class="vrb-alert__title">{{ 'issueList.loadError' | translate }}</p>
+          <p class="vrb-alert__description">{{ error }}</p>
+          <div class="vrb-alert__actions">
+            <ui-button size="sm" (pressed)="list.reload()">{{ 'common.retry' | translate }}</ui-button>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <article class="vrb-card issue-list__card" [attr.aria-busy]="list.loading() || null">
+        <div class="issue-list__scroll">
+          <table class="tk-table issue-list__table">
+            <caption class="u-visually-hidden">
+              {{ 'issueList.caption' | translate }}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col" class="issue-list__check">
+                  <label class="vrb-check">
+                    <input
+                      type="checkbox"
+                      class="vrb-check__input"
+                      [checked]="list.allSelected()"
+                      [disabled]="!list.items().length || !!list.bulk()"
+                      [attr.aria-label]="'issueList.selectAll' | translate"
+                      (change)="list.toggleAll()"
+                    />
+                    <span class="vrb-check__box" aria-hidden="true"></span>
+                  </label>
+                </th>
+                <th scope="col">{{ 'issueList.columns.issue' | translate }}</th>
+                <th scope="col">{{ 'issueDetail.state' | translate }}</th>
+                <th scope="col">{{ 'issue.priorityLabel' | translate }}</th>
+                <th scope="col" class="issue-list__right">{{ 'issueDetail.lastChange' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (list.loading() && !list.items().length) {
+                @for (row of [1, 2, 3, 4]; track row) {
+                  <tr>
+                    <td colspan="5"><span class="vrb-skeleton vrb-skeleton--text"></span></td>
+                  </tr>
+                }
+              }
+              @for (issue of list.items(); track issue.id) {
+                @let off = discarded(issue);
+                @let status = statusOf(issue);
+                @let selected = list.selected().has(issue.number);
+                <tr
+                  [class.issue-list__row--off]="off"
+                  [class.issue-list__row--selected]="selected"
+                  [attr.data-issue]="issue.number"
+                >
+                  <td class="issue-list__check">
+                    <label class="vrb-check">
+                      <input
+                        type="checkbox"
+                        class="vrb-check__input"
+                        [checked]="selected"
+                        [disabled]="!!list.bulk()"
+                        [attr.aria-label]="'issueList.select' | translate: { issue: key(issue) }"
+                        (change)="list.toggle(issue.number)"
+                      />
+                      <span class="vrb-check__box" aria-hidden="true"></span>
+                    </label>
+                  </td>
+                  <th scope="row" class="issue-list__main">
+                    <span class="vrb-cluster vrb-cluster--sm">
+                      <a class="issue-list__key" [routerLink]="['/proyectos', projectId(), 'issues', issue.number]">{{ key(issue) }}</a>
+                      <a class="issue-list__title" [routerLink]="['/proyectos', projectId(), 'issues', issue.number]">{{ issue.title }}</a>
+                      @for (label of labelsOf(issue); track label.id) {
+                        <span [class]="'vrb-badge vrb-badge--sm vrb-badge--' + labelTone[label.color]">{{ label.name }}</span>
+                      }
+                    </span>
+                    @if (off) {
+                      <span class="issue-list__discard"><app-discard-note [discard]="issue.discard" /></span>
+                    }
+                  </th>
+                  <td>
+                    @if (status) {
+                      <span [class]="'vrb-badge vrb-badge--sm vrb-badge--dot vrb-badge--' + tone(status)">{{ status.name }}</span>
+                    }
+                  </td>
+                  <td><app-priority-badge [priority]="issue.priority" /></td>
+                  <td class="issue-list__right">
+                    @if (off) {
+                      <button
+                        type="button"
+                        class="vrb-button vrb-button--outline vrb-button--sm"
+                        [disabled]="!!list.bulk()"
+                        [attr.aria-label]="'issueList.restoreOne' | translate: { issue: key(issue) }"
+                        (click)="restoreOne(issue)"
+                      >
+                        {{ 'issueDetail.restore' | translate }}
+                      </button>
+                    } @else if (issue.updatedAt) {
+                      <time class="issue-list__muted" [attr.datetime]="issue.updatedAt">{{ issue.updatedAt | date: 'd MMM, HH:mm' }}</time>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (!list.loading() && !list.items().length) {
+          <div class="vrb-empty issue-list__empty">
+            @if (filtered()) {
+              <p class="vrb-empty__title">{{ 'issueList.noMatchTitle' | translate }}</p>
+              <p class="vrb-empty__description">{{ 'issueList.noMatchText' | translate }}</p>
+              <div class="vrb-empty__actions">
+                <button type="button" class="vrb-button vrb-button--outline vrb-button--sm" (click)="clearFilters()">
+                  {{ 'issueList.clear' | translate }}
+                </button>
+              </div>
+            } @else {
+              <p class="vrb-empty__title">{{ 'issueList.emptyTitle.' + filters().scope | translate }}</p>
+            }
+          </div>
+        }
+        <footer class="vrb-cluster vrb-cluster--between issue-list__footer">
+          <span class="issue-list__muted" aria-live="polite">
+            @if (list.items().length) {
+              {{ 'issueList.shown' | translate: { count: list.items().length } }}
+            }
+          </span>
+          @if (list.hasNext()) {
+            <ui-button variant="ghost" size="sm" [loading]="list.loadingMore()" (pressed)="list.loadMore()">
+              {{ 'issueList.more' | translate }}
+            </ui-button>
+          }
+        </footer>
+        @if (list.moreError(); as error) {
+          <p class="vrb-field__error issue-list__more-error" role="alert">
+            {{ 'issueList.moreError' | translate }} {{ error }}
+          </p>
+        }
+      </article>
+    }
+
+    @if (list.selected().size || list.bulk()) {
+      <div class="issue-list__bulk" role="region" [attr.aria-label]="'issueList.bulk.label' | translate">
+        @if (list.bulk(); as bulk) {
+          <b class="issue-list__bulk-count" role="status">
+            {{ 'issueList.bulk.progress.' + bulk.action | translate: { done: bulk.done, total: bulk.total } }}
+          </b>
+        } @else {
+          <b class="issue-list__bulk-count">{{ 'issueList.bulk.selected' | translate: { count: list.selected().size } }}</b>
+          <span class="issue-list__bulk-spacer"></span>
+          <button
+            type="button"
+            class="vrb-button vrb-button--ghost vrb-button--sm"
+            [cdkMenuTriggerFor]="moveMenu"
+          >
+            <ui-icon name="move" />{{ 'issueList.bulk.move' | translate }}
+          </button>
+          @if (selectedDiscarded()) {
+            <button type="button" class="vrb-button vrb-button--ghost vrb-button--sm" (click)="restoreSelected()">
+              <ui-icon name="restore" />{{ 'issueList.bulk.restore' | translate: { count: selectedDiscarded() } }}
+            </button>
+          }
+          @if (selectedDiscarded() < list.selected().size) {
+            <button type="button" class="vrb-button vrb-button--ghost vrb-button--sm" (click)="openDiscard()">
+              <ui-icon name="trash" />{{ 'issueList.bulk.discard' | translate }}
+            </button>
+          }
+          <button
+            type="button"
+            class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"
+            [attr.aria-label]="'issueList.bulk.clear' | translate"
+            (click)="list.clearSelection()"
+          >
+            <ui-icon name="close" />
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  <app-discard-dialog
+    [subject]="'issueList.bulk.subject' | translate: { count: list.selected().size - selectedDiscarded() }"
+    [statuses]="canceledStatuses()"
+    [error]="discardError()"
+    (confirmed)="discardSelected($event)"
+  />
+</section>
+
+<ng-template #moveMenu>
+  <div class="vrb-menu" cdkMenu>
+    @for (status of statusOptions(); track status.id) {
+      <button type="button" class="vrb-menu__item" cdkMenuItem (cdkMenuItemTriggered)="moveSelected(status.id)">
+        <span [class]="'vrb-segmented__dot vrb-segmented__dot--' + tone(status)"></span>
+        {{ 'board.card.moveTo' | translate: { column: status.name } }}
+      </button>
+    }
+  </div>
+</ng-template>
