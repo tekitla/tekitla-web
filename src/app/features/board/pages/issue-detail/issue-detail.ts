@@ -173,7 +173,10 @@ export class IssueDetail {
     effect(() => {
       if (!this.descartar() || !this.store.selected() || !this.store.statuses().length) return;
       untracked(() => {
-        if (!this.canceled()) this.openDiscard();
+        // El diálogo está dentro del bloque del issue: existe después del render.
+        if (!this.canceled()) {
+          afterNextRender(() => this.openDiscard(), { injector: this.injector });
+        }
         void this.router.navigate([], {
           queryParams: { descartar: null },
           queryParamsHandling: 'merge',
@@ -196,6 +199,7 @@ export class IssueDetail {
       next: () => {
         this.discarding.set(false);
         this.discardDialog()?.close();
+        this.activity.refresh();
         this.focusAfterRender('issue-restore');
       },
       error: (err: DomainError) => {
@@ -214,6 +218,7 @@ export class IssueDetail {
     this.store.restore(this.number()).subscribe({
       next: () => {
         this.restoring.set(false);
+        this.activity.refresh();
         this.focusAfterRender('issue-status');
       },
       error: (err: DomainError) => {
