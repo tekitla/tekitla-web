@@ -4,9 +4,9 @@ import { environment } from '../../src/environments/environment';
 
 /**
  * Backend falso para los e2e: sesión de Firebase + API de Tekitla (contrato
- * `issues.v1` de tekitla-protos 0.3.0), todo con `page.route`. Los tests no
+ * `issues.v1` de tekitla-protos 0.4.0), todo con `page.route`. Los tests no
  * dependen de Firebase real ni del gateway. Los errores salen con el sobre del
- * gateway: `{"error": {"code", "message"}}`.
+ * gateway: `{"error": {"code", "message", "reason"?}}`.
  */
 
 export interface FakeIssue {
@@ -22,6 +22,7 @@ export interface FakeIssue {
   labelIds?: string[];
   createdAt?: string;
   updatedAt?: string;
+  discard?: { reason: string; actorId: string; discardedAt: string };
 }
 
 export interface FakeProject {
@@ -37,6 +38,9 @@ export interface FakeStatus {
   name: string;
   category: string;
   rank: string;
+  color?: string;
+  wipLimit?: number;
+  hidden?: boolean;
 }
 
 export interface FakeLabel {
@@ -56,6 +60,10 @@ export interface FakeBackendOptions {
    * vista vieja).
    */
   moveStatus?: number;
+  /** Tamaño de página de ListIssues (para probar «Cargar más»). */
+  pageSize?: number;
+  /** BatchUpdateStatuses responde STALE_STATUSES la primera vez. */
+  staleStatusesOnce?: boolean;
   /** Responde 403 a todo (cuenta fuera de la allowlist). */
   forbidden?: boolean;
 }
@@ -91,6 +99,7 @@ export const STATUSES: FakeStatus[] = [
     name: 'Descartado',
     category: 'ISSUE_STATE_CANCELED',
     rank: 'e',
+    hidden: true,
   },
 ];
 
@@ -155,6 +164,11 @@ export const ISSUES: FakeIssue[] = [
     statusId: 's-canceled',
     rank: '000500',
     createdAt: '2026-10-05T10:00:00Z',
+    discard: {
+      reason: 'Lo cubre otro issue',
+      actorId: 'otro-uid',
+      discardedAt: '2026-10-06T10:00:00Z',
+    },
   },
 ];
 
@@ -165,6 +179,13 @@ const CORS = {
 };
 
 const UID = 'e2e-uid';
+
+const CATEGORIES = [
+  'ISSUE_STATE_TODO',
+  'ISSUE_STATE_IN_PROGRESS',
+  'ISSUE_STATE_DONE',
+  'ISSUE_STATE_CANCELED',
+];
 
 /** Sesión de Firebase ya iniciada (como si el usuario hubiera entrado antes). */
 export async function signIn(page: Page): Promise<void> {
@@ -250,6 +271,85 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
     issues.filter((i) => i.projectId === projectId && statusOf(i).id === statusId).sort(byRank);
   const log = (issue: FakeIssue, change: Record<string, unknown>) =>
     events.push({ id: nextId('e'), issueId: issue.id, actorId: UID, createdAt: now(), ...change });
+  let staleOnce = options.staleStatusesOnce ?? false;
+  const listQueries: URLSearchParams[] = [];
+
+  /**
+   * ListIssues con búsqueda, filtros y orden (como tekitla-issues): Y entre
+   * filtros, O dentro de cada lista; el cursor es el índice siguiente más la
+   * huella de filtros y orden (con otros: INVALID_ARGUMENT).
+   */
+  const err = (status: number, code: string, message: string) =>
+    [status, { error: { code, message, request_id: 'e2e' } }] as const;
+  const listIssues = (own: FakeIssue[], params: URLSearchParams) => {
+    listQueries.push(params);
+    const fold = (s: string) =>
+      s
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    if (params.has('state') && params.has('states')) {
+      return err(400, 'INVALID_ARGUMENT', 'state and states');
+    }
+    const query = fold(params.get('query') ?? '');
+    const number = /^(?:[a-z]+-)?(\d+)$/.exec(query)?.[1];
+    const states = params.getAll('states');
+    const statusIds = params.getAll('status_ids');
+    const priorities = params.getAll('priorities');
+    const labelIds = params.getAll('label_ids');
+    const order = params.get('order_by') ?? 'ISSUE_ORDER_RANK';
+    const PRIO = [
+      'PRIORITY_UNSPECIFIED',
+      'PRIORITY_LOW',
+      'PRIORITY_MEDIUM',
+      'PRIORITY_HIGH',
+      'PRIORITY_URGENT',
+    ];
+    const list = own
+      .filter((i) => {
+        const status = statusOf(i);
+        if (query && !fold(i.title).includes(query) && Number(number) !== i.number) return false;
+        if (states.length && !states.includes(status.category)) return false;
+        if (statusIds.length && !statusIds.includes(status.id)) return false;
+        if (priorities.length && !priorities.includes(i.priority ?? 'PRIORITY_UNSPECIFIED'))
+          return false;
+        if (labelIds.length && !labelIds.some((id) => i.labelIds?.includes(id))) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        if (order === 'ISSUE_ORDER_UPDATED_DESC') {
+          const ua = a.updatedAt ?? a.createdAt ?? '';
+          const ub = b.updatedAt ?? b.createdAt ?? '';
+          if (ua !== ub) return ua < ub ? 1 : -1;
+        }
+        if (order === 'ISSUE_ORDER_PRIORITY_DESC') {
+          const diff = PRIO.indexOf(b.priority ?? '') - PRIO.indexOf(a.priority ?? '');
+          if (diff) return diff;
+        }
+        return byRank(a, b);
+      });
+    const fingerprint = [...params.entries()]
+      .filter(([k]) => !k.startsWith('page.'))
+      .map(([k, v]) => `${k}=${v}`)
+      .sort()
+      .join('&');
+    const cursor = params.get('page.cursor');
+    let start = 0;
+    if (cursor) {
+      const [index, print] = cursor.split('|');
+      if (print !== fingerprint) {
+        return err(400, 'INVALID_ARGUMENT', 'cursor does not match the request');
+      }
+      start = Number(index);
+    }
+    const size = options.pageSize ?? Number(params.get('page.limit') ?? 50);
+    const issuesPage = list.slice(start, start + size);
+    const next = start + size < list.length ? `${start + size}|${fingerprint}` : '';
+    return [
+      200,
+      { issues: issuesPage, page: next ? { nextCursor: next, hasNext: true } : {} },
+    ] as const;
+  };
 
   await page.route(
     (url) => url.origin === base.origin && url.pathname.startsWith('/v1/'),
@@ -268,8 +368,8 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
       });
       const reply = (status: number, json: unknown) =>
         route.fulfill({ status, headers: CORS, json });
-      const fail = (status: number, code: string, message: string) =>
-        reply(status, { error: { code, message, request_id: 'e2e' } });
+      const fail = (status: number, code: string, message: string, reason?: string) =>
+        reply(status, { error: { code, message, reason, request_id: 'e2e' } });
 
       if (options.forbidden) return fail(403, 'PERMISSION_DENIED', 'forbidden');
 
@@ -348,6 +448,92 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
         }
       }
 
+      if (rest === 'statuses:batchUpdate' && method === 'POST') {
+        if (staleOnce) {
+          staleOnce = false;
+          // Otro creó un estado mientras tanto.
+          statuses.push({
+            id: nextId('s'),
+            projectId,
+            name: 'Bloqueado',
+            category: 'ISSUE_STATE_IN_PROGRESS',
+            rank: 'zz',
+          });
+          return fail(400, 'FAILED_PRECONDITION', 'stale statuses', 'STALE_STATUSES');
+        }
+        type Spec = Partial<FakeStatus> & { id: string };
+        const specs = (body?.['statuses'] ?? []) as Spec[];
+        const deletions = (body?.['deletions'] ?? []) as {
+          statusId: string;
+          moveToStatusId?: string;
+        }[];
+        const current = sortedStatuses(projectId);
+        const listed = new Set([
+          ...specs.map((s) => s.id).filter(Boolean),
+          ...deletions.map((d) => d.statusId),
+        ]);
+        if (current.some((s) => !listed.has(s.id))) {
+          return fail(400, 'FAILED_PRECONDITION', 'stale statuses', 'STALE_STATUSES');
+        }
+        const names = specs.map((s) => String(s.name).toLowerCase());
+        if (new Set(names).size !== names.length) {
+          return fail(409, 'ALREADY_EXISTS', 'status name taken', 'STATUS_NAME_TAKEN');
+        }
+        const categoryOf = (s: Spec) =>
+          s.id ? current.find((c) => c.id === s.id)!.category : String(s.category);
+        const categories = new Set(specs.map(categoryOf));
+        if (CATEGORIES.some((c) => !categories.has(c))) {
+          return fail(
+            400,
+            'FAILED_PRECONDITION',
+            'last status of category',
+            'LAST_STATUS_OF_CATEGORY',
+          );
+        }
+        for (const deletion of deletions) {
+          const own = column(projectId, deletion.statusId);
+          const target = current.find((s) => s.id === deletion.moveToStatusId);
+          if (own.length && !target) {
+            return fail(400, 'FAILED_PRECONDITION', 'status has issues', 'STATUS_HAS_ISSUES');
+          }
+          const from = current.find((s) => s.id === deletion.statusId)!;
+          for (const issue of own) {
+            issue.statusId = target!.id;
+            issue.state = target!.category;
+            log(issue, {
+              statusChanged: {
+                fromStatusId: from.id,
+                fromStatusName: from.name,
+                fromState: from.category,
+                toStatusId: target!.id,
+                toStatusName: target!.name,
+                toState: target!.category,
+              },
+            });
+          }
+          statuses.splice(statuses.indexOf(from), 1);
+        }
+        specs.forEach((spec, i) => {
+          const status =
+            statuses.find((s) => s.id === spec.id) ??
+            (statuses[
+              statuses.push({
+                id: nextId('s'),
+                projectId,
+                name: '',
+                category: categoryOf(spec),
+                rank: '',
+              }) - 1
+            ] as FakeStatus);
+          status.name = String(spec.name);
+          status.rank = String.fromCharCode(97 + i);
+          status.color = spec.color === 'LABEL_COLOR_UNSPECIFIED' ? undefined : spec.color;
+          status.wipLimit = spec.wipLimit || undefined;
+          status.hidden = spec.hidden || undefined;
+        });
+        return reply(200, { statuses: sortedStatuses(projectId) });
+      }
+
       // ── Etiquetas ─────────────────────────────────────────────────────────
       if (rest === 'labels' && method === 'GET') {
         const own = labels.filter((l) => l.projectId === projectId);
@@ -386,7 +572,8 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
       // ── Issues ────────────────────────────────────────────────────────────
       const own = issues.filter((i) => i.projectId === projectId);
       if (rest === 'issues' && method === 'GET') {
-        return reply(200, { issues: [...own].sort(byRank), page: {} });
+        const [status, json] = listIssues(own, url.searchParams);
+        return reply(status, json);
       }
       if (rest === 'issues' && method === 'POST') {
         const first = sortedStatuses(projectId).find((s) => s.category === 'ISSUE_STATE_TODO')!;
@@ -407,7 +594,9 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
         return reply(200, { issue });
       }
 
-      const issueMatch = rest.match(/^issues\/(\d+)(:move|\/comments|\/events)?$/);
+      const issueMatch = rest.match(
+        /^issues\/(\d+)(:move|:discard|:restore|\/comments|\/events)?$/,
+      );
       const issue = issueMatch && own.find((i) => i.number === Number(issueMatch[1]));
       if (!issueMatch || !issue) return fail(404, 'NOT_FOUND', 'issue not found');
       const action = issueMatch[2];
@@ -447,6 +636,8 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
         issue.statusId = to.id;
         issue.state = to.category;
         issue.updatedAt = now();
+        // Salir de un descarte con MoveIssue limpia el motivo.
+        if (to.category !== 'ISSUE_STATE_CANCELED') delete issue.discard;
         if (from.id !== to.id) {
           log(issue, {
             statusChanged: {
@@ -459,6 +650,56 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
             },
           });
         }
+        return reply(200, { issue });
+      }
+
+      if (action === ':discard') {
+        const from = statusOf(issue);
+        if (from.category === 'ISSUE_STATE_CANCELED') {
+          return fail(400, 'FAILED_PRECONDITION', 'already discarded', 'ISSUE_ALREADY_DISCARDED');
+        }
+        const reason = String(body?.['reason'] ?? '').trim();
+        if (!reason) return fail(400, 'INVALID_ARGUMENT', 'reason is required');
+        const to =
+          statuses.find((s) => s.id === body?.['statusId']) ??
+          sortedStatuses(projectId).find((s) => s.category === 'ISSUE_STATE_CANCELED')!;
+        issue.statusId = to.id;
+        issue.state = to.category;
+        issue.discard = { reason, actorId: UID, discardedAt: now() };
+        issue.updatedAt = now();
+        log(issue, {
+          discarded: {
+            reason,
+            fromStatusId: from.id,
+            fromStatusName: from.name,
+            fromState: from.category,
+            toStatusId: to.id,
+            toStatusName: to.name,
+          },
+        });
+        return reply(200, { issue });
+      }
+
+      if (action === ':restore') {
+        const from = statusOf(issue);
+        if (from.category !== 'ISSUE_STATE_CANCELED') {
+          return fail(400, 'FAILED_PRECONDITION', 'not discarded', 'ISSUE_NOT_DISCARDED');
+        }
+        const to = sortedStatuses(projectId).find((s) => s.category === 'ISSUE_STATE_TODO')!;
+        const last = column(projectId, to.id).at(-1);
+        issue.statusId = to.id;
+        issue.state = to.category;
+        issue.rank = String(Number(last?.rank ?? 0) + 100).padStart(6, '0');
+        delete issue.discard;
+        issue.updatedAt = now();
+        log(issue, {
+          restored: {
+            fromStatusId: from.id,
+            fromStatusName: from.name,
+            toStatusId: to.id,
+            toStatusName: to.name,
+          },
+        });
         return reply(200, { issue });
       }
 
@@ -515,7 +756,7 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
     },
   );
 
-  return { calls, issues, statuses, labels };
+  return { calls, issues, statuses, labels, listQueries };
 }
 
 function fakeJwt(): string {

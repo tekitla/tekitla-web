@@ -1,0 +1,194 @@
+@use 'mixins' as m;
+
+// Lista de issues. vrb todavía no trae `.vrb-table`: la tabla es la `tk-table`
+// del diseño, sólo con variables --vrb-*.
+:host {
+  display: block;
+}
+
+.issue-list__hint,
+.issue-list__muted {
+  color: var(--vrb-muted-fg);
+  font-size: 13px;
+}
+
+// Solo sirve con teclado físico.
+.issue-list__hint {
+  display: none;
+
+  @include m.from-tablet {
+    display: inline;
+  }
+}
+
+.issue-list__kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--vrb-border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  font: 500 11px/1 var(--vrb-font-mono);
+}
+
+.issue-list__search {
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
+.issue-list__select {
+  flex: 1 1 150px;
+  max-width: 190px;
+
+  .vrb-input {
+    height: var(--vrb-control-h-sm);
+  }
+}
+
+.issue-list__sort {
+  @include m.from-tablet {
+    margin-left: auto;
+  }
+}
+
+.issue-list__card {
+  overflow: hidden;
+}
+
+// En celular la tabla se desplaza de costado en lugar de aplastarse.
+.issue-list__scroll {
+  overflow-x: auto;
+}
+
+.tk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+
+  th,
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--vrb-border);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  thead th {
+    padding-block: 10px;
+    color: var(--vrb-muted-fg);
+    font-weight: 500;
+    white-space: nowrap;
+    background: var(--vrb-surface);
+  }
+
+  tbody th {
+    font-weight: 400;
+  }
+
+  tbody tr:hover > * {
+    background: var(--vrb-fill);
+  }
+}
+
+.issue-list__check {
+  width: 36px;
+
+  .vrb-check {
+    min-height: auto;
+  }
+}
+
+.issue-list__main {
+  min-width: 320px;
+}
+
+.issue-list__key {
+  font: 12px var(--vrb-font-mono);
+}
+
+.issue-list__title {
+  color: inherit;
+  font-weight: 500;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.issue-list__discard {
+  display: block;
+  margin-top: 2px;
+  color: var(--vrb-muted-fg);
+  font-size: 12px;
+}
+
+.tk-table .issue-list__right {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.issue-list__row--off > * {
+  color: var(--vrb-muted-fg);
+}
+
+.issue-list__row--off .issue-list__title {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--vrb-muted-fg) 60%, transparent);
+}
+
+.tk-table .issue-list__row--selected > * {
+  background: color-mix(in oklab, var(--vrb-brand) 7%, var(--vrb-bg));
+}
+
+.issue-list__empty {
+  padding: 48px 16px;
+}
+
+.issue-list__footer {
+  padding: 12px 16px;
+}
+
+.issue-list__more-error {
+  margin: 0;
+  padding: 0 16px 12px;
+}
+
+.issue-list__failures {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-4);
+  overflow-wrap: anywhere;
+}
+
+// Barra de la selección: queda pegada abajo mientras se recorre la lista.
+.issue-list__bulk {
+  position: sticky;
+  bottom: var(--space-3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border-radius: var(--vrb-radius-control);
+  background: var(--vrb-ink);
+  color: var(--vrb-ink-fg);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+
+  .vrb-button--ghost {
+    color: var(--vrb-ink-fg);
+  }
+
+  .vrb-button--ghost:hover {
+    background: color-mix(in oklab, var(--vrb-ink-fg) 12%, transparent);
+  }
+}
+
+.issue-list__bulk-count {
+  font-weight: 500;
+}
+
+.issue-list__bulk-spacer {
+  flex: 1;
+}

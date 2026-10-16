@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { fakeApi, signIn } from './support/fake-backend';
+import { ISSUES, fakeApi, signIn } from './support/fake-backend';
 
 /**
  * Detalle de un issue (rebanada 3a): editar en el lugar, estado, prioridad,
@@ -126,4 +126,49 @@ test('móvil: el detalle se apila sin scroll horizontal', async ({ page }) => {
   await expect(page.locator('app-issue-activity')).toContainText('creó el issue');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/issue-detalle-375.png`, fullPage: true });
+});
+
+test('descarta con motivo, muestra quién y por qué, y restaura', async ({ page }) => {
+  await signIn(page);
+  const api = await fakeApi(page);
+  await page.goto('/proyectos/p-tk/issues/2');
+  const activity = page.locator('app-issue-activity');
+
+  // El selector de estado no ofrece los de descarte.
+  await expect(page.getByLabel('Estado').locator('option', { hasText: 'Descartado' })).toHaveCount(
+    0,
+  );
+
+  await page.getByRole('button', { name: 'Descartar…' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Descartar TK-2' });
+  await expect(dialog.getByLabel('Motivo')).toBeFocused();
+  await dialog.getByRole('button', { name: 'Descartar' }).click();
+  await expect(dialog.getByText('Escribe por qué se descarta.')).toBeVisible();
+  expect(api.calls.some((c) => c.path.endsWith(':discard'))).toBe(false);
+
+  await dialog.getByLabel('Motivo').fill('  Duplicado de TK-4 ');
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/descartar-1280.png` });
+  await dialog.getByRole('button', { name: 'Descartar' }).click();
+  await expect(dialog).toBeHidden();
+  expect(api.calls.find((c) => c.path.endsWith(':discard'))?.body).toEqual({
+    reason: 'Duplicado de TK-4',
+  });
+  await expect(page.locator('.vrb-alert')).toContainText('Descartado por Tú:');
+  await expect(page.locator('.vrb-alert')).toContainText('Duplicado de TK-4');
+  await expect(activity).toContainText('descartó el issue');
+  await expect(activity).toContainText('“Duplicado de TK-4”');
+
+  await page.getByRole('button', { name: 'Restaurar' }).click();
+  await expect(page.getByRole('button', { name: 'Descartar…' })).toBeVisible();
+  await expect(page.locator('.vrb-page-header__description')).toContainText('Por hacer');
+  await expect(activity).toContainText('restauró el issue en');
+});
+
+test('uno descartado con MoveIssue (v0.3) dice «Descartado sin motivo»', async ({ page }) => {
+  await signIn(page);
+  await fakeApi(page, {
+    issues: ISSUES.map((i) => (i.number === 5 ? { ...i, discard: undefined } : i)),
+  });
+  await page.goto('/proyectos/p-tk/issues/5');
+  await expect(page.locator('.vrb-alert')).toContainText('Descartado sin motivo');
 });

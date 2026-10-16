@@ -3,11 +3,13 @@ import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
 
 import { RestClient } from '../rest/rest.client';
 import type {
+  BatchUpdateStatusesRequest,
   Comment,
   CreateIssueRequest,
   CreateLabelRequest,
   CreateProjectRequest,
   CreateStatusRequest,
+  DiscardIssueRequest,
   Issue,
   IssueEvent,
   Label,
@@ -82,10 +84,26 @@ export class IssuesClient {
       .pipe(map((res) => toProject(res.project)));
   }
 
+  /**
+   * Una página de issues. Los filtros vacíos no viajan (sin ellos, como en
+   * v0.3); `orderBy` RANK tampoco, porque es el default.
+   */
   listIssues(projectId: string, req: ListIssuesRequest = {}): Observable<ListIssuesResponse> {
+    const list = <T>(values?: readonly T[]) => (values?.length ? values : undefined);
     const params = {
       ...pageParams(req.page ?? {}),
       state: req.state && req.state !== 'ISSUE_STATE_UNSPECIFIED' ? req.state : undefined,
+      query: req.query?.trim() || undefined,
+      states: list(req.states),
+      status_ids: list(req.statusIds),
+      priorities: list(req.priorities),
+      label_ids: list(req.labelIds),
+      order_by:
+        req.orderBy &&
+        req.orderBy !== 'ISSUE_ORDER_UNSPECIFIED' &&
+        req.orderBy !== 'ISSUE_ORDER_RANK'
+          ? req.orderBy
+          : undefined,
     };
     return this.rest
       .get<RawListIssuesResponse>(issuesPath(projectId), { params })
@@ -131,6 +149,24 @@ export class IssuesClient {
     const body = labelIds ? { ...rest, labels: { ids: labelIds } } : rest;
     return this.rest
       .patch<RawIssueEnvelope>(issuePath(projectId, number), body)
+      .pipe(map((res) => toIssue(res.issue)));
+  }
+
+  /** Lo pasa a un estado CANCELED con motivo (ver `DiscardIssueRequest`). */
+  discardIssue(projectId: string, number: number, req: DiscardIssueRequest): Observable<Issue> {
+    const body = { reason: req.reason, statusId: req.statusId || undefined };
+    return this.rest
+      .post<RawIssueEnvelope>(`${issuePath(projectId, number)}:discard`, body)
+      .pipe(map((res) => toIssue(res.issue)));
+  }
+
+  /**
+   * Lo vuelve al primer estado de categoría TODO, al final de la columna. Uno
+   * que no está descartado: FAILED_PRECONDITION `ISSUE_NOT_DISCARDED`.
+   */
+  restoreIssue(projectId: string, number: number): Observable<Issue> {
+    return this.rest
+      .post<RawIssueEnvelope>(`${issuePath(projectId, number)}:restore`, {})
       .pipe(map((res) => toIssue(res.issue)));
   }
 
@@ -182,6 +218,16 @@ export class IssuesClient {
         params: { moveToStatusId: moveToStatusId || undefined },
       })
       .pipe(map(() => undefined));
+  }
+
+  /**
+   * Guarda la lista completa de estados en una transacción (todo o nada) y
+   * devuelve cómo quedaron, en el orden de las columnas.
+   */
+  batchUpdateStatuses(projectId: string, req: BatchUpdateStatusesRequest): Observable<Status[]> {
+    return this.rest
+      .post<RawListStatusesResponse>(`${projectPath(projectId)}/statuses:batchUpdate`, req)
+      .pipe(map((res) => (res.statuses ?? []).map(toStatus)));
   }
 
   // ── Etiquetas ─────────────────────────────────────────────────────────────

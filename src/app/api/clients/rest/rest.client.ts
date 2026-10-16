@@ -11,7 +11,11 @@ function toHttpParams(params?: QueryParams): HttpParams | undefined {
   let hp = new HttpParams();
   for (const [k, v] of Object.entries(params)) {
     if (v === null || v === undefined) continue;
-    hp = hp.set(k, String(v));
+    if (Array.isArray(v)) {
+      for (const item of v as readonly unknown[]) hp = hp.append(k, String(item));
+    } else {
+      hp = hp.set(k, String(v));
+    }
   }
   return hp;
 }

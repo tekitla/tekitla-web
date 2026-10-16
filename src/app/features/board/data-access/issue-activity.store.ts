@@ -45,6 +45,8 @@ export class IssueActivityStore {
   private pages = 0;
   private nextCursor = '';
   private requestId = 0;
+  /** Hay una carga o un refresco (no «ver más») en vuelo. */
+  private refreshing = false;
 
   /** Carga el historial del issue; si es el mismo que ya se ve, lo refresca. */
   load(projectId: string, number: number): void {
@@ -54,6 +56,7 @@ export class IssueActivityStore {
     }
     this.target = { projectId, number };
     this._events.set([]);
+    this._error.set(null);
     this._hasNext.set(false);
     this.pages = 0;
     this.nextCursor = '';
@@ -92,6 +95,7 @@ export class IssueActivityStore {
           change: { kind: 'commented', comment },
         };
         this._events.update((list) => [...list, event]);
+        if (this.refreshing) this.refresh();
       }),
       catchError((err: unknown) => throwError(() => toDomainError(err))),
     );
@@ -104,11 +108,13 @@ export class IssueActivityStore {
   private fetch(maxPages: number, cursor: string, append: boolean): void {
     const target = this.target!;
     const requestId = ++this.requestId;
+    this.refreshing = !append;
     this.pagesFrom(target, cursor, maxPages)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => {
           if (requestId !== this.requestId) return;
+          this.refreshing = false;
           this._events.update((list) => (append ? [...list, ...result.items] : result.items));
           this.pages = append ? this.pages + result.pages : result.pages;
           this.nextCursor = result.nextCursor;
@@ -118,6 +124,7 @@ export class IssueActivityStore {
         },
         error: (err: unknown) => {
           if (requestId !== this.requestId) return;
+          this.refreshing = false;
           this._error.set(toDomainError(err).message);
           this.done();
         },
