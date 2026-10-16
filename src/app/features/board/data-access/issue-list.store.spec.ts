@@ -106,14 +106,20 @@ describe('IssueListStore', () => {
     expect(store.moreError()).toBeNull();
   });
 
-  it('otro error al cargar más se muestra sin perder lo cargado', () => {
+  it('otro error al cargar más (también un 400 que no es del cursor) se muestra sin perder lo cargado', () => {
     store.load('p1', DEFAULT_FILTERS);
-    listIssues.mockReturnValueOnce(throwError(() => apiError(503, 'UNAVAILABLE')));
+    listIssues
+      .mockReturnValueOnce(throwError(() => apiError(503, 'UNAVAILABLE')))
+      .mockReturnValueOnce(throwError(() => apiError(400, 'FAILED_PRECONDITION')));
 
     store.loadMore();
-
     expect(store.items()).toHaveLength(2);
     expect(store.moreError()).toBe('UNAVAILABLE');
+
+    store.loadMore();
+    expect(listIssues).toHaveBeenCalledTimes(3);
+    expect(store.items()).toHaveLength(2);
+    expect(store.moreError()).toBe('FAILED_PRECONDITION');
   });
 
   it('acción en lote: en serie, reemplaza los que salen y deja seleccionados los que fallan', () => {
@@ -130,7 +136,8 @@ describe('IssueListStore', () => {
 
     expect(board.discard).toHaveBeenNthCalledWith(1, 1, { reason: 'Fuera de alcance' });
     expect(board.discard).toHaveBeenNthCalledWith(2, 2, { reason: 'Fuera de alcance' });
-    expect(store.items()[0]!.state).toBe('ISSUE_STATE_CANCELED');
+    // TK-1 quedó descartado: ya no es de Activos y sale de la lista.
+    expect(store.items().map((i) => i.number)).toEqual([2]);
     expect([...store.selected()]).toEqual([2]);
     expect(store.bulk()).toBeNull();
     expect(store.bulkResult()).toEqual({

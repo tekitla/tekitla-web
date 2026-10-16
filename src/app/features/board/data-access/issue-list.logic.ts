@@ -1,4 +1,4 @@
-import type { IssueOrder, ListIssuesRequest, Priority, StatusCategory } from '@/app/api';
+import type { Issue, IssueOrder, ListIssuesRequest, Priority, StatusCategory } from '@/app/api';
 
 /**
  * Lista de issues (pantalla Issues): filtros, su forma en la URL (para
@@ -116,6 +116,21 @@ export function sameFilters(a: IssueFilters, b: IssueFilters): boolean {
     a.labelId === b.labelId &&
     a.statusId === b.statusId &&
     a.sort === b.sort
+  );
+}
+
+/**
+ * Si un issue sigue cumpliendo los filtros después de cambiarlo (pestaña,
+ * estado, prioridad y etiqueta; la búsqueda y el orden no cambian con mover,
+ * descartar o restaurar).
+ */
+export function matchesFilters(issue: Issue, filters: IssueFilters): boolean {
+  const states = STATES[filters.scope];
+  return (
+    (!states.length || states.includes(issue.state as StatusCategory)) &&
+    (!filters.statusId || issue.statusId === filters.statusId) &&
+    (!filters.priority || issue.priority === filters.priority) &&
+    (!filters.labelId || issue.labelIds.includes(filters.labelId))
   );
 }
 

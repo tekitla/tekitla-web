@@ -153,7 +153,7 @@ export class IssueDetail {
     let seen: { number: number; updatedAt: string } | null = null;
     effect(() => {
       const issue = this.store.selected();
-      if (!issue?.updatedAt) return;
+      if (!issue) return;
       const changed = seen?.number === issue.number && seen.updatedAt !== issue.updatedAt;
       seen = { number: issue.number, updatedAt: issue.updatedAt };
       if (changed) untracked(() => this.activity.refresh());
@@ -199,7 +199,6 @@ export class IssueDetail {
       next: () => {
         this.discarding.set(false);
         this.discardDialog()?.close();
-        this.activity.refresh();
         this.focusAfterRender('issue-restore');
       },
       error: (err: DomainError) => {
@@ -218,7 +217,6 @@ export class IssueDetail {
     this.store.restore(this.number()).subscribe({
       next: () => {
         this.restoring.set(false);
-        this.activity.refresh();
         this.focusAfterRender('issue-status');
       },
       error: (err: DomainError) => {

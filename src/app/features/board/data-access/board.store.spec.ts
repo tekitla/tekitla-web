@@ -159,6 +159,12 @@ describe('BoardStore', () => {
       expect(numbersIn('todo')).toEqual([1, 3]);
     });
 
+    it('mover a un estado de descarte no hace nada: descartar pide motivo', () => {
+      store.move(1, 'canceled');
+      expect(client.moveIssue).not.toHaveBeenCalled();
+      expect(numbersIn('todo')).toEqual([1, 3]);
+    });
+
     it('moveTo espera al servidor y no avisa (lo usan las acciones en lote)', () => {
       client.moveIssue.mockReturnValue(of(issue(1, { statusId: 'done' })));
       store.dismissNotice();

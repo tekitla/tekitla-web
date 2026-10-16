@@ -114,8 +114,10 @@ test('Descartados: quién y por qué, y Restaurar desde la fila', async ({ page 
 
   await row.getByRole('button', { name: 'Restaurar TK-5' }).click();
   await expect(page.getByText('Se restauraron 1')).toBeVisible();
-  await expect(row).toContainText('Por hacer');
-  await expect(row.getByRole('button', { name: 'Restaurar TK-5' })).toHaveCount(0);
+  // Ya no es descartado: sale de la pestaña y aparece en Activos, en Por hacer.
+  await expect(row).toHaveCount(0);
+  await page.getByText('Activos', { exact: true }).click();
+  await expect(page.locator('tr', { hasText: 'TK-5' })).toContainText('Por hacer');
 });
 
 test('selección múltiple: descartar con motivo y mover, reportando los que fallan', async ({
@@ -151,5 +153,6 @@ test('selección múltiple: descartar con motivo y mover, reportando los que fal
   await expect(page.locator('.issue-list__failures')).toContainText('TK-2');
   // El que falló queda seleccionado para reintentar.
   await expect(page.getByRole('checkbox', { name: 'Seleccionar TK-2' })).toBeChecked();
-  await expect(page.getByRole('checkbox', { name: 'Seleccionar TK-1' })).not.toBeChecked();
+  // Los descartados salen de Activos.
+  await expect(page.getByRole('checkbox', { name: 'Seleccionar TK-1' })).toHaveCount(0);
 });

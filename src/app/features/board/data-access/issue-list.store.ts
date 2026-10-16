@@ -11,7 +11,7 @@ import {
 } from '@/app/api';
 import { BoardStore } from './board.store';
 import { issueKey } from './board.logic';
-import { type IssueFilters, sameFilters, toListRequest } from './issue-list.logic';
+import { type IssueFilters, matchesFilters, sameFilters, toListRequest } from './issue-list.logic';
 
 /** Issues por página de la lista («Cargar más» pide la siguiente). */
 export const LIST_PAGE_SIZE = 50;
@@ -143,7 +143,8 @@ export class IssueListStore {
         if (requestId !== this.requestId) return;
         this._loadingMore.set(false);
         const error = toDomainError(err);
-        if (error.isValidation()) {
+        // Un cursor que no sirve con estos filtros: de vuelta a la primera página.
+        if (error.api.code === 'INVALID_ARGUMENT') {
           this.load(projectId, filters, true);
           return;
         }
@@ -233,6 +234,10 @@ export class IssueListStore {
           if (updated) {
             result.ok++;
             this.replace(updated);
+            // Ya no es de esta pestaña o filtro (p. ej. descartado desde Activos): sale.
+            if (this.filters && !matchesFilters(updated, this.filters)) {
+              this._items.update((list) => list.filter((i) => i.number !== updated.number));
+            }
             this._selected.update((set) => {
               const next = new Set(set);
               next.delete(issue.number);

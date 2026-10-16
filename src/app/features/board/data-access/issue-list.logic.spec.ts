@@ -5,6 +5,7 @@ import {
   filtersFromParams,
   filtersToParams,
   hasFilters,
+  matchesFilters,
   sameFilters,
   toListRequest,
 } from './issue-list.logic';
@@ -86,6 +87,28 @@ describe('issue-list.logic', () => {
     expect(toListRequest({ ...DEFAULT_FILTERS, scope: 'descartados' }).states).toEqual([
       'ISSUE_STATE_CANCELED',
     ]);
+  });
+
+  it('matchesFilters: pestaña, estado, prioridad y etiqueta', () => {
+    const issue = {
+      state: 'ISSUE_STATE_CANCELED',
+      statusId: 's9',
+      priority: 'PRIORITY_HIGH',
+      labelIds: ['l1'],
+    } as Parameters<typeof matchesFilters>[0];
+    expect(matchesFilters(issue, DEFAULT_FILTERS)).toBe(false);
+    expect(matchesFilters(issue, { ...DEFAULT_FILTERS, scope: 'descartados' })).toBe(true);
+    expect(matchesFilters(issue, { ...DEFAULT_FILTERS, scope: 'todos', statusId: 's1' })).toBe(
+      false,
+    );
+    expect(
+      matchesFilters(issue, {
+        ...DEFAULT_FILTERS,
+        scope: 'todos',
+        priority: 'PRIORITY_HIGH',
+        labelId: 'l1',
+      }),
+    ).toBe(true);
   });
 
   it('hasFilters y sameFilters', () => {

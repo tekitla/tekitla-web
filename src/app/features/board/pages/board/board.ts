@@ -14,7 +14,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
-import type { Issue } from '@/app/api';
+import type { Issue, Status } from '@/app/api';
 import { Viewport } from '@/app/core/layout/viewport';
 import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { Button } from '@/app/ui/components/button/button';
@@ -98,6 +98,15 @@ export class Board {
     inject(DestroyRef).onDestroy(() => clearTimeout(timer));
   }
 
+  /**
+   * Si una columna visible es de descarte, no recibe tarjetas: descartar va con
+   * motivo (desde «Descartar…»). Devuelve el predicado de CDK para esa columna.
+   */
+  protected canEnter(status: Status): () => boolean {
+    const open = status.category !== 'ISSUE_STATE_CANCELED';
+    return () => open;
+  }
+
   /** Soltar: la posición es `currentIndex` en la columna destino (CDK). */
   protected onDrop(event: CdkDragDrop<string, string, Issue>): void {
     const sameList = event.previousContainer === event.container;
@@ -114,8 +123,12 @@ export class Board {
       const column = columns[from];
       if (!column) return;
       if (request.axis === 'column') {
-        const target = columns[from + request.direction];
-        if (!target) return;
+        // La columna vecina que no sea de descarte.
+        const step = request.direction;
+        let to = from + step;
+        while (columns[to]?.status.category === 'ISSUE_STATE_CANCELED') to += step;
+        const target = columns[to];
+        if (!target || column.status.category === 'ISSUE_STATE_CANCELED') return;
         this.store.move(request.number, target.status.id);
       } else {
         const index = column.issues.findIndex((i) => i.number === request.number);

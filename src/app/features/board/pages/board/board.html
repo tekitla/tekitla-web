@@ -171,6 +171,7 @@
             class="vrb-kanban__list board__list"
             cdkDropList
             [cdkDropListData]="status.id"
+            [cdkDropListEnterPredicate]="canEnter(status)"
             [cdkDropListDisabled]="isMobile()"
             (cdkDropListDropped)="onDrop($event)"
           >
@@ -180,7 +181,11 @@
                 cdkDrag
                 cdkDragPreviewContainer="parent"
                 [cdkDragData]="issue"
-                [cdkDragDisabled]="isMobile() || store.pending().has(issue.number)"
+                [cdkDragDisabled]="
+                  isMobile() ||
+                  store.pending().has(issue.number) ||
+                  status.category === 'ISSUE_STATE_CANCELED'
+                "
               >
                 <app-issue-card
                   [issue]="issue"

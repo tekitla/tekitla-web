@@ -76,7 +76,13 @@ export class ProjectConfigStore {
 
   /** Vuelve a traer los estados (otro los cambió: `STALE_STATUSES`). */
   reloadStatuses(): Observable<Status[]> {
-    return this.write((id) => this.client.listStatuses(id)).pipe(
+    const projectId = this.projectId;
+    if (!projectId) {
+      return throwError(() => toDomainError(new Error('ProjectConfigStore sin proyecto')));
+    }
+    return this.client.listStatuses(projectId).pipe(
+      catchError((err: unknown) => throwError(() => toDomainError(err))),
+      filter(() => this.projectId === projectId),
       tap((statuses) => this._statuses.set(sortStatuses(statuses))),
     );
   }
@@ -110,7 +116,9 @@ export class ProjectConfigStore {
    */
   private write<T>(call: (projectId: string) => Observable<T>): Observable<T> {
     const projectId = this.projectId;
-    if (!projectId) return throwError(() => new Error('ProjectConfigStore sin proyecto'));
+    if (!projectId) {
+      return throwError(() => toDomainError(new Error('ProjectConfigStore sin proyecto')));
+    }
     return call(projectId).pipe(
       catchError((err: unknown) => throwError(() => toDomainError(err))),
       filter(() => this.projectId === projectId),

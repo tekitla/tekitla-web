@@ -159,6 +159,11 @@ export class BoardStore {
       this._error.set(null);
       this._notFound.set(false);
     }
+    this.fetch(projectId, sameProject);
+  }
+
+  /** Pide proyecto, issues, estados y etiquetas; `sameProject`: refresco en segundo plano. */
+  private fetch(projectId: string, sameProject: boolean): void {
     const requestId = ++this.loadRequestId;
     const versions = { board: this.writes, config: this.config.version };
 
@@ -175,7 +180,7 @@ export class BoardStore {
           // Hubo escrituras mientras tanto: lo que trajo es anterior a ellas y
           // las pisaría. Se pide de nuevo.
           if (versions.board !== this.writes || versions.config !== this.config.version) {
-            this.load(projectId);
+            this.fetch(projectId, sameProject);
             return;
           }
           const project = projects.find((p) => p.id === projectId) ?? null;
@@ -235,6 +240,9 @@ export class BoardStore {
     const current = this._issues().find((i) => i.number === number);
     const status = this.config.statuses().find((s) => s.id === statusId);
     if (!projectId || !current || !status) return;
+    // Descartar pide un motivo (`discard`): mover a un estado de descarte no
+    // está permitido desde el panel, aunque su columna esté visible.
+    if (status.category === 'ISSUE_STATE_CANCELED') return;
 
     const fromStatusId = this.statusOf(current)?.id ?? current.statusId;
     const column = this.columns().find((c) => c.status.id === statusId)?.issues ?? [];
@@ -382,12 +390,13 @@ export class BoardStore {
    */
   private write(number: number, call: (projectId: string) => Observable<Issue>): Observable<Issue> {
     const projectId = this._projectId();
-    if (!projectId) return throwError(() => new Error('BoardStore sin proyecto'));
+    if (!projectId) return throwError(() => toDomainError(new Error('BoardStore sin proyecto')));
     return call(projectId).pipe(
       tap((issue) => {
-        if (this._projectId() !== projectId || this.isPending(number)) return;
+        if (this._projectId() !== projectId) return;
+        // Cuenta aunque haya un movimiento en vuelo: un refresco anterior es viejo.
         this.writes++;
-        this._issues.update((list) => upsertIssue(list, issue));
+        if (!this.isPending(number)) this._issues.update((list) => upsertIssue(list, issue));
       }),
       catchError((err: unknown) => throwError(() => toDomainError(err))),
     );
