@@ -17,6 +17,8 @@
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:visual": "playwright test -c playwright.visual.config.ts",
+    "test:visual:docker": "node scripts/visual-docker.mjs",
     "typecheck": "tsc -p tsconfig.spec.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

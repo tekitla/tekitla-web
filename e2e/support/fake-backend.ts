@@ -58,6 +58,11 @@ export interface FakeBackendOptions {
   moveStatus?: number;
   /** Responde 403 a todo (cuenta fuera de la allowlist). */
   forbidden?: boolean;
+  /**
+   * Comentarios viejos que se suman al historial de cada issue (para probar la
+   * paginación de `ListIssueEvents`).
+   */
+  oldComments?: number;
 }
 
 export const PROJECT: FakeProject = {
@@ -224,13 +229,23 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
   const issues = structuredClone(options.issues ?? ISSUES);
   const statuses = structuredClone(options.statuses ?? STATUSES);
   const labels = structuredClone(options.labels ?? LABELS);
-  const events: Event[] = issues.map((i) => ({
-    id: `e-${i.id}-created`,
-    issueId: i.id,
-    actorId: UID,
-    createdAt: i.createdAt,
-    created: {},
-  }));
+  const events: Event[] = issues.flatMap((i) => [
+    { id: `e-${i.id}-created`, issueId: i.id, actorId: UID, createdAt: i.createdAt, created: {} },
+    ...Array.from({ length: options.oldComments ?? 0 }, (_, n) => ({
+      id: `e-${i.id}-old-${n + 1}`,
+      issueId: i.id,
+      // Otra persona: el historial muestra su uid.
+      actorId: 'otra-uid',
+      createdAt: i.createdAt,
+      commented: {
+        id: `c-${i.id}-old-${n + 1}`,
+        issueId: i.id,
+        authorId: 'otra-uid',
+        body: `Comentario viejo ${n + 1}`,
+        createdAt: i.createdAt,
+      },
+    })),
+  ]);
   const calls: { method: string; path: string; body: Body; auth: string | null }[] = [];
   const base = new URL(environment.apiBaseUrl);
   let seq = 100;
@@ -475,7 +490,14 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
       }
 
       if (action === '/events' && method === 'GET') {
-        return reply(200, { events: events.filter((e) => e.issueId === issue.id), page: {} });
+        // Paginado como el gateway: el cursor es opaco (acá, la posición) y
+        // grpc-gateway omite `hasNext: false` y `nextCursor: ""`.
+        const own = events.filter((e) => e.issueId === issue.id);
+        const from = Number(url.searchParams.get('page.cursor') ?? 0);
+        const limit = Number(url.searchParams.get('page.limit') ?? 50);
+        const to = from + limit;
+        const page = to < own.length ? { nextCursor: String(to), hasNext: true } : {};
+        return reply(200, { events: own.slice(from, to), page });
       }
 
       if (method === 'PATCH') {
