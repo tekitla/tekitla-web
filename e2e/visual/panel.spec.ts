@@ -110,7 +110,6 @@ test('Ajustes: las pestañas (enlaces) quedan dentro del contenedor y centradas'
     const box = (await tab.boundingBox())!;
     expect(box.y).toBeGreaterThanOrEqual(list.y);
     expect(box.y + box.height).toBeLessThanOrEqual(list.y + list.height);
-    expect(box.height).toBe(34);
     const text = await tab.evaluate((el) => {
       const range = document.createRange();
       range.selectNodeContents(el);

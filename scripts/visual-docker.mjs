@@ -29,10 +29,17 @@ if (!process.env['SKIP_BUILD']) {
   else run('npx', build.split(' ').slice(1));
 }
 
+// En Linux y macOS, con el usuario del host: si no, las capturas y los
+// reportes quedan del root y git no los puede tocar. En Windows (Docker
+// Desktop) los permisos del volumen no aplican.
+const user =
+  process.platform === 'win32' ? [] : ['--user', `${process.getuid()}:${process.getgid()}`];
+
 run('docker', [
   'run',
   '--rm',
   '--ipc=host',
+  ...user,
   '-e',
   'CI',
   '-v',

@@ -495,9 +495,13 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
         const own = events.filter((e) => e.issueId === issue.id);
         const from = Number(url.searchParams.get('page.cursor') ?? 0);
         const limit = Number(url.searchParams.get('page.limit') ?? 50);
+        // Un cursor que el backend no emitió: error, no la primera página otra vez.
+        if (!Number.isInteger(from) || from < 0) {
+          return fail(400, 'INVALID_ARGUMENT', 'invalid page cursor');
+        }
         const to = from + limit;
-        const page = to < own.length ? { nextCursor: String(to), hasNext: true } : {};
-        return reply(200, { events: own.slice(from, to), page });
+        const pageInfo = to < own.length ? { nextCursor: String(to), hasNext: true } : {};
+        return reply(200, { events: own.slice(from, to), page: pageInfo });
       }
 
       if (method === 'PATCH') {
