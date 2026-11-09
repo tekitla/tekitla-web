@@ -128,10 +128,18 @@ test('móvil: el detalle se apila sin scroll horizontal', async ({ page }) => {
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/issue-detalle-375.png`, fullPage: true });
 });
 
-/** Las líneas del historial, en orden (con los espacios normalizados). */
-const historyLines = async (page: Page) =>
-  (await page.locator('app-issue-activity .activity__line').allTextContents()).map((t) =>
-    t.replace(/\s+/g, ' ').trim(),
+/**
+ * Las líneas del historial, en orden: los textos de cada línea unidos con un
+ * espacio (las insignias van pegadas en el template).
+ */
+const historyLines = (page: Page) =>
+  page.locator('app-issue-activity .activity__line').evaluateAll((lines) =>
+    lines.map((line) => {
+      const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+      const parts: string[] = [];
+      while (walker.nextNode()) parts.push(walker.currentNode.textContent ?? '');
+      return parts.join(' ').replace(/\s+/g, ' ').trim();
+    }),
   );
 
 test('el historial cuenta cada cambio con su detalle, en orden, y sigue igual al recargar', async ({
