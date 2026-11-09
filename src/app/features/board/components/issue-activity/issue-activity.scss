@@ -75,3 +75,9 @@
   align-items: center;
   justify-content: space-between;
 }
+
+.activity__reason {
+  margin: var(--space-1) 0 0;
+  color: var(--vrb-muted-fg);
+  overflow-wrap: anywhere;
+}

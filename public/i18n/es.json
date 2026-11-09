@@ -5,7 +5,8 @@
     "noAccess": "Sin acceso · Tekitla",
     "projects": "Proyectos · Tekitla",
     "board": "Tablero · Tekitla",
-    "settings": "Ajustes · Tekitla"
+    "settings": "Ajustes · Tekitla",
+    "issues": "Issues · Tekitla"
   },
   "common": {
     "loading": "Cargando…",
@@ -14,7 +15,8 @@
     "close": "Cerrar",
     "optional": "(opcional)",
     "save": "Guardar",
-    "edit": "Editar"
+    "edit": "Editar",
+    "ok": "Listo"
   },
   "shell": {
     "skip": "Saltar al contenido",
@@ -26,7 +28,8 @@
       "workspace": "Espacio de trabajo",
       "projects": "Proyectos",
       "board": "Tablero",
-      "settings": "Ajustes"
+      "settings": "Ajustes",
+      "issues": "Issues"
     },
     "logout": "Cerrar sesión"
   },
@@ -94,7 +97,8 @@
     "card": {
       "move": "Mover",
       "moveLabel": "Mover {{issue}} a otra columna",
-      "moveTo": "Mover a {{column}}"
+      "moveTo": "Mover a {{column}}",
+      "discard": "Descartar…"
     },
     "notice": {
       "moved": "{{issue}} pasó a {{column}}",
@@ -105,15 +109,22 @@
       "created": "{{issue}} creado en {{column}}",
       "refreshFailed": "No pudimos actualizar el tablero. Lo que ves puede estar desactualizado.",
       "createdNoColumn": "{{issue}} creado",
-      "retry": "Intenta de nuevo."
+      "retry": "Intenta de nuevo.",
+      "discarded": "{{issue}} descartado",
+      "restored": "{{issue}} restaurado en {{column}}"
     },
-    "canceledHidden": "{{count}} descartados ocultos",
     "settings": "Ajustes",
     "loadErrorHint": "Revisa tu conexión e intenta de nuevo.",
     "backToProjects": "Volver a proyectos",
     "emptyTitle": "Todavía no hay issues",
     "emptyText": "Crea el primero y aparecerá en {{column}}.",
-    "canceledHiddenOne": "1 descartado oculto"
+    "list": "Lista",
+    "hidden": "{{count}} issues en columnas ocultas",
+    "hiddenOne": "1 issue en una columna oculta",
+    "seeInList": "Ver en la lista",
+    "wipOf": "de un máximo de",
+    "wipOver": "WIP excedido",
+    "wipFull": "En el límite"
   },
   "issue": {
     "priorityLabel": "Prioridad",
@@ -161,17 +172,20 @@
     "notFound": "No encontramos este issue.",
     "loadError": "No pudimos cargar el issue.",
     "project": "Proyecto",
-    "canceledHint": "Este issue está descartado: no se ve en el tablero. Elegir otro estado lo reabre.",
     "titleLabel": "Título",
     "editTitle": "Editar el título",
-    "closedStatuses": "Descartar",
     "noLabels": "Este proyecto todavía no tiene etiquetas.",
     "createLabels": "Crear etiquetas",
     "errors": {
       "titleRequired": "Escribe un título.",
-      "save": "No se pudo guardar."
+      "save": "No se pudo guardar.",
+      "restore": "No se pudo restaurar."
     },
-    "lastChange": "Último cambio"
+    "lastChange": "Último cambio",
+    "discard": "Descartar…",
+    "discarded": "Descartado",
+    "restore": "Restaurar",
+    "restoreHint": "Restaurar lo regresa al primer estado de Por hacer, al final de la columna."
   },
   "editor": {
     "mode": "Modo del editor",
@@ -217,7 +231,9 @@
     "commentHint": "Admite Markdown. Ctrl + Enter para enviar.",
     "commentError": "No se pudo comentar.",
     "send": "Comentar",
-    "today": "Hoy"
+    "today": "Hoy",
+    "discarded": "descartó el issue",
+    "restored": "restauró el issue en"
   },
   "settings": {
     "title": "Ajustes del proyecto",
@@ -239,7 +255,9 @@
       "category": "Categoría",
       "issues": "Issues",
       "actions": "Acciones",
-      "label": "Etiqueta"
+      "label": "Etiqueta",
+      "wip": "Límite WIP",
+      "onBoard": "En tablero"
     },
     "colors": {
       "LABEL_COLOR_UNSPECIFIED": "Neutro",
@@ -255,24 +273,39 @@
       "lead": "Cada estado es una columna del tablero. Su categoría no cambia: la usan la CLI y los reportes.",
       "caption": "Estados del proyecto, en el orden de las columnas",
       "new": "Nuevo estado",
-      "create": "Crear estado",
       "categoryHint": "No se puede cambiar después.",
       "full": "El proyecto ya tiene el máximo de {{max}} estados.",
-      "hidden": "(no se ve en el tablero)",
       "moveUp": "Subir {{name}}",
       "moveDown": "Bajar {{name}}",
-      "rename": "Renombrar {{name}}",
       "renameLabel": "Nuevo nombre de {{name}}",
-      "delete": "Eliminar {{name}}",
-      "confirmDelete": "Eliminar estado",
       "moveIssuesTo": "Sus {{count}} issues pasan a",
-      "deleteEmpty": "{{name}} no tiene issues.",
       "lastHint": "Cada categoría necesita al menos un estado: el último de una categoría no se puede eliminar.",
       "preview": "// columnas resultantes",
-      "canceledNote": "Los estados de categoría Cancelado (como Descartado) nunca se muestran en el tablero.",
       "actions": "Más acciones para {{name}}",
       "renameItem": "Renombrar",
-      "deleteItem": "Eliminar"
+      "deleteItem": "Eliminar",
+      "add": "Agregar",
+      "unsaved": "Nuevo",
+      "colorOf": "Color de {{name}}",
+      "defaultColor": "De su categoría",
+      "wipOf": "Límite WIP de {{name}} (vacío: sin límite)",
+      "visibleOf": "{{name}}: mostrar en el tablero",
+      "wipPreview": "máx. {{limit}}",
+      "removedTitle": "Se eliminan al guardar",
+      "removedEmpty": "No tiene issues.",
+      "undoRemove": "Deshacer",
+      "undoRemoveOf": "No eliminar {{name}}",
+      "save": "Guardar cambios",
+      "discard": "Descartar cambios",
+      "saved": "Cambios guardados.",
+      "rebased": "Otra persona cambió los estados mientras tanto. Los trajimos de nuevo con tus cambios encima: revísalos y guarda otra vez.",
+      "unsavedChanges": "Tienes cambios sin guardar.",
+      "hiddenNote": "Las columnas ocultas no se ven en el tablero; sus issues siguen en la lista de issues.",
+      "problems": {
+        "tooMany": "Puede haber hasta {{max}} estados.",
+        "lastOfCategory": "Falta un estado de categoría {{category}}: cada categoría necesita al menos uno.",
+        "destination": "Elige a qué estado pasan los issues de {{name}}."
+      }
     },
     "labels": {
       "lead": "Las etiquetas clasifican los issues; se ven en las tarjetas del tablero.",
@@ -295,14 +328,97 @@
         "taken": "Ya hay uno con ese nombre."
       },
       "nameTaken": "Ya hay uno con ese nombre.",
-      "statusLimit": "El proyecto ya tiene el máximo de estados.",
       "labelLimit": "El proyecto ya tiene el máximo de etiquetas.",
-      "cannotDelete": "No se puede eliminar: es el último de su categoría o falta elegir a dónde pasan sus issues.",
       "notFound": "Ya no existe: recarga la página.",
       "generic": "No se pudo guardar.",
       "lastOfCategory": "No se puede eliminar: es el último estado de su categoría.",
-      "statusHasIssues": "Tiene issues: elige a qué estado pasan."
+      "statusHasIssues": "Tiene issues: elige a qué estado pasan.",
+      "staleStatuses": "Otra persona cambió los estados: recarga e intenta de nuevo.",
+      "statusRules": "No se pudo guardar: revisa que cada categoría tenga un estado y que los eliminados tengan a dónde pasar sus issues."
     },
     "thisProject": "este proyecto"
+  },
+  "discard": {
+    "title": "Descartar {{subject}}",
+    "description": "Sale del tablero y queda en la pestaña Descartados de la lista, con el motivo. Se puede restaurar.",
+    "reason": "Motivo",
+    "reasonPlaceholder": "Ej. Duplicado de TK-4",
+    "reasonHint": "{{count}} / {{max}} caracteres",
+    "status": "Estado de descarte",
+    "confirm": "Descartar",
+    "by": "Descartado por {{actor}}:",
+    "withoutReason": "Descartado sin motivo",
+    "errors": {
+      "required": "Escribe por qué se descarta.",
+      "tooLong": "Máximo {{max}} caracteres."
+    }
+  },
+  "issueList": {
+    "title": "Issues",
+    "eyebrow": "// {{key}} · lista",
+    "lead": "Todos los issues del proyecto, también los hechos y los descartados. Mismo orden que el tablero, salvo que lo cambies.",
+    "toBoard": "Ver tablero",
+    "scopeLabel": "Qué issues mostrar",
+    "scopes": {
+      "activos": "Activos",
+      "hechos": "Hechos",
+      "descartados": "Descartados",
+      "todos": "Todos"
+    },
+    "slashBefore": "Pulsa",
+    "slashAfter": "para buscar",
+    "searchLabel": "Buscar issues",
+    "searchPlaceholder": "Buscar por título o clave ({{key}}-9)",
+    "anyPriority": "Cualquier prioridad",
+    "anyLabel": "Cualquier etiqueta",
+    "anyStatus": "Cualquier estado",
+    "sortLabel": "Ordenar",
+    "sorts": {
+      "tablero": "Orden del tablero",
+      "cambio": "Último cambio",
+      "prioridad": "Prioridad"
+    },
+    "clear": "Limpiar filtros",
+    "discardedTitle": "Los descartados no aparecen en el tablero",
+    "discardedText": "Quedan aquí con quién los descartó y por qué. Restaurar uno lo regresa al primer estado de Por hacer, al final de la columna.",
+    "loadError": "No pudimos cargar los issues",
+    "caption": "Issues del proyecto",
+    "columns": {
+      "issue": "Issue"
+    },
+    "selectAll": "Seleccionar todos",
+    "select": "Seleccionar {{issue}}",
+    "restoreOne": "Restaurar {{issue}}",
+    "noMatchTitle": "Ningún issue coincide",
+    "noMatchText": "Prueba con otra palabra o quita algún filtro.",
+    "emptyTitle": {
+      "activos": "No hay issues activos",
+      "hechos": "Todavía no hay issues hechos",
+      "descartados": "No hay issues descartados",
+      "todos": "Todavía no hay issues"
+    },
+    "shown": "Mostrando {{count}}",
+    "more": "Cargar más",
+    "moreError": "No se pudo cargar más.",
+    "bulk": {
+      "label": "Acciones para los seleccionados",
+      "selected": "{{count}} seleccionados",
+      "move": "Mover a…",
+      "discard": "Descartar…",
+      "restore": "Restaurar ({{count}})",
+      "clear": "Quitar selección",
+      "subject": "{{count}} issues",
+      "progress": {
+        "move": "Moviendo {{done}} de {{total}}…",
+        "discard": "Descartando {{done}} de {{total}}…",
+        "restore": "Restaurando {{done}} de {{total}}…"
+      },
+      "done": {
+        "move": "Se movieron {{count}}",
+        "discard": "Se descartaron {{count}}",
+        "restore": "Se restauraron {{count}}"
+      },
+      "failed": "Fallaron {{count}}; siguen seleccionados para reintentar:"
+    }
   }
 }

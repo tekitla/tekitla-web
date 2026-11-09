@@ -14,13 +14,13 @@ import {
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
-import type { Issue } from '@/app/api';
+import type { Issue, Status } from '@/app/api';
 import { Viewport } from '@/app/core/layout/viewport';
 import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { Button } from '@/app/ui/components/button/button';
 import { Icon } from '@/app/ui/components/icon/icon';
 import { IssueCard, type MoveRequest } from '../../components/issue-card/issue-card';
-import { CATEGORY_TONE } from '../../data-access/board.logic';
+import { statusTone, wipState } from '../../data-access/board.logic';
 import { boardNav } from '../../board-nav';
 import { BoardStore } from '../../data-access/board.store';
 
@@ -28,9 +28,10 @@ import { BoardStore } from '../../data-access/board.store';
 const INFO_NOTICE_MS = 5000;
 
 /**
- * Tablero de un proyecto (`vrb-kanban`): una columna por estado del proyecto
- * (`ListStatuses`, en orden de rank), con el tono de su categoría; los estados
- * de categoría CANCELED (descartados) no se muestran. Cada columna, por rank.
+ * Tablero de un proyecto (`vrb-kanban`): una columna por estado visible del
+ * proyecto (`ListStatuses`, en orden de rank; los ocultos no se muestran),
+ * con su color. Cada columna, por rank. Con límite WIP, la cabecera muestra
+ * «issues / límite» y avisa si se pasó (no bloquea: el backend mueve igual).
  *
  * - Desktop (≥ 768px): las columnas lado a lado, con drag & drop (CDK) para
  *   cambiar de columna y reordenar dentro de una, además del menú «Mover» de
@@ -64,13 +65,13 @@ export class Board {
   /** Path `:projectId` (withComponentInputBinding + paramsInheritanceStrategy 'always'). */
   readonly projectId = input.required<string>();
 
-  protected readonly tone = CATEGORY_TONE;
-  /** Ningún issue en el tablero (los descartados no cuentan). */
+  protected readonly tone = statusTone;
+  protected readonly wip = wipState;
+  /** Ningún issue en el tablero (los de columnas ocultas no cuentan). */
   protected readonly empty = computed(() => this.store.columns().every((c) => !c.issues.length));
-  protected readonly canceledCount = computed(
-    () =>
-      this.store.issues().filter((i) => this.store.statusOf(i)?.category === 'ISSUE_STATE_CANCELED')
-        .length,
+  /** Issues en columnas ocultas (descartados, por defecto): siguen en la lista. */
+  protected readonly hiddenCount = computed(
+    () => this.store.issues().filter((i) => this.store.statusOf(i)?.hidden).length,
   );
 
   constructor() {
@@ -97,6 +98,15 @@ export class Board {
     inject(DestroyRef).onDestroy(() => clearTimeout(timer));
   }
 
+  /**
+   * Si una columna visible es de descarte, no recibe tarjetas: descartar va con
+   * motivo (desde «Descartar…»). Devuelve el predicado de CDK para esa columna.
+   */
+  protected canEnter(status: Status): () => boolean {
+    const open = status.category !== 'ISSUE_STATE_CANCELED';
+    return () => open;
+  }
+
   /** Soltar: la posición es `currentIndex` en la columna destino (CDK). */
   protected onDrop(event: CdkDragDrop<string, string, Issue>): void {
     const sameList = event.previousContainer === event.container;
@@ -113,8 +123,12 @@ export class Board {
       const column = columns[from];
       if (!column) return;
       if (request.axis === 'column') {
-        const target = columns[from + request.direction];
-        if (!target) return;
+        // La columna vecina que no sea de descarte.
+        const step = request.direction;
+        let to = from + step;
+        while (columns[to]?.status.category === 'ISSUE_STATE_CANCELED') to += step;
+        const target = columns[to];
+        if (!target || column.status.category === 'ISSUE_STATE_CANCELED') return;
         this.store.move(request.number, target.status.id);
       } else {
         const index = column.issues.findIndex((i) => i.number === request.number);

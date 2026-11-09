@@ -13,27 +13,29 @@ describe('settingsError', () => {
       message: 'del servidor',
     });
     expect(
-      settingsError(error(400, 'FAILED_PRECONDITION', 'LAST_STATUS_OF_CATEGORY'), 'deleteStatus')
+      settingsError(error(400, 'FAILED_PRECONDITION', 'LAST_STATUS_OF_CATEGORY'), 'saveStatuses')
         .key,
     ).toBe('settings.errors.lastOfCategory');
     expect(
-      settingsError(error(400, 'FAILED_PRECONDITION', 'STATUS_HAS_ISSUES'), 'deleteStatus').key,
+      settingsError(error(400, 'FAILED_PRECONDITION', 'STATUS_HAS_ISSUES'), 'saveStatuses').key,
     ).toBe('settings.errors.statusHasIssues');
+    expect(
+      settingsError(error(400, 'FAILED_PRECONDITION', 'STALE_STATUSES'), 'saveStatuses').key,
+    ).toBe('settings.errors.staleStatuses');
   });
 
   it('sin reason (gateway viejo), por código y operación', () => {
-    expect(settingsError(error(409, 'ALREADY_EXISTS'), 'renameStatus').key).toBe(
+    expect(settingsError(error(409, 'ALREADY_EXISTS'), 'saveStatuses').key).toBe(
       'settings.errors.nameTaken',
     );
     const precondition = error(400, 'FAILED_PRECONDITION');
-    expect(settingsError(precondition, 'createStatus').key).toBe('settings.errors.statusLimit');
+    expect(settingsError(precondition, 'saveStatuses').key).toBe('settings.errors.statusRules');
     expect(settingsError(precondition, 'createLabel').key).toBe('settings.errors.labelLimit');
-    expect(settingsError(precondition, 'deleteStatus').key).toBe('settings.errors.cannotDelete');
-    expect(settingsError(precondition, 'moveStatus').key).toBe('settings.errors.generic');
+    expect(settingsError(precondition, 'updateLabel').key).toBe('settings.errors.generic');
   });
 
   it('un reason que no conoce cae al código', () => {
-    expect(settingsError(error(409, 'ALREADY_EXISTS', 'ALGO_NUEVO'), 'createStatus').key).toBe(
+    expect(settingsError(error(409, 'ALREADY_EXISTS', 'ALGO_NUEVO'), 'saveStatuses').key).toBe(
       'settings.errors.nameTaken',
     );
   });

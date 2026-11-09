@@ -1,11 +1,11 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import type { Issue, Label, Status } from '@/app/api';
 import { Icon } from '@/app/ui/components/icon/icon';
-import { CATEGORY_TONE, LABEL_TONE, isBoardStatus, issueKey } from '../../data-access/board.logic';
+import { LABEL_TONE, issueKey, statusTone } from '../../data-access/board.logic';
 import { KANBAN_PRIORITY, PRIORITY_LEVEL } from '../priority-badge/priority-badge';
 
 /**
@@ -23,7 +23,8 @@ export type MoveRequest =
  * «Mover» con menú: en pantallas táctiles es LA forma de mover (arrastrar ahí
  * es incómodo), y en desktop es la alternativa accesible al drag & drop. Con
  * el foco en la tarjeta, Shift+← / Shift+→ la pasa a la columna vecina y
- * Shift+↑ / Shift+↓ la sube o baja en la suya.
+ * Shift+↑ / Shift+↓ la sube o baja en la suya. «Descartar…» lleva al detalle
+ * con el diálogo del motivo abierto (descartar pide un motivo).
  */
 @Component({
   selector: 'app-issue-card',
@@ -45,7 +46,9 @@ export class IssueCard {
 
   readonly move = output<MoveRequest>();
 
-  protected readonly categoryTone = CATEGORY_TONE;
+  private readonly router = inject(Router);
+
+  protected readonly tone = statusTone;
   protected readonly labelTone = LABEL_TONE;
   protected readonly key = computed(() => issueKey(this.projectKey(), this.issue().number));
   protected readonly level = computed(() => PRIORITY_LEVEL[this.issue().priority]);
@@ -56,17 +59,25 @@ export class IssueCard {
       .labelIds.map((id) => this.labelsById().get(id))
       .filter((l): l is Label => !!l),
   );
-  /** Destinos del menú: las otras columnas y, aparte, los estados de descarte. */
-  protected readonly targets = computed(() => {
-    const others = this.statuses().filter((s) => s.id !== this.statusId());
-    return { board: others.filter(isBoardStatus), closed: others.filter((s) => !isBoardStatus(s)) };
-  });
+  /**
+   * Destinos del menú: los otros estados, también los ocultos, salvo los de
+   * descarte (descartar va con motivo, desde «Descartar…»).
+   */
+  protected readonly targets = computed(() =>
+    this.statuses().filter(
+      (s) => s.id !== this.statusId() && s.category !== 'ISSUE_STATE_CANCELED',
+    ),
+  );
   protected readonly link = computed(() => [
     '/proyectos',
     this.projectId(),
     'issues',
     this.issue().number,
   ]);
+
+  protected discard(): void {
+    void this.router.navigate(this.link(), { queryParams: { descartar: 1 } });
+  }
 
   protected moveTo(statusId: string): void {
     this.move.emit({ number: this.issue().number, via: 'menu', statusId });

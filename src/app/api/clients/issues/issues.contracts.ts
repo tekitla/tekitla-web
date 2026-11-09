@@ -56,10 +56,16 @@ export const PRIORITIES: readonly Exclude<Priority, 'PRIORITY_UNSPECIFIED'>[] = 
   'PRIORITY_URGENT',
 ];
 
-/** Color de una etiqueta: un tono del design system, no un valor libre. */
+/**
+ * Tono del design system, no un valor libre: color de una etiqueta y de un
+ * estado (columna).
+ */
 export type LabelColor = `LABEL_COLOR_${keyof typeof pb.LabelColor}`;
 
-/** Colores elegibles (UNSPECIFIED se guarda como NEUTRAL). */
+/**
+ * Colores elegibles. En una etiqueta, UNSPECIFIED se guarda como NEUTRAL; en
+ * un estado, como el tono de su categoría.
+ */
 export const LABEL_COLORS: readonly Exclude<LabelColor, 'LABEL_COLOR_UNSPECIFIED'>[] = [
   'LABEL_COLOR_NEUTRAL',
   'LABEL_COLOR_INFO',
@@ -83,19 +89,33 @@ interface Timestamps {
 export type Project = Json<pb.Project, Timestamps>;
 
 /**
+ * Por qué y quién descartó un issue con `DiscardIssue`. `actorId`: uid de
+ * quien lo descartó.
+ */
+export type DiscardInfo = Json<pb.DiscardInfo, { discardedAt: string }>;
+
+/**
  * Issue. `number`: correlativo dentro del proyecto, desde 1 (`TK-42`).
  * `description`: Markdown. `rank`: posición en el orden manual, opaca (se
  * compara como string; vacío si no vino). `statusId`: su estado (columna);
  * `state` es la categoría de ese estado. `labelIds`: ordenadas por nombre.
+ * `discard`: solo mientras está descartado con motivo; `null` si no está
+ * descartado o se descartó moviéndolo (sin motivo).
  */
-export type Issue = Json<pb.Issue, Timestamps & { state: IssueState; priority: Priority }>;
+export type Issue = Json<
+  pb.Issue,
+  Timestamps & { state: IssueState; priority: Priority; discard: DiscardInfo | null }
+>;
 
 /**
  * Estado concreto del proyecto: una columna del tablero. `name`: único en el
  * proyecto, 1 a 40 caracteres. `rank`: orden de las columnas, opaco (como el
- * de los issues). La categoría no cambia después de crearlo.
+ * de los issues). La categoría no cambia después de crearlo. `color`: siempre
+ * con valor (el de su categoría si no se eligió). `wipLimit`: 0 = sin límite;
+ * pasarse avisa, no bloquea. `hidden`: la columna no se ve en el tablero (sus
+ * issues sí salen en la lista).
  */
-export type Status = Json<pb.Status, { category: IssueState }>;
+export type Status = Json<pb.Status, { category: IssueState; color: LabelColor }>;
 
 /** Etiqueta del proyecto. `name`: única en el proyecto, 1 a 40 caracteres. */
 export type Label = Json<pb.Label, { color: LabelColor }>;
@@ -117,6 +137,9 @@ export type IssueChange =
   | { kind: 'descriptionChanged' }
   | ({ kind: 'priorityChanged' } & Json<pb.PriorityChanged, { from: Priority; to: Priority }>)
   | ({ kind: 'labelsChanged' } & Json<pb.LabelsChanged>)
+  /** Con `DiscardIssue`. Descartar con `MoveIssue` deja un `statusChanged`. */
+  | ({ kind: 'discarded' } & Json<pb.IssueDiscarded, { fromState: IssueState }>)
+  | ({ kind: 'restored' } & Json<pb.IssueRestored>)
   | { kind: 'commented'; comment: Comment }
   /** Un cambio que esta versión del panel todavía no conoce. */
   | { kind: 'unknown' };
@@ -139,10 +162,25 @@ export type CreateProjectRequest = Pick<
   'key' | 'name' | 'description'
 >;
 
-/** GET /v1/projects/{projectId}/issues */
+/** Orden de la lista. UNSPECIFIED = RANK (el del tablero). Empates, por `rank`. */
+export type IssueOrder = `ISSUE_ORDER_${keyof typeof pb.IssueOrder}`;
+
+/**
+ * GET /v1/projects/{projectId}/issues. Los filtros van con Y entre sí y con O
+ * dentro de cada lista; una lista vacía no filtra. `state` y `states` juntos
+ * son INVALID_ARGUMENT. Un cursor solo sirve con los mismos filtros y orden
+ * (con otros: INVALID_ARGUMENT, hay que volver a la primera página).
+ */
 export interface ListIssuesRequest {
-  /** Sin estado (o UNSPECIFIED): todos. */
+  /** Una sola categoría (el de v0.3). Sin estado (o UNSPECIFIED): todas. */
   state?: IssueState;
+  /** Hasta 200 caracteres: título (sin mayúsculas ni acentos) o número (`TK-12`, `12`). */
+  query?: string;
+  states?: readonly StatusCategory[];
+  statusIds?: readonly string[];
+  priorities?: readonly Exclude<Priority, 'PRIORITY_UNSPECIFIED'>[];
+  labelIds?: readonly string[];
+  orderBy?: IssueOrder;
   page?: PageRequest;
 }
 
@@ -173,11 +211,27 @@ export interface UpdateIssueRequest {
   labelIds?: string[];
 }
 
-/** POST /v1/projects/{projectId}/statuses. Sin `afterStatusId`: al final. */
+/**
+ * POST /v1/projects/{projectId}/issues/{number}:discard. `reason`: 1 a 500
+ * caracteres. Sin `statusId`, el primer estado de categoría CANCELED. El rank
+ * no cambia. Uno ya descartado: FAILED_PRECONDITION `ISSUE_ALREADY_DISCARDED`.
+ */
+export interface DiscardIssueRequest {
+  reason: string;
+  statusId?: string;
+}
+
+/**
+ * POST /v1/projects/{projectId}/statuses. Sin `afterStatusId`: al final. Sin
+ * `hidden`, los de categoría CANCELED nacen ocultos.
+ */
 export interface CreateStatusRequest {
   name: string;
   category: StatusCategory;
   afterStatusId?: string;
+  color?: LabelColor;
+  wipLimit?: number;
+  hidden?: boolean;
 }
 
 /**
@@ -187,6 +241,32 @@ export interface CreateStatusRequest {
 export interface UpdateStatusRequest {
   name?: string;
   afterStatusId?: string;
+  color?: LabelColor;
+  wipLimit?: number;
+  hidden?: boolean;
+}
+
+/**
+ * Un estado tal como debe quedar en `BatchUpdateStatuses`. `id` vacío: estado
+ * nuevo (con `category` obligatoria); en uno existente la categoría no cambia.
+ */
+export type StatusSpec = Json<
+  pb.StatusSpec,
+  { category: StatusCategory | 'ISSUE_STATE_UNSPECIFIED'; color: LabelColor }
+>;
+
+/** Estado que se borra; sus issues pasan a `moveToStatusId` (un estado existente que queda). */
+export type StatusDeletion = Json<pb.StatusDeletion>;
+
+/**
+ * POST /v1/projects/{projectId}/statuses:batchUpdate. Declarativo y todo o
+ * nada: `statuses` es la lista completa en el orden de las columnas. Un
+ * estado existente que no viene en `statuses` ni en `deletions` es
+ * FAILED_PRECONDITION `STALE_STATUSES` (otro lo creó: recargar).
+ */
+export interface BatchUpdateStatusesRequest {
+  statuses: StatusSpec[];
+  deletions: StatusDeletion[];
 }
 
 /** POST /v1/projects/{projectId}/labels */
@@ -220,7 +300,11 @@ type RawChange<K extends IssueChange['kind']> = Partial<
 >;
 
 export type RawProject = Partial<Project>;
-export type RawIssue = Partial<Omit<Issue, 'number'>> & { number?: number | string };
+export type RawDiscardInfo = Partial<DiscardInfo>;
+export type RawIssue = Partial<Omit<Issue, 'number' | 'discard'>> & {
+  number?: number | string;
+  discard?: RawDiscardInfo | null;
+};
 export type RawPageResponse = Partial<PageResponse>;
 export type RawStatus = Partial<Status>;
 export type RawLabel = Partial<Label>;
@@ -238,6 +322,8 @@ export interface RawIssueEvent {
   descriptionChanged?: object;
   priorityChanged?: RawChange<'priorityChanged'>;
   labelsChanged?: RawChange<'labelsChanged'>;
+  discarded?: RawChange<'discarded'>;
+  restored?: RawChange<'restored'>;
   commented?: RawComment;
 }
 

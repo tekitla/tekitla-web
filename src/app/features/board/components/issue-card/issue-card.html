@@ -49,31 +49,25 @@
 
 <ng-template #moveMenu>
   <div class="vrb-menu" cdkMenu>
-    @for (status of targets().board; track status.id) {
+    @for (status of targets(); track status.id) {
       <button
         type="button"
         class="vrb-menu__item"
         cdkMenuItem
         (cdkMenuItemTriggered)="moveTo(status.id)"
       >
-        <span
-          [class]="'vrb-segmented__dot vrb-segmented__dot--' + categoryTone[status.category]"
-        ></span>
+        <span [class]="'vrb-segmented__dot vrb-segmented__dot--' + tone(status)"></span>
         {{ 'board.card.moveTo' | translate: { column: status.name } }}
       </button>
     }
-    @if (targets().closed.length) {
-      <div class="vrb-menu__separator" role="separator"></div>
-      @for (status of targets().closed; track status.id) {
-        <button
-          type="button"
-          class="vrb-menu__item vrb-menu__item--danger"
-          cdkMenuItem
-          (cdkMenuItemTriggered)="moveTo(status.id)"
-        >
-          {{ 'board.card.moveTo' | translate: { column: status.name } }}
-        </button>
-      }
-    }
+    <div class="vrb-menu__separator" role="separator"></div>
+    <button
+      type="button"
+      class="vrb-menu__item vrb-menu__item--danger"
+      cdkMenuItem
+      (cdkMenuItemTriggered)="discard()"
+    >
+      <ui-icon name="trash" />{{ 'board.card.discard' | translate }}
+    </button>
   </div>
 </ng-template>

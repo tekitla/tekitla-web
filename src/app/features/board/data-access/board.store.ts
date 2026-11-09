@@ -4,6 +4,7 @@ import { Observable, catchError, forkJoin, tap, throwError } from 'rxjs';
 
 import {
   type CreateIssueRequest,
+  type DiscardIssueRequest,
   type Issue,
   IssuesClient,
   type Project,
@@ -158,6 +159,11 @@ export class BoardStore {
       this._error.set(null);
       this._notFound.set(false);
     }
+    this.fetch(projectId, sameProject);
+  }
+
+  /** Pide proyecto, issues, estados y etiquetas; `sameProject`: refresco en segundo plano. */
+  private fetch(projectId: string, sameProject: boolean): void {
     const requestId = ++this.loadRequestId;
     const versions = { board: this.writes, config: this.config.version };
 
@@ -174,7 +180,7 @@ export class BoardStore {
           // Hubo escrituras mientras tanto: lo que trajo es anterior a ellas y
           // las pisaría. Se pide de nuevo.
           if (versions.board !== this.writes || versions.config !== this.config.version) {
-            this.load(projectId);
+            this.fetch(projectId, sameProject);
             return;
           }
           const project = projects.find((p) => p.id === projectId) ?? null;
@@ -234,6 +240,9 @@ export class BoardStore {
     const current = this._issues().find((i) => i.number === number);
     const status = this.config.statuses().find((s) => s.id === statusId);
     if (!projectId || !current || !status) return;
+    // Descartar pide un motivo (`discard`): mover a un estado de descarte no
+    // está permitido desde el panel, aunque su columna esté visible.
+    if (status.category === 'ISSUE_STATE_CANCELED') return;
 
     const fromStatusId = this.statusOf(current)?.id ?? current.statusId;
     const column = this.columns().find((c) => c.status.id === statusId)?.issues ?? [];
@@ -333,6 +342,68 @@ export class BoardStore {
     const column = back && this.statusOf(back)?.name;
     const detail = column ? 'board.notice.moveFailedDetail' : 'board.notice.retry';
     this.notify('error', 'board.notice.moveFailed', key, column, detail);
+  }
+
+  /**
+   * Descarta un issue con motivo (lo pasa a un estado CANCELED). Espera al
+   * servidor: la página muestra el error en el diálogo. Errores como
+   * `DomainError` (`ISSUE_ALREADY_DISCARDED` si ya estaba descartado).
+   */
+  discard(number: number, req: DiscardIssueRequest): Observable<Issue> {
+    return this.write(number, (projectId) => this.client.discardIssue(projectId, number, req)).pipe(
+      tap((issue) => {
+        const status = this.statusOf(issue);
+        this.notify('info', 'board.notice.discarded', this.keyOf(number), status?.name);
+      }),
+    );
+  }
+
+  /**
+   * Restaura un issue descartado: vuelve al primer estado «Por hacer», al
+   * final de la columna. `ISSUE_NOT_DISCARDED` si no estaba descartado.
+   */
+  restore(number: number): Observable<Issue> {
+    return this.write(number, (projectId) => this.client.restoreIssue(projectId, number)).pipe(
+      tap((issue) => {
+        const status = this.statusOf(issue);
+        this.notify('info', 'board.notice.restored', this.keyOf(number), status?.name);
+      }),
+    );
+  }
+
+  /**
+   * Mueve un issue a otro estado esperando al servidor (sin aviso ni
+   * actualización optimista): para las acciones en lote de la lista, que
+   * reportan juntos los que fallaron.
+   */
+  moveTo(number: number, statusId: string): Observable<Issue> {
+    return this.write(number, (projectId) =>
+      this.client.moveIssue(projectId, number, { statusId }),
+    );
+  }
+
+  /**
+   * Una escritura de un issue que espera al servidor y deja su respuesta en
+   * la lista. Si se cambió de proyecto con el pedido en vuelo, la respuesta no
+   * toca el store. Un movimiento optimista en vuelo del mismo issue es más
+   * nuevo: su posición se respeta hasta que responda.
+   */
+  private write(number: number, call: (projectId: string) => Observable<Issue>): Observable<Issue> {
+    const projectId = this._projectId();
+    if (!projectId) return throwError(() => toDomainError(new Error('BoardStore sin proyecto')));
+    return call(projectId).pipe(
+      tap((issue) => {
+        if (this._projectId() !== projectId) return;
+        // Cuenta aunque haya un movimiento en vuelo: un refresco anterior es viejo.
+        this.writes++;
+        if (!this.isPending(number)) this._issues.update((list) => upsertIssue(list, issue));
+      }),
+      catchError((err: unknown) => throwError(() => toDomainError(err))),
+    );
+  }
+
+  private keyOf(number: number): string {
+    return issueKey(this.projectKey(), number);
   }
 
   /** Crea un issue (el backend lo pone en el primer estado «Por hacer») y lo suma al tablero. */

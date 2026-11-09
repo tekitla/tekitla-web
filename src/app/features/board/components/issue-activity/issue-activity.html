@@ -117,6 +117,23 @@
                       }
                     }
                   }
+                  @case ('discarded') {
+                    {{ 'activity.discarded' | translate }}
+                    <span class="vrb-badge vrb-badge--sm vrb-badge--neutral">{{
+                      change.fromStatusName
+                    }}</span>
+                    <ui-icon name="arrowRight" />
+                    <span class="u-visually-hidden">{{ 'activity.to' | translate }}</span>
+                    <span class="vrb-badge vrb-badge--sm vrb-badge--danger">{{
+                      change.toStatusName
+                    }}</span>
+                  }
+                  @case ('restored') {
+                    {{ 'activity.restored' | translate }}
+                    <span class="vrb-badge vrb-badge--sm vrb-badge--neutral">{{
+                      change.toStatusName
+                    }}</span>
+                  }
                   @case ('commented') {
                     {{ 'activity.commented' | translate }}
                   }
@@ -125,6 +142,9 @@
                   }
                 }
               </p>
+              @if (change.kind === 'discarded' && change.reason) {
+                <p class="activity__reason">“{{ change.reason }}”</p>
+              }
               @if (change.kind === 'commented') {
                 <div class="activity__comment">
                   <ui-markdown [source]="change.comment.body" />

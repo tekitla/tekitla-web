@@ -22,6 +22,9 @@ const status = (id: string, category: Status['category'], rank: string, name: st
   name,
   category,
   rank,
+  color: 'LABEL_COLOR_UNSPECIFIED',
+  wipLimit: 0,
+  hidden: category === 'ISSUE_STATE_CANCELED',
 });
 
 const statuses: Status[] = [
@@ -53,6 +56,7 @@ const issue = (number: number, patch: Partial<Issue> = {}): Issue => {
     rank: `0|a${number}`,
     statusId,
     labelIds: [],
+    discard: null,
     ...patch,
   };
 };
@@ -68,7 +72,9 @@ type ClientMock = Record<
   | 'moveIssue'
   | 'createIssue'
   | 'updateIssue'
-  | 'getIssue',
+  | 'getIssue'
+  | 'discardIssue'
+  | 'restoreIssue',
   ReturnType<typeof vi.fn>
 >;
 
@@ -92,6 +98,8 @@ describe('BoardStore', () => {
       createIssue: vi.fn(),
       updateIssue: vi.fn(),
       getIssue: vi.fn(),
+      discardIssue: vi.fn(),
+      restoreIssue: vi.fn(),
     };
     TestBed.configureTestingModule({
       providers: [ProjectConfigStore, BoardStore, { provide: IssuesClient, useValue: client }],
@@ -107,6 +115,66 @@ describe('BoardStore', () => {
     expect(numbersIn('doing')).toEqual([2]);
     expect(store.activeColumn()).toBe('todo');
     expect(store.loading()).toBe(false);
+  });
+
+  describe('descartar y restaurar', () => {
+    it('descartar espera al servidor, saca el issue del tablero y avisa', () => {
+      const discarded = issue(1, {
+        statusId: 'canceled',
+        state: 'ISSUE_STATE_CANCELED',
+        discard: { reason: 'Duplicado', actorId: 'u1', discardedAt: '' },
+      });
+      client.discardIssue.mockReturnValue(of(discarded));
+      let result: Issue | undefined;
+
+      store.discard(1, { reason: 'Duplicado' }).subscribe((i) => (result = i));
+
+      expect(client.discardIssue).toHaveBeenCalledWith('p1', 1, { reason: 'Duplicado' });
+      expect(result?.discard?.reason).toBe('Duplicado');
+      expect(numbersIn('todo')).toEqual([3]);
+      expect(store.notice()).toMatchObject({ message: 'board.notice.discarded', issue: 'TK-1' });
+    });
+
+    it('restaurar lo devuelve al tablero con el rank del servidor', () => {
+      client.restoreIssue.mockReturnValue(of(issue(2, { statusId: 'todo', rank: '0|z' })));
+
+      store.restore(2).subscribe();
+
+      expect(numbersIn('todo')).toEqual([1, 3, 2]);
+      expect(store.notice()).toMatchObject({
+        message: 'board.notice.restored',
+        column: 'Por hacer',
+      });
+    });
+
+    it('un error llega como DomainError y no cambia nada', () => {
+      client.restoreIssue.mockReturnValue(
+        throwError(() => apiError(400, 'FAILED_PRECONDITION', 'ISSUE_NOT_DISCARDED')),
+      );
+      let error: DomainError | undefined;
+
+      store.restore(1).subscribe({ error: (e: DomainError) => (error = e) });
+
+      expect(error?.api.reason).toBe('ISSUE_NOT_DISCARDED');
+      expect(numbersIn('todo')).toEqual([1, 3]);
+    });
+
+    it('mover a un estado de descarte no hace nada: descartar pide motivo', () => {
+      store.move(1, 'canceled');
+      expect(client.moveIssue).not.toHaveBeenCalled();
+      expect(numbersIn('todo')).toEqual([1, 3]);
+    });
+
+    it('moveTo espera al servidor y no avisa (lo usan las acciones en lote)', () => {
+      client.moveIssue.mockReturnValue(of(issue(1, { statusId: 'done' })));
+      store.dismissNotice();
+
+      store.moveTo(1, 'done').subscribe();
+
+      expect(client.moveIssue).toHaveBeenCalledWith('p1', 1, { statusId: 'done' });
+      expect(numbersIn('done')).toEqual([1]);
+      expect(store.notice()).toBeNull();
+    });
   });
 
   describe('refresco en segundo plano', () => {
