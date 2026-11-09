@@ -8,8 +8,11 @@
   list-style: none;
 }
 
+// La tarjeta sólo tiene encabezado (sin cuerpo ni pie), y .vrb-card__header no
+// trae relleno abajo: sin esto la descripción toca el borde (issue 028).
 .project-list__card {
   height: 100%;
+  padding-bottom: var(--vrb-card-pad);
   color: inherit;
   text-decoration: none;
 }

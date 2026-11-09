@@ -21,3 +21,10 @@
     box-shadow: var(--vrb-shadow-raise);
   }
 }
+
+// .vrb-tabs es grid y su panel (vrb 0.2.0) no trae `min-width: 0`: a 375 px se
+// ensanchaba hasta el ancho de la tabla de estados y la página se desplazaba a
+// lo ancho, en vez de desplazarse sólo la tabla. Va también al arreglo de vrb.
+.vrb-tabs__panel {
+  min-width: 0;
+}

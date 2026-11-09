@@ -23,10 +23,17 @@ const PROJECTS = [
   { id: 'p-web', key: 'WEB', name: 'Sitio web', description: 'vrojas1015.com y la marca' },
 ];
 
-/** Fuentes cargadas y sin esqueletos de carga a la vista. */
+/**
+ * Fuentes cargadas y sin esqueletos de carga a la vista. Y la página no se
+ * desplaza a lo ancho: lo que no cabe (columnas, tablas) se desplaza dentro de
+ * su contenedor. Sin esto la captura de página completa sale más ancha que la
+ * pantalla y el motivo no es obvio.
+ */
 async function settle(page: Page): Promise<void> {
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   await expect(page.locator('.vrb-skeleton')).toHaveCount(0);
+  const width = page.viewportSize()!.width;
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
 }
 
 async function open(page: Page, path: string, ready: (page: Page) => Promise<void>) {

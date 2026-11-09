@@ -35,7 +35,8 @@ const isFile = (path) => {
 createServer((req, res) => {
   const { pathname } = new URL(req.url ?? '/', 'http://localhost');
   const candidate = normalize(join(root, decodeURIComponent(pathname)));
-  const file = candidate.startsWith(root) && isFile(candidate) ? candidate : join(root, 'index.html');
+  const file =
+    candidate.startsWith(root) && isFile(candidate) ? candidate : join(root, 'index.html');
   res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
   createReadStream(file).pipe(res);
 }).listen(port, () => console.log(`serve-spa: ${root} en http://localhost:${port}`));

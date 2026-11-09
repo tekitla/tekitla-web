@@ -11,8 +11,10 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-const run = (cmd, args) => {
-  const { status } = spawnSync(cmd, args, { stdio: 'inherit', shell: process.platform === 'win32' });
+// `npx` es un .cmd en Windows y necesita shell; docker no (y sin shell los
+// argumentos no se reinterpretan).
+const run = (cmd, args, shell = false) => {
+  const { status } = spawnSync(cmd, args, { stdio: 'inherit', shell });
   if (status !== 0) process.exit(status ?? 1);
 };
 
@@ -21,7 +23,11 @@ const { version } = JSON.parse(
 );
 const image = `mcr.microsoft.com/playwright:v${version}-noble`;
 
-if (!process.env['SKIP_BUILD']) run('npx', ['ng', 'build', '--configuration', 'development']);
+if (!process.env['SKIP_BUILD']) {
+  const build = 'npx ng build --configuration development';
+  if (process.platform === 'win32') run(build, [], true);
+  else run('npx', build.split(' ').slice(1));
+}
 
 run('docker', [
   'run',

@@ -15,7 +15,7 @@ plataforma están en los `CLAUDE.md` de las carpetas padre; acá sólo lo propio
   Firebase persiste la sesión y renueva el token. 401 → token nuevo y un reintento;
   403 → pantalla «sin acceso» (cuenta fuera de la allowlist del gateway)
 - Textos: @ngx-translate, `public/i18n/es.json` (idioma por defecto `es`)
-- Tests: vitest (unit) + Playwright (e2e) · Formato: prettier
+- Tests: vitest (unit) + Playwright (e2e y visuales: `e2e/visual/`, capturas base generadas siempre en Docker) · Formato: prettier
 
 ## Estructura (`src/app`)
 
@@ -62,6 +62,7 @@ npm start              # dev server en http://localhost:4200 (gateway local en :
 npm run build          # build de producción (= build:prod); build:qa para QA
 npm run test:unit      # vitest
 npm run test:e2e       # Playwright (1ra vez: npx playwright install chromium)
+npm run test:visual:docker  # capturas del panel en la imagen de Playwright (Docker); -- --update-snapshots las regenera
 npm run lint           # prettier --check + typecheck
 npm run format         # prettier --write
 npx ng generate component features/<x>/pages/<nombre>
