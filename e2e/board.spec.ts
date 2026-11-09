@@ -1,6 +1,6 @@
 import { type Locator, type Page, expect, test } from '@playwright/test';
 
-import { fakeApi, signIn } from './support/fake-backend';
+import { STATUSES, fakeApi, signIn } from './support/fake-backend';
 
 /**
  * Tablero con el API y Firebase mockeados (ver support/fake-backend.ts).
@@ -42,7 +42,7 @@ async function drag(page: Page, from: Locator, ...path: { x: number; y: number }
 test.describe('desktop', () => {
   test.use({ viewport: DESKTOP });
 
-  test('una columna por estado, con su categoría, etiquetas y los descartados ocultos', async ({
+  test('una columna por estado visible, con su categoría, etiquetas y los ocultos', async ({
     page,
   }) => {
     await signIn(page);
@@ -67,7 +67,7 @@ test.describe('desktop', () => {
     expect(await keysIn(column(page, 'Por hacer'))).toEqual(['TK-1', 'TK-3']);
     await expect(card(page, 'TK-1').locator('.vrb-kanban-card__label')).toHaveText('Frontend');
     await expect(card(page, 'TK-5')).toHaveCount(0);
-    await expect(page.getByText('1 descartado oculto')).toBeVisible();
+    await expect(page.getByText('1 issue en una columna oculta')).toBeVisible();
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/tablero-1280.png`, fullPage: true });
   });
 
@@ -143,13 +143,20 @@ test.describe('desktop', () => {
     await page.getByRole('menuitem', { name: 'Mover a Hecho' }).click();
     await expect(card(column(page, 'Hecho'), 'TK-1')).toBeVisible();
 
-    // Descartar desde el menú: sale del tablero.
+    // El menú no ofrece los estados de descarte: «Descartar…» pide un motivo.
     await card(page, 'TK-1')
       .getByRole('button', { name: /Mover TK-1/ })
       .click();
-    await page.getByRole('menuitem', { name: 'Mover a Descartado' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Mover a Descartado' })).toHaveCount(0);
+    await page.getByRole('menuitem', { name: 'Descartar…' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Descartar TK-1' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByLabel('Motivo').fill('Duplicado de TK-4');
+    await dialog.getByRole('button', { name: 'Descartar' }).click();
+    await expect(dialog).toBeHidden();
+    await page.getByRole('link', { name: 'Tablero' }).click();
     await expect(card(page, 'TK-1')).toHaveCount(0);
-    await expect(page.getByText('2 descartados ocultos')).toBeVisible();
+    await expect(page.getByText('2 issues en columnas ocultas')).toBeVisible();
   });
 
   test('si el backend falla, la tarjeta vuelve y se avisa', async ({ page }) => {
@@ -263,5 +270,43 @@ test.describe('móvil', () => {
     );
     await page.keyboard.press('End');
     await expect(page.getByRole('tab', { name: /Hecho/ })).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+test.describe('estados con color, WIP y ocultos', () => {
+  test.use({ viewport: DESKTOP });
+
+  test('marca el WIP excedido sin bloquear, usa el color y no muestra las ocultas', async ({
+    page,
+  }) => {
+    await signIn(page);
+    const statuses = STATUSES.map((s) =>
+      s.id === 's-doing'
+        ? { ...s, wipLimit: 1, color: 'LABEL_COLOR_WARNING' }
+        : s.id === 's-review'
+          ? { ...s, hidden: true }
+          : s,
+    );
+    await fakeApi(page, { statuses });
+    await page.goto('/proyectos/p-tk');
+
+    await expect(page.locator('.board__column .vrb-kanban__title')).toHaveText([
+      'Por hacer',
+      'En curso',
+      'Hecho',
+    ]);
+    const doing = column(page, 'En curso');
+    await expect(doing).toHaveClass(/vrb-kanban__column--warning/);
+    await expect(doing.locator('.vrb-kanban__count')).toContainText('1');
+    await expect(doing.locator('.vrb-kanban__limit')).toContainText('1');
+    await expect(doing.getByText('En el límite')).toBeVisible();
+
+    // Pasarse avisa, no bloquea: el movimiento sale igual.
+    await card(page, 'TK-1').getByRole('button', { name: 'Mover TK-1 a otra columna' }).click();
+    await page.getByRole('menuitem', { name: 'Mover a En curso' }).click();
+    await expect(card(doing, 'TK-1')).toBeVisible();
+    await expect(doing.getByText('WIP excedido')).toBeVisible();
+    await expect(doing).toHaveAttribute('data-over-limit', 'true');
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/tablero-wip-1280.png`, fullPage: true });
   });
 });

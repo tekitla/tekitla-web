@@ -19,6 +19,8 @@ const PATHS = {
   edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z',
   trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6',
   more: 'M12 5h.01M12 12h.01M12 19h.01',
+  list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  restore: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
 } as const;
 
 export type IconName = keyof typeof PATHS;

@@ -7,13 +7,18 @@ import { ProjectConfigStore } from './data-access/project-config.store';
 export const BOARD_ROUTES: Routes = [
   {
     path: '',
-    // Lo comparten tablero, alta, detalle y ajustes: ir y volver no recarga en
+    // Lo comparten tablero, lista, alta, detalle y ajustes: ir y volver no recarga en
     // blanco, y lo que cambia en Ajustes se ve en el tablero.
     providers: [ProjectConfigStore, BoardStore],
     children: [
       {
         path: '',
         loadComponent: () => import('./pages/board/board').then((m) => m.Board),
+      },
+      {
+        path: 'issues',
+        title: 'titles.issues',
+        loadComponent: () => import('./pages/issue-list/issue-list').then((m) => m.IssueList),
       },
       {
         path: 'issues/nuevo',

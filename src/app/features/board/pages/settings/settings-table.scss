@@ -123,3 +123,24 @@
   padding: 0;
   border: 0;
 }
+
+// Controles dentro de una fila: compactos, para que la tabla no crezca tanto.
+.settings-cell-select {
+  min-width: 140px;
+
+  .vrb-input {
+    height: var(--vrb-control-h-sm);
+  }
+}
+
+.settings-wip {
+  width: 72px;
+  height: var(--vrb-control-h-sm);
+  font-family: var(--vrb-font-mono);
+}
+
+.settings-removed {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

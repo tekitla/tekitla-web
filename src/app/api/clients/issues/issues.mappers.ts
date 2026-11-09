@@ -1,5 +1,6 @@
 import type {
   Comment,
+  DiscardInfo,
   Issue,
   IssueChange,
   IssueEvent,
@@ -10,6 +11,7 @@ import type {
   Priority,
   Project,
   RawComment,
+  RawDiscardInfo,
   RawIssue,
   RawIssueEvent,
   RawLabel,
@@ -79,9 +81,22 @@ export function toIssue(raw: RawIssue = {}): Issue {
     rank: raw.rank ?? '',
     statusId: raw.statusId ?? '',
     labelIds: raw.labelIds ?? [],
+    discard: raw.discard ? toDiscardInfo(raw.discard) : null,
   };
 }
 
+function toDiscardInfo(raw: RawDiscardInfo): DiscardInfo {
+  return {
+    reason: raw.reason ?? '',
+    actorId: raw.actorId ?? '',
+    discardedAt: raw.discardedAt ?? '',
+  };
+}
+
+/**
+ * Un backend de v0.3 no manda color: queda UNSPECIFIED y el panel usa el tono
+ * de la categoría.
+ */
 export function toStatus(raw: RawStatus = {}): Status {
   return {
     id: raw.id ?? '',
@@ -89,6 +104,9 @@ export function toStatus(raw: RawStatus = {}): Status {
     name: raw.name ?? '',
     category: toState(raw.category),
     rank: raw.rank ?? '',
+    color: toColor(raw.color),
+    wipLimit: Number(raw.wipLimit ?? 0) || 0,
+    hidden: raw.hidden ?? false,
   };
 }
 
@@ -97,7 +115,7 @@ export function toLabel(raw: RawLabel = {}): Label {
     id: raw.id ?? '',
     projectId: raw.projectId ?? '',
     name: raw.name ?? '',
-    color: oneOf(raw.color, LABEL_COLOR_VALUES, 'LABEL_COLOR_UNSPECIFIED'),
+    color: toColor(raw.color),
   };
 }
 
@@ -159,6 +177,28 @@ function toChange(raw: RawIssueEvent): IssueChange {
       removedLabelNames: c.removedLabelNames ?? [],
     };
   }
+  if (raw.discarded) {
+    const c = raw.discarded;
+    return {
+      kind: 'discarded',
+      reason: c.reason ?? '',
+      fromStatusId: c.fromStatusId ?? '',
+      fromStatusName: c.fromStatusName ?? '',
+      fromState: toState(c.fromState),
+      toStatusId: c.toStatusId ?? '',
+      toStatusName: c.toStatusName ?? '',
+    };
+  }
+  if (raw.restored) {
+    const c = raw.restored;
+    return {
+      kind: 'restored',
+      fromStatusId: c.fromStatusId ?? '',
+      fromStatusName: c.fromStatusName ?? '',
+      toStatusId: c.toStatusId ?? '',
+      toStatusName: c.toStatusName ?? '',
+    };
+  }
   if (raw.commented) return { kind: 'commented', comment: toComment(raw.commented) };
   if (raw.descriptionChanged) return { kind: 'descriptionChanged' };
   if (raw.created) return { kind: 'created' };
@@ -171,6 +211,10 @@ export function toPage(raw: RawPageResponse = {}): PageResponse {
 
 function toState(value: unknown): IssueState {
   return oneOf(value, ISSUE_STATES, 'ISSUE_STATE_UNSPECIFIED');
+}
+
+function toColor(value: unknown): LabelColor {
+  return oneOf(value, LABEL_COLOR_VALUES, 'LABEL_COLOR_UNSPECIFIED');
 }
 
 function toPriority(value: unknown): Priority {

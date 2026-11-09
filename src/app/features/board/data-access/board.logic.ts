@@ -5,7 +5,7 @@ import type { Issue, IssueState, LabelColor, Status } from '@/app/api';
 /** Tonos de vrb (`vrb-kanban__column--*`, `vrb-kanban-card__label--*`, `vrb-segmented__dot--*`). */
 export type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'accent' | 'brand';
 
-/** Tono de una columna según la categoría de su estado. */
+/** Tono por defecto de un estado según su categoría (el de un estado sin color). */
 export const CATEGORY_TONE: Record<IssueState, Tone> = {
   ISSUE_STATE_UNSPECIFIED: 'neutral',
   ISSUE_STATE_TODO: 'neutral',
@@ -26,9 +26,27 @@ export const LABEL_TONE: Record<LabelColor, Tone> = {
   LABEL_COLOR_BRAND: 'brand',
 };
 
+/** Tono de un estado: su color o, si no tiene (backend de v0.3), el de su categoría. */
+export function statusTone(status: Pick<Status, 'color' | 'category'>): Tone {
+  return status.color === 'LABEL_COLOR_UNSPECIFIED'
+    ? CATEGORY_TONE[status.category]
+    : LABEL_TONE[status.color];
+}
+
 export interface BoardColumn {
   status: Status;
   issues: Issue[];
+}
+
+/**
+ * Límite WIP de una columna: `null` sin límite; `full` justo en el límite;
+ * `over` pasado (solo avisa: la API mueve igual).
+ */
+export function wipState(column: BoardColumn): 'full' | 'over' | null {
+  const limit = column.status.wipLimit;
+  if (limit <= 0) return null;
+  const count = column.issues.length;
+  return count > limit ? 'over' : count === limit ? 'full' : null;
 }
 
 /** Lugar pedido al mover: vecinos tal como el cliente ve la columna destino (0 = ninguno). */
@@ -60,9 +78,14 @@ export function sortStatuses(statuses: readonly Status[]): Status[] {
   return [...statuses].sort(compareStatuses);
 }
 
-/** Columnas del tablero: todos los estados salvo los de categoría CANCELED. */
+/** Columnas del tablero: los estados que no están ocultos. */
 export function isBoardStatus(status: Status): boolean {
-  return status.category !== 'ISSUE_STATE_CANCELED';
+  return !status.hidden;
+}
+
+/** Descartado = en un estado de categoría CANCELED, con o sin motivo. */
+export function isDiscarded(issue: Issue, statuses: readonly Status[]): boolean {
+  return statusOf(issue, statuses)?.category === 'ISSUE_STATE_CANCELED';
 }
 
 /**
@@ -81,7 +104,7 @@ export function statusOf(issue: Issue, statuses: readonly Status[]): Status | nu
   );
 }
 
-/** Columnas en orden, cada una con sus issues por `rank`. Los descartados no van. */
+/** Columnas en orden, cada una con sus issues por `rank`. Las ocultas no van. */
 export function buildColumns(issues: readonly Issue[], statuses: readonly Status[]): BoardColumn[] {
   const sorted = sortStatuses(statuses);
   const columns = sorted.filter(isBoardStatus).map((status) => ({ status, issues: [] as Issue[] }));

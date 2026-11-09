@@ -4,11 +4,14 @@ import type { Issue, Status } from '@/app/api';
 import {
   buildColumns,
   countByStatus,
+  isDiscarded,
   issueKey,
   placementAt,
   rankBetween,
   statusOf,
+  statusTone,
   upsertIssue,
+  wipState,
   withMove,
 } from './board.logic';
 
@@ -18,6 +21,9 @@ const status = (id: string, category: Status['category'], rank: string, name = i
   name,
   category,
   rank,
+  color: 'LABEL_COLOR_UNSPECIFIED',
+  wipLimit: 0,
+  hidden: category === 'ISSUE_STATE_CANCELED',
 });
 
 // Desordenados a propósito: las columnas salen por rank.
@@ -42,6 +48,7 @@ const issue = (number: number, patch: Partial<Issue> = {}): Issue => ({
   rank: `r${number}`,
   statusId: 'todo',
   labelIds: [],
+  discard: null,
   ...patch,
 });
 
@@ -49,9 +56,21 @@ const numbers = (list: readonly Issue[]) => list.map((i) => i.number);
 
 describe('board.logic', () => {
   describe('buildColumns', () => {
-    it('una columna por estado en orden de rank, sin los de descarte', () => {
+    it('una columna por estado en orden de rank, sin los ocultos', () => {
       const columns = buildColumns([], statuses);
       expect(columns.map((c) => c.status.id)).toEqual(['todo', 'doing', 'review', 'done']);
+    });
+
+    it('oculto es `hidden`, no la categoría: un descarte visible es columna', () => {
+      const custom = statuses.map((s) =>
+        s.id === 'canceled'
+          ? { ...s, hidden: false }
+          : s.id === 'review'
+            ? { ...s, hidden: true }
+            : s,
+      );
+      const columns = buildColumns([], custom);
+      expect(columns.map((c) => c.status.id)).toEqual(['todo', 'doing', 'done', 'canceled']);
     });
 
     it('agrupa por statusId y ordena cada columna por rank', () => {
@@ -81,6 +100,34 @@ describe('board.logic', () => {
       const columns = buildColumns([issue(2, { rank: 'x' }), issue(1, { rank: 'x' })], statuses);
       expect(numbers(columns[0]!.issues)).toEqual([1, 2]);
     });
+  });
+
+  it('statusTone: el color del estado o, sin color, el de su categoría', () => {
+    expect(statusTone({ color: 'LABEL_COLOR_UNSPECIFIED', category: 'ISSUE_STATE_DONE' })).toBe(
+      'success',
+    );
+    expect(statusTone({ color: 'LABEL_COLOR_ACCENT', category: 'ISSUE_STATE_DONE' })).toBe(
+      'accent',
+    );
+  });
+
+  it('wipState: sin límite, justo en el límite o pasado (solo avisa)', () => {
+    const doing = statuses.find((s) => s.id === 'doing')!;
+    const column = (limit: number, count: number) => ({
+      status: { ...doing, wipLimit: limit },
+      issues: Array.from({ length: count }, (_, i) => issue(i + 1)),
+    });
+    expect(wipState(column(0, 9))).toBeNull();
+    expect(wipState(column(3, 2))).toBeNull();
+    expect(wipState(column(3, 3))).toBe('full');
+    expect(wipState(column(3, 4))).toBe('over');
+  });
+
+  it('isDiscarded: en un estado CANCELED, con o sin motivo', () => {
+    expect(
+      isDiscarded(issue(1, { statusId: 'canceled', state: 'ISSUE_STATE_CANCELED' }), statuses),
+    ).toBe(true);
+    expect(isDiscarded(issue(2), statuses)).toBe(false);
   });
 
   it('sin statusId ni categoría (UNSPECIFIED) va al primer «Por hacer»', () => {
