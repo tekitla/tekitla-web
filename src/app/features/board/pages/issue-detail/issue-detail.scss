@@ -69,6 +69,11 @@
   margin: 0;
   padding: 0;
   border: 0;
+
+  // El <legend> trae relleno del navegador: se alinea con las demás etiquetas.
+  > legend {
+    padding: 0;
+  }
 }
 
 // .vrb-card__header es grid: el título y su acción, en una fila.

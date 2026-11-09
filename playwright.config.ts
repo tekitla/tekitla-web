@@ -4,6 +4,8 @@ import { defineConfig, devices } from '@playwright/test';
 // dependen de un backend levantado. Primera vez: `npx playwright install chromium`.
 export default defineConfig({
   testDir: './e2e',
+  // Las visuales tienen su config (playwright.visual.config.ts) y corren en Docker.
+  testIgnore: 'visual/**',
   fullyParallel: true,
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 2 : 0,

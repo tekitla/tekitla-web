@@ -1,4 +1,5 @@
-# Verificación en cada PR y en cada push a main: lint + unit tests + build.
+# Verificación en cada PR y en cada push a main: lint + unit tests + build,
+# y la regresión visual del panel (job `visual`).
 name: CI
 
 on:
@@ -28,3 +29,40 @@ jobs:
       - run: npm run lint
       - run: npm run test:unit
       - run: npm run build:prod
+
+  # Regresión visual (issue 028): capturas de las pantallas del panel con el API
+  # simulado. Corre en la imagen oficial de Playwright, la misma que usa
+  # `npm run test:visual:docker` en local, para que las fuentes rendericen igual.
+  # Actualizar las capturas base es un paso explícito (`-- --update-snapshots`)
+  # que se revisa en el PR.
+  visual:
+    runs-on: ubuntu-latest
+    container:
+      # Misma versión que @playwright/test en package-lock.json (lo revisa un paso abajo).
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # paquetes privados (.npmrc)
+      - name: La imagen coincide con @playwright/test
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          test "$version" = "1.64.0" || { echo "::error::@playwright/test es $version: actualiza la imagen del job visual"; exit 1; }
+      - run: npx ng build --configuration development
+      - run: npx playwright test -c playwright.visual.config.ts
+        env:
+          HOME: /root
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-report
+          path: |
+            playwright-report/visual
+            test-results/visual
+          retention-days: 7

@@ -6,8 +6,13 @@
 
 // Las pestañas son enlaces (una ruta cada una): sin subrayado, y la activa
 // con el aspecto de `.vrb-tabs__tab[aria-selected='true']` (aria-selected no
-// vale en un enlace; se marca con aria-current).
+// vale en un enlace; se marca con aria-current). vrb 0.2.0 da por hecho un
+// <button>: un enlace es en línea, ignora `height` y no centra el texto, así
+// que se vuelve inline-flex. Sale cuando vrb lo corrija en `_tabs.scss` (028).
 .vrb-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
 
   &[aria-current='page'] {
@@ -15,4 +20,11 @@
     color: var(--vrb-fg);
     box-shadow: var(--vrb-shadow-raise);
   }
+}
+
+// .vrb-tabs es grid y su panel (vrb 0.2.0) no trae `min-width: 0`: a 375 px se
+// ensanchaba hasta el ancho de la tabla de estados y la página se desplazaba a
+// lo ancho, en vez de desplazarse sólo la tabla. Va también al arreglo de vrb.
+.vrb-tabs__panel {
+  min-width: 0;
 }

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { type Page, expect, test } from '@playwright/test';
 
 import { ISSUES, fakeApi, signIn } from './support/fake-backend';
 
@@ -126,6 +126,96 @@ test('móvil: el detalle se apila sin scroll horizontal', async ({ page }) => {
   await expect(page.locator('app-issue-activity')).toContainText('creó el issue');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/issue-detalle-375.png`, fullPage: true });
+});
+
+/**
+ * Las líneas del historial, en orden: los textos de cada línea unidos con un
+ * espacio (las insignias van pegadas en el template).
+ */
+const historyLines = (page: Page) =>
+  page.locator('app-issue-activity .activity__line').evaluateAll((lines) =>
+    lines.map((line) => {
+      const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+      const parts: string[] = [];
+      while (walker.nextNode()) parts.push(walker.currentNode.textContent ?? '');
+      return parts.join(' ').replace(/\s+/g, ' ').trim();
+    }),
+  );
+
+test('el historial cuenta cada cambio con su detalle, en orden, y sigue igual al recargar', async ({
+  page,
+}) => {
+  await signIn(page);
+  const api = await fakeApi(page);
+  await page.goto('/proyectos/p-tk/issues/1');
+  const activity = page.locator('app-issue-activity');
+  await expect(activity).toContainText('creó el issue');
+
+  await page.getByRole('button', { name: 'Editar el título' }).click();
+  await page.getByLabel('Título').fill('Tablero v2');
+  await page.getByLabel('Título').press('Enter');
+  await expect(activity).toContainText('cambió el título');
+  await page.getByLabel('Estado').selectOption({ label: 'En revisión' });
+  await expect(activity).toContainText('movió el issue');
+  await page.locator('label', { hasText: 'Urgente' }).click();
+  await expect(activity).toContainText('cambió la prioridad');
+  await page.locator('.issue-detail__labels label', { hasText: 'Backend' }).click();
+  await expect(activity).toContainText('agregó');
+  await page.getByLabel('Comentar', { exact: true }).fill('Va **bien**');
+  await page.getByLabel('Comentar', { exact: true }).press('Control+Enter');
+  await expect(activity.locator('.activity__comment strong')).toHaveText('bien');
+
+  const expected = [
+    'Tú creó el issue',
+    'Tú cambió el título Diseñar el tablero a Tablero v2',
+    'Tú movió el issue Por hacer a En revisión',
+    'Tú cambió la prioridad Alta a Urgente',
+    'Tú agregó Backend',
+    'Tú comentó',
+  ];
+  await expect.poll(() => historyLines(page)).toEqual(expected);
+
+  // Recargar: todo sale de ListIssueEvents (nada quedó sólo en memoria).
+  const before = api.calls.filter((c) => c.path.endsWith('/events')).length;
+  await page.reload();
+  await expect.poll(() => historyLines(page)).toEqual(expected);
+  expect(api.calls.filter((c) => c.path.endsWith('/events')).length).toBeGreaterThan(before);
+  await expect(activity.locator('.activity__comment strong')).toHaveText('bien');
+  // El destino del movimiento lleva el tono de su categoría.
+  await expect(activity.locator('.activity__item').nth(2).locator('.vrb-badge').last()).toHaveClass(
+    /vrb-badge--info/,
+  );
+
+  // Filtros: sólo cambios / sólo comentarios.
+  await activity.locator('label', { hasText: 'Cambios' }).click();
+  await expect.poll(() => historyLines(page)).toEqual(expected.slice(0, 5));
+  await activity.locator('label', { hasText: 'Comentarios' }).click();
+  await expect.poll(() => historyLines(page)).toEqual(['Tú comentó']);
+});
+
+test('el historial largo se pagina con «Ver más actividad» y un cambio nuevo no lo corta', async ({
+  page,
+}) => {
+  await signIn(page);
+  const api = await fakeApi(page, { oldComments: 60 });
+  await page.goto('/proyectos/p-tk/issues/1');
+  const items = page.locator('app-issue-activity .activity__item');
+  const more = page.getByRole('button', { name: 'Ver más actividad' });
+
+  // Primera página: 50 de 61 (el alta + 60 comentarios de otra persona).
+  await expect(items).toHaveCount(50);
+  await expect(items.nth(1)).toContainText('otra-uid');
+  await more.click();
+  await expect(items).toHaveCount(61);
+  await expect(more).toHaveCount(0);
+  await expect(items.last()).toContainText('Comentario viejo 60');
+  const pages = api.calls.filter((c) => c.path.endsWith('/events'));
+  expect(pages).toHaveLength(2);
+
+  // Un cambio después de ver todo: el historial se refresca entero, sin perder nada.
+  await page.locator('label', { hasText: 'Urgente' }).click();
+  await expect(items).toHaveCount(62);
+  await expect(items.last()).toContainText('cambió la prioridad');
 });
 
 test('descarta con motivo, muestra quién y por qué, y restaura', async ({ page }) => {

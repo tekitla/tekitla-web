@@ -37,8 +37,11 @@
   }
 }
 
-// En celular la tabla se desplaza de costado en lugar de aplastarse.
+// En celular la tabla se desplaza de costado en lugar de aplastarse. `relative`:
+// los textos para lectores de pantalla (.u-visually-hidden, absolutos) quedan
+// dentro del scroll y no ensanchan la página (issue 028).
 .settings-table-card {
+  position: relative;
   overflow-x: auto;
 }
 

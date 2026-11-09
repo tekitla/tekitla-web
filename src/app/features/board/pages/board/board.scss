@@ -23,6 +23,10 @@
 }
 
 .board__kanban {
+  // Contenedor de los textos para lectores de pantalla (.u-visually-hidden, en
+  // posición absoluta): sin esto escapan del scroll del tablero y la página
+  // entera se desplaza a lo ancho cuando las columnas no caben (issue 028).
+  position: relative;
   grid-auto-columns: minmax(0, 1fr);
 
   @include m.from-tablet {

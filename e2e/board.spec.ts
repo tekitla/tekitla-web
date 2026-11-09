@@ -68,6 +68,9 @@ test.describe('desktop', () => {
     await expect(card(page, 'TK-1').locator('.vrb-kanban-card__label')).toHaveText('Frontend');
     await expect(card(page, 'TK-5')).toHaveCount(0);
     await expect(page.getByText('1 issue en una columna oculta')).toBeVisible();
+    // Las columnas que no caben se recorren dentro del tablero: la página no
+    // se desplaza a lo ancho (issue 028: los textos ocultos se escapaban).
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(DESKTOP.width);
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/tablero-1280.png`, fullPage: true });
   });
 
