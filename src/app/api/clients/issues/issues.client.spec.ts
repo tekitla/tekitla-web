@@ -7,7 +7,7 @@ import { DomainError } from '../../http/http-errors';
 import { errorInterceptor } from '../../http/interceptors/error.interceptor';
 import { joinApi } from '../rest/rest.endpoints';
 import { IssuesClient } from './issues.client';
-import type { Issue, IssueEvent, Label, Project, Status } from './issues.contracts';
+import type { Actor, Issue, IssueEvent, Label, Project, Status } from './issues.contracts';
 
 const url = (path: string) => joinApi(path);
 
@@ -437,5 +437,61 @@ describe('IssuesClient', () => {
     });
     expect(events[5]!.change).toMatchObject({ addedLabelNames: ['API'], removedLabelNames: [] });
     expect(events[0]).toMatchObject({ actorId: 'u1', createdAt: '' });
+  });
+
+  it('un issue trae su asignado y su clave de origen (vacíos si se omiten)', () => {
+    let issues: Issue[] = [];
+    client.listIssues('p1').subscribe((res) => (issues = res.issues));
+    httpMock
+      .expectOne((r) => r.url === url('/v1/projects/p1/issues'))
+      .flush({ issues: [{ number: 1, assigneeActorId: 'a1', sourceKey: '236-x' }, { number: 2 }] });
+    expect(issues[0]).toMatchObject({ assigneeActorId: 'a1', sourceKey: '236-x' });
+    expect(issues[1]).toMatchObject({ assigneeActorId: '', sourceKey: '' });
+  });
+
+  it('listActors pide los revocados solo si se piden, y normaliza', () => {
+    let actors: Actor[] = [];
+    client.listActors(true).subscribe((res) => (actors = res));
+    const req = httpMock.expectOne((r) => r.url === url('/v1/actors'));
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('include_revoked')).toBe('true');
+    req.flush({
+      actors: [
+        { id: 'u', kind: 'ACTOR_KIND_PERSON', userId: 'uid-1' },
+        {
+          id: 'a1',
+          kind: 'ACTOR_KIND_AGENT',
+          displayName: 'Codex PC-01',
+          ownerActorId: 'u',
+          tool: 'AGENT_TOOL_CODEX',
+          revokedAt: '2026-11-01T00:00:00Z',
+        },
+        { id: 'x', kind: 'ACTOR_KIND_ROBOT', tool: 'AGENT_TOOL_NUEVA' },
+      ],
+    });
+    expect(actors[0]).toEqual({
+      id: 'u',
+      kind: 'ACTOR_KIND_PERSON',
+      displayName: '',
+      ownerActorId: '',
+      tool: 'AGENT_TOOL_UNSPECIFIED',
+      createdAt: '',
+      revokedAt: '',
+      userId: 'uid-1',
+    });
+    expect(actors[1]).toMatchObject({
+      tool: 'AGENT_TOOL_CODEX',
+      revokedAt: '2026-11-01T00:00:00Z',
+    });
+    // Un valor de una versión nueva del backend cae en UNSPECIFIED.
+    expect(actors[2]).toMatchObject({
+      kind: 'ACTOR_KIND_UNSPECIFIED',
+      tool: 'AGENT_TOOL_UNSPECIFIED',
+    });
+
+    client.listActors().subscribe();
+    const plain = httpMock.expectOne((r) => r.url === url('/v1/actors'));
+    expect(plain.request.params.keys()).toEqual([]);
+    plain.flush({});
   });
 });

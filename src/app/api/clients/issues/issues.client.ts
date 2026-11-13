@@ -3,6 +3,7 @@ import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
 
 import { RestClient } from '../rest/rest.client';
 import type {
+  Actor,
   BatchUpdateStatusesRequest,
   Comment,
   CreateIssueRequest,
@@ -21,6 +22,7 @@ import type {
   PageRequest,
   Project,
   RawCommentEnvelope,
+  RawListActorsResponse,
   RawIssueEnvelope,
   RawLabelEnvelope,
   RawListIssueEventsResponse,
@@ -36,6 +38,7 @@ import type {
   UpdateStatusRequest,
 } from './issues.contracts';
 import {
+  toActor,
   toComment,
   toIssue,
   toIssueEvent,
@@ -254,6 +257,20 @@ export class IssuesClient {
   /** Borra la etiqueta y la quita de todos los issues. */
   deleteLabel(projectId: string, labelId: string): Observable<void> {
     return this.rest.delete<unknown>(labelPath(projectId, labelId)).pipe(map(() => undefined));
+  }
+
+  // ── Actores (ActorService) ────────────────────────────────────────────────
+
+  /**
+   * La persona del usuario (primero) y sus agentes, por nombre. Con
+   * `includeRevoked`, también los revocados (un issue puede seguir asignado
+   * a uno).
+   */
+  listActors(includeRevoked = false): Observable<Actor[]> {
+    const params = { include_revoked: includeRevoked || undefined };
+    return this.rest
+      .get<RawListActorsResponse>('/v1/actors', { params })
+      .pipe(map((res) => (res.actors ?? []).map(toActor)));
   }
 }
 
