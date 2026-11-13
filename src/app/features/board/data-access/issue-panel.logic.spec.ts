@@ -90,9 +90,9 @@ describe('openedOverBoard', () => {
 });
 
 describe('withPanelMark', () => {
-  it('pone la marca y conserva lo demás', () => {
-    const state = withPanelMark({ otro: 1, navigationId: 4 }, true);
-    expect(state).toMatchObject({ otro: 1, navigationId: 4 });
+  it('pone la marca y conserva lo demás, sin las claves del router', () => {
+    const state = withPanelMark({ otro: 1, navigationId: 4, ɵrouterPageId: 2 }, true);
+    expect(state).toEqual({ otro: 1, ...panelHistoryState() });
     expect(openedOverBoard(state)).toBe(true);
   });
 

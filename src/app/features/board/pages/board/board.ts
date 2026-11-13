@@ -12,16 +12,7 @@ import {
   untracked,
 } from '@angular/core';
 import { Location } from '@angular/common';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  NavigationCancel,
-  NavigationError,
-  NavigationSkipped,
-  NavigationStart,
-  Router,
-  RouterLink,
-  Scroll,
-} from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import type { Issue, Status } from '@/app/api';
@@ -44,6 +35,9 @@ import { boardNav } from '../../board-nav';
 import { BoardStore } from '../../data-access/board.store';
 
 /** Los avisos de éxito se van solos; los de error quedan hasta cerrarlos. */
+/** Ventana en la que un segundo «cerrar» no vuelve atrás otra vez. */
+const CLOSE_GUARD_MS = 600;
+
 const INFO_NOTICE_MS = 5000;
 
 /**
@@ -155,46 +149,16 @@ export class Board {
   // si la entrada es del tablero o, si no (enlace directo, recarga), saca
   // `?issue=` reemplazando la URL.
   //
-  // Scroll (CU-033-2): las navegaciones del panel van con `scroll: 'manual'`
-  // y el router no lleva el tablero arriba. Cerrar con Esc o con el botón
-  // (que es un «atrás») se queda donde está ahora: ver `keepScrollOnBack`. El
-  // «atrás» del navegador vuelve, como siempre, a la posición de cuando se
-  // abrió el panel.
+  // Scroll (CU-033-2): abrir, cambiar de issue y cerrar reemplazando van con
+  // `scroll: 'manual'` y el router no mueve el tablero. Cerrar cuando la
+  // entrada es del tablero es «atrás» (Esc, el botón o el del navegador): el
+  // router vuelve a la posición de cuando se abrió el panel, como cualquier
+  // «atrás». Decisión del 2026-11-13: no se pelea con el scroll del router.
 
-  /**
-   * Posición a conservar en el «atrás» de `closePanel`, y el id de esa
-   * navegación cuando empieza. Se usa solo con el `Scroll` de esa misma
-   * navegación, y se olvida si se cancela, se salta o falla.
-   */
-  private keepScrollOnBack: { position: readonly [number, number]; id: number | null } | null =
-    null;
+  /** Cuándo `closePanel` pidió «atrás»: un segundo Esc enseguida no vuelve otra vez. */
+  private closingAt = 0;
 
   private setUpPanel(): void {
-    // El router hace su scroll al avisar `Scroll`, en el mismo tick en que lo
-    // reciben los suscriptores de `router.events`: una microtarea corre
-    // después y antes de pintar, sin salto visible. Depende de ese orden del
-    // router (no es contrato público): lo cuida el e2e «lo que se desplaza con
-    // el panel abierto se conserva al cerrar con Esc».
-    this.router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
-      const keep = this.keepScrollOnBack;
-      if (!keep) return;
-      if (event instanceof NavigationStart) {
-        if (event.navigationTrigger === 'popstate' && keep.id === null) keep.id = event.id;
-        else this.keepScrollOnBack = null;
-      } else if (
-        (event instanceof NavigationCancel ||
-          event instanceof NavigationError ||
-          event instanceof NavigationSkipped) &&
-        event.id === keep.id
-      ) {
-        this.keepScrollOnBack = null;
-      } else if (event instanceof Scroll && event.routerEvent.id === keep.id) {
-        const [x, y] = keep.position;
-        this.keepScrollOnBack = null;
-        queueMicrotask(() => window.scrollTo(x, y));
-      }
-    });
-
     // Al abrir: el foco va al panel. Al cerrar, si el foco se perdió (estaba
     // en el panel), vuelve a la tarjeta; si ya no está en el tablero (se
     // descartó o pasó a una columna oculta), a la primera.
@@ -272,10 +236,12 @@ export class Board {
   /** Cierra el panel: «atrás» si lo abrió el tablero; si no, saca `?issue=`. */
   protected closePanel(): void {
     if (this.overBoard()) {
-      // «Atrás» deja que el router vuelva a la posición de cuando se abrió el
-      // panel; al cerrar con Esc o con el botón se queda donde está ahora
-      // (lo que se desplazó con el panel abierto no se pierde).
-      this.keepScrollOnBack = { position: [window.scrollX, window.scrollY], id: null };
+      // `back()` es asíncrono: mientras no llega, la entrada sigue siendo la
+      // del panel y un segundo Esc (o Esc y el botón) volvería dos veces,
+      // fuera del tablero.
+      const now = Date.now();
+      if (now - this.closingAt < CLOSE_GUARD_MS) return;
+      this.closingAt = now;
       this.location.back();
       return;
     }

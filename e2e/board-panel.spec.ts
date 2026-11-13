@@ -105,20 +105,21 @@ test.describe('desktop', () => {
     expect(ys.filter((y) => y !== 120)).toEqual([]);
   });
 
-  test('lo que se desplaza con el panel abierto se conserva al cerrar con Esc', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 1280, height: 420 });
-    await openBoard(page);
-    const scrollY = () => page.evaluate(() => Math.round(window.scrollY));
-    await cardLink(page, 'TK-3').click();
+  test('dos Esc seguidos cierran el panel y se quedan en el tablero', async ({ page }) => {
+    // Una página antes del tablero: un «atrás» de más volvería a ella.
+    await signIn(page);
+    await fakeApi(page);
+    await page.goto('/proyectos');
+    await page.getByRole('link', { name: /TK\s+Tekitla/ }).click();
+    await expect(page.locator('.board__column').first()).toBeVisible();
+    await cardLink(page, 'TK-2').click();
     await expect(panel(page)).toBeVisible();
-    await page.evaluate(() => window.scrollTo(0, 150));
-    await expect.poll(scrollY).toBe(150);
+    await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
     await expect(panel(page)).toHaveCount(0);
     await expect(page).toHaveURL(/\/proyectos\/p-tk$/);
-    await expect.poll(scrollY).toBe(150);
+    await page.waitForTimeout(300);
+    await expect(page).toHaveURL(/\/proyectos\/p-tk$/);
   });
 
   test('después de recargar, cerrar saca ?issue= sin salir de la página', async ({ page }) => {
