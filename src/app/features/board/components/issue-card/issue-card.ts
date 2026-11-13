@@ -1,12 +1,11 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import type { Issue, Label, Status } from '@/app/api';
 import { Icon } from '@/app/ui/components/icon/icon';
 import { LABEL_TONE, issueKey, statusTone } from '../../data-access/board.logic';
-import type { PanelHistoryState } from '../../data-access/issue-panel.logic';
 import { KANBAN_PRIORITY, PRIORITY_LEVEL } from '../priority-badge/priority-badge';
 
 /**
@@ -29,7 +28,7 @@ export type MoveRequest =
  */
 @Component({
   selector: 'app-issue-card',
-  imports: [RouterLink, CdkMenuTrigger, CdkMenu, CdkMenuItem, Icon, TranslatePipe],
+  imports: [CdkMenuTrigger, CdkMenu, CdkMenuItem, Icon, TranslatePipe],
   templateUrl: './issue-card.html',
   styleUrl: './issue-card.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,18 +45,17 @@ export class IssueCard {
   readonly pending = input(false);
   /**
    * Desktop (033): la tarjeta abre el detalle en el panel lateral del tablero
-   * (`?issue=RND-231`) en vez de ir a la página. Con el panel ya abierto,
-   * cambiar de issue reemplaza la entrada del historial: «atrás» cierra el
-   * panel en vez de recorrer cada issue visto.
+   * (`?issue=RND-231`) en vez de ir a la página: la tarjeta avisa con
+   * `opened` y el tablero navega (historial y scroll son suyos). El `href`
+   * sigue siendo el del panel, para abrirlo en otra pestaña o copiarlo.
    */
   readonly openInPanel = input(false);
-  readonly panelOpen = input(false);
-  /** `history.state` de la navegación al panel (lo arma el tablero). */
-  readonly panelState = input<PanelHistoryState | undefined>(undefined);
   /** Es el issue abierto en el panel. */
   readonly current = input(false);
 
   readonly move = output<MoveRequest>();
+  /** Pedido de abrir el issue en el panel del tablero (`openInPanel`). */
+  readonly opened = output<number>();
 
   private readonly router = inject(Router);
 
@@ -88,12 +86,24 @@ export class IssueCard {
     'issues',
     this.issue().number,
   ]);
-  protected readonly link = computed(() =>
-    this.openInPanel() ? ['/proyectos', this.projectId()] : this.page(),
+  private readonly target = computed(() =>
+    this.openInPanel()
+      ? this.router.createUrlTree(['/proyectos', this.projectId()], {
+          queryParams: { issue: this.key() },
+        })
+      : this.router.createUrlTree(this.page()),
   );
-  protected readonly queryParams = computed(() =>
-    this.openInPanel() ? { issue: this.key() } : null,
-  );
+  protected readonly href = computed(() => this.router.serializeUrl(this.target()));
+
+  /** Clic común: navega en la app. Con modificador o botón del medio, el navegador. */
+  protected onClick(event: MouseEvent): void {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    if (this.openInPanel()) this.opened.emit(this.issue().number);
+    else void this.router.navigateByUrl(this.target());
+  }
 
   protected discard(): void {
     void this.router.navigate(this.page(), { queryParams: { descartar: 1 } });

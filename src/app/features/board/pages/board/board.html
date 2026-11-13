@@ -197,10 +197,9 @@
                     [labelsById]="store.labelsById()"
                     [pending]="store.pending().has(issue.number)"
                     [openInPanel]="!isMobile()"
-                    [panelOpen]="panelNumber() !== null"
-                    [panelState]="panelState()"
                     [current]="panelNumber() === issue.number"
                     (move)="onMove($event)"
+                    (opened)="openPanel($event)"
                   />
                 </li>
               } @empty {

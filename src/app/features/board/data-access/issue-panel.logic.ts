@@ -1,5 +1,3 @@
-import { UrlTree } from '@angular/router';
-
 import type { BoardColumn } from './board.logic';
 
 /**
@@ -57,36 +55,26 @@ export function ownsKeyboard(target: EventTarget | null): boolean {
 }
 
 /**
- * Marca en `history.state` de las entradas que abrió el tablero encima de sí
- * mismo. Si está, cerrar el panel es volver atrás (no queda una entrada de
- * más); si no (enlace directo, recarga), cerrar reemplaza la URL.
+ * Id de este documento: cambia con cada carga de la página. La marca del
+ * historial lo lleva, así una entrada marcada antes de recargar no cuenta
+ * (`history.state` sobrevive a la recarga, pero la entrada anterior ya es de
+ * otro documento: volver «atrás» a ella recargaría la app).
  */
-export interface PanelHistoryState {
-  readonly [key: string]: unknown;
-  readonly tkPanel: boolean;
+const DOCUMENT_ID = Math.random().toString(36).slice(2);
+
+/**
+ * `history.state` de las entradas que el tablero abre encima de sí mismo. Si
+ * la entrada actual la tiene, cerrar el panel es volver atrás (no queda una
+ * entrada de más); si no (enlace directo, recarga), cerrar reemplaza la URL.
+ */
+export function panelHistoryState(): { readonly tkPanel: string } {
+  return { tkPanel: DOCUMENT_ID };
 }
 
 export function openedOverBoard(state: unknown): boolean {
   return (
-    !!state && typeof state === 'object' && (state as Record<string, unknown>)['tkPanel'] === true
+    !!state &&
+    typeof state === 'object' &&
+    (state as Record<string, unknown>)['tkPanel'] === DOCUMENT_ID
   );
-}
-
-/** La URL sin `?issue=`: identifica la «página» que queda debajo del panel. */
-function withoutPanel(tree: UrlTree, serialize: (tree: UrlTree) => string): string {
-  const { issue: _panel, ...rest } = tree.queryParams;
-  return serialize(new UrlTree(tree.root, rest, tree.fragment));
-}
-
-/**
- * La navegación solo abre, cambia o cierra el panel (lo demás de la URL queda
- * igual): el tablero conserva su scroll en vez de volver arriba (CU-033-2).
- * `serialize` es el del router (`router.serializeUrl`).
- */
-export function onlyPanelChanged(
-  from: UrlTree,
-  to: UrlTree,
-  serialize: (tree: UrlTree) => string,
-): boolean {
-  return withoutPanel(from, serialize) === withoutPanel(to, serialize);
 }

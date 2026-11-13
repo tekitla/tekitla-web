@@ -72,7 +72,7 @@ test.describe('desktop', () => {
     await expect(cardLink(page, 'TK-3')).toBeFocused();
 
     // Abrir y cerrar con «atrás» del navegador.
-    await cardLink(page, 'TK-1').click();
+    await cardLink(page, 'TK-3').click();
     await expect(panel(page)).toBeVisible();
     await page.goBack();
     await expect(panel(page)).toHaveCount(0);
@@ -80,34 +80,70 @@ test.describe('desktop', () => {
     await expect.poll(scrollY).toBe(before);
   });
 
-  test('lo que se desplaza con el panel abierto se conserva al cerrar, sin saltar arriba', async ({
-    page,
-  }) => {
+  test('abrir, cambiar de issue y cerrar nunca llevan el tablero arriba', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 420 });
     await openBoard(page);
+    await page.evaluate(() => window.scrollTo(0, 120));
     const scrollY = () => page.evaluate(() => Math.round(window.scrollY));
-    // Cada posición por la que pasa la página (un salto arriba quedaría acá).
+    await expect.poll(scrollY).toBe(120);
+    // Cada posición por la que pasa la página: un salto arriba quedaría acá.
     await page.evaluate(() => {
       const w = window as unknown as { __ys: number[] };
       w.__ys = [];
       window.addEventListener('scroll', () => w.__ys.push(Math.round(window.scrollY)));
     });
 
-    await cardLink(page, 'TK-3').click();
+    await cardLink(page, 'TK-1').click();
     await expect(panel(page)).toBeVisible();
-    await page.evaluate(() => window.scrollTo(0, 150));
-    await expect.poll(scrollY).toBe(150);
+    await page.keyboard.press('ArrowDown');
+    await expect(page).toHaveURL(/\?issue=TK-3$/);
     await page.keyboard.press('Escape');
     await expect(panel(page)).toHaveCount(0);
-    await expect.poll(scrollY).toBe(150);
+    await expect.poll(scrollY).toBe(120);
     const ys = await page.evaluate(() => (window as unknown as { __ys: number[] }).__ys);
-    expect(ys.filter((y) => y === 0)).toEqual([]);
+    expect(ys.filter((y) => y !== 120)).toEqual([]);
   });
 
-  test('una clave de otro proyecto en ?issue= no abre nada', async ({ page }) => {
-    await openBoard(page, '/proyectos/p-tk?issue=OTRO-1');
+  test('después de recargar, cerrar saca ?issue= sin salir de la página', async ({ page }) => {
+    await openBoard(page);
+    await cardLink(page, 'TK-2').click();
+    await expect(panel(page)).toBeVisible();
+    await page.reload();
+    await expect(panelTitle(panel(page))).toHaveText('Login con Google');
+    // Marca de este documento: si cerrar recargara la app, se perdería.
+    await page.evaluate(() => ((window as unknown as { __doc: number }).__doc = 1));
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/proyectos\/p-tk$/);
+    expect(await page.evaluate(() => (window as unknown as { __doc?: number }).__doc)).toBe(1);
+  });
+
+  test('una clave de otro proyecto en ?issue= no abre nada, ni mientras carga', async ({
+    page,
+  }) => {
+    // Registra si el panel aparece en algún momento (también antes de cargar).
+    await page.addInitScript(() => {
+      new MutationObserver(() => {
+        if (document.getElementById('board-panel')) {
+          (window as unknown as { __panel: boolean }).__panel = true;
+        }
+      }).observe(document, { childList: true, subtree: true });
+    });
+    await signIn(page);
+    await fakeApi(page);
+    // El proyecto tarda: la clave todavía no se conoce mientras se ven los issues.
+    await page.route('**/v1/projects/p-tk', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await route.fallback();
+    });
+    await page.goto('/proyectos/p-tk?issue=OTRO-1');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Tekitla');
     await expect(page.locator('app-issue-card').first()).toBeVisible();
     await expect(panel(page)).toHaveCount(0);
+    expect(await page.evaluate(() => (window as unknown as { __panel?: boolean }).__panel)).toBe(
+      undefined,
+    );
+    await expect(page).toHaveURL(/\/proyectos\/p-tk\?issue=OTRO-1$/);
   });
 
   test('↑ y ↓ pasan al issue anterior o siguiente de la columna', async ({ page }) => {

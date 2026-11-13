@@ -1,4 +1,3 @@
-import { DefaultUrlSerializer } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
 import type { Issue, Status } from '@/app/api';
@@ -6,8 +5,8 @@ import type { BoardColumn } from './board.logic';
 import {
   neighborInColumn,
   openedOverBoard,
-  onlyPanelChanged,
   ownsKeyboard,
+  panelHistoryState,
   parseIssueParam,
 } from './issue-panel.logic';
 
@@ -27,7 +26,6 @@ describe('parseIssueParam', () => {
 
   it('mientras no se conoce la clave del proyecto, una clave no abre nada', () => {
     expect(parseIssueParam('TK-3', '')).toBeNull();
-    expect(parseIssueParam('3', '')).toBe(3);
   });
 
   it('ignora lo vacío o inválido', () => {
@@ -79,28 +77,12 @@ describe('ownsKeyboard', () => {
 });
 
 describe('openedOverBoard', () => {
-  it('solo con la marca del tablero', () => {
-    expect(openedOverBoard({ tkPanel: true, navigationId: 3 })).toBe(true);
-    expect(openedOverBoard({ tkPanel: false })).toBe(false);
+  it('solo con la marca de este documento', () => {
+    expect(openedOverBoard({ ...panelHistoryState(), navigationId: 3 })).toBe(true);
+    // Marca de antes de recargar (otro documento) o sin marca.
+    expect(openedOverBoard({ tkPanel: 'otro-documento' })).toBe(false);
+    expect(openedOverBoard({ tkPanel: true })).toBe(false);
     expect(openedOverBoard({ navigationId: 3 })).toBe(false);
     expect(openedOverBoard(null)).toBe(false);
-  });
-});
-
-describe('onlyPanelChanged', () => {
-  const serializer = new DefaultUrlSerializer();
-  const url = (u: string) => serializer.parse(u);
-  const onlyPanel = (a: string, b: string) =>
-    onlyPanelChanged(url(a), url(b), (t) => serializer.serialize(t));
-
-  it('abrir, cambiar o cerrar el panel', () => {
-    expect(onlyPanel('/proyectos/p1', '/proyectos/p1?issue=RND-2')).toBe(true);
-    expect(onlyPanel('/proyectos/p1?issue=RND-2', '/proyectos/p1?issue=RND-3')).toBe(true);
-    expect(onlyPanel('/proyectos/p1?issue=RND-3&q=x', '/proyectos/p1?q=x')).toBe(true);
-  });
-
-  it('ir a otra página o cambiar otros filtros no', () => {
-    expect(onlyPanel('/proyectos/p1', '/proyectos/p1/issues')).toBe(false);
-    expect(onlyPanel('/proyectos/p1?issue=RND-2', '/proyectos/p1?q=x')).toBe(false);
   });
 });

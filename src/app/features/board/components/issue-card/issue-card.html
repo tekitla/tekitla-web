@@ -22,11 +22,9 @@
   <a
     class="vrb-kanban-card__title issue-card__link"
     [id]="'issue-link-' + issue().number"
-    [routerLink]="link()"
-    [queryParams]="queryParams()"
-    [state]="openInPanel() ? panelState() : undefined"
-    [replaceUrl]="openInPanel() && panelOpen()"
+    [attr.href]="href()"
     [attr.aria-current]="current() || null"
+    (click)="onClick($event)"
     aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp Shift+ArrowDown"
     aria-describedby="board-shortcut-hint"
     (keydown)="onKeydown($event)"
