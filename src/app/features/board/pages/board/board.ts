@@ -24,6 +24,7 @@ import { IssueCard, type MoveRequest } from '../../components/issue-card/issue-c
 import { issueKey, statusTone, wipState } from '../../data-access/board.logic';
 import {
   closeAction,
+  isLeaving,
   neighborInColumn,
   openedOverBoard,
   ownsKeyboard,
@@ -155,6 +156,8 @@ export class Board {
 
   /** La entrada desde la que `closePanel` pidió «atrás» (ver `closeAction`). */
   private leaving: unknown = undefined;
+  /** El próximo panel que se abra lo pidió el usuario: el foco va a él. */
+  private focusNextPanel = false;
 
   private setUpPanel(): void {
     // Al abrir: el foco va al panel. Al cerrar, si el foco se perdió (estaba
@@ -170,7 +173,12 @@ export class Board {
         afterNextRender(
           () => {
             if (opening) {
-              document.getElementById('board-panel')?.focus({ preventScroll: true });
+              // Solo si lo abrió el usuario: un `?issue=` que se resuelve al
+              // cargar no le saca el foco de donde esté.
+              if (this.focusNextPanel) {
+                document.getElementById('board-panel')?.focus({ preventScroll: true });
+              }
+              this.focusNextPanel = false;
               return;
             }
             const lost = !document.activeElement || document.activeElement === document.body;
@@ -187,9 +195,11 @@ export class Board {
     });
 
     // Un enlace `?issue=` abierto en el celular va a la página completa (CU-033-8).
+    // Reacciona al enlace, no al ancho: angostar la ventana con el panel
+    // abierto lo oculta, no saca del tablero.
     effect(() => {
       const number = this.requestedNumber();
-      if (!this.isMobile() || number === null) return;
+      if (number === null || !untracked(this.isMobile)) return;
       untracked(
         () =>
           void this.router.navigate(['/proyectos', this.projectId(), 'issues', number], {
@@ -227,6 +237,10 @@ export class Board {
   /** Clic en una tarjeta (desktop). La abierta no hace nada. */
   protected openPanel(number: number): void {
     if (!this.cardsOpenPanel() || this.panelNumber() === number) return;
+    // Hay un «atrás» de cerrar en camino: reemplazar ahora caería en la entrada
+    // que se está dejando y el issue pedido se perdería.
+    if (isLeaving(this.location.getState(), this.leaving)) return;
+    this.focusNextPanel = true;
     // Con `?issue=` en la URL (aunque todavía no se resuelva), se reemplaza.
     void this.showInPanel(number, !!this.issue());
   }
@@ -278,8 +292,12 @@ export class Board {
       this.closePanel();
     } else if (
       (event.key === 'ArrowUp' || event.key === 'ArrowDown') &&
-      // Dentro del contenido del panel, las flechas desplazan lo que se lee.
-      !(event.target instanceof Element && event.target.closest('.board__panel-body'))
+      // Con el foco en el panel (fuera de su contenido, que se desplaza con
+      // las flechas) o en una tarjeta. En el resto de la página las flechas
+      // siguen desplazándola.
+      event.target instanceof Element &&
+      !event.target.closest('.board__panel-body') &&
+      !!event.target.closest('#board-panel, .board__kanban')
     ) {
       event.preventDefault();
       this.stepPanel(event.key === 'ArrowUp' ? -1 : 1);

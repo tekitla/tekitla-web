@@ -7,6 +7,7 @@ import {
   openedOverBoard,
   ownsKeyboard,
   closeAction,
+  isLeaving,
   panelHistoryState,
   withPanelMark,
   parseIssueParam,
@@ -121,5 +122,13 @@ describe('closeAction', () => {
   it('enlace directo o recarga: reemplaza la URL', () => {
     expect(closeAction({ navigationId: 3 }, undefined)).toEqual({ kind: 'replace' });
     expect(closeAction(null, 7)).toEqual({ kind: 'replace' });
+  });
+});
+
+describe('isLeaving', () => {
+  it('solo mientras la entrada sigue siendo la que se deja', () => {
+    expect(isLeaving({ navigationId: 7 }, 7)).toBe(true);
+    expect(isLeaving({ navigationId: 8 }, 7)).toBe(false);
+    expect(isLeaving({ navigationId: 7 }, undefined)).toBe(false);
   });
 });

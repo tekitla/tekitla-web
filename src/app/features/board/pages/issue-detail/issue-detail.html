@@ -342,11 +342,14 @@
   } @else if (store.selectedNotFound()) {
     <div class="vrb-empty vrb-empty--bordered" role="alert">
       <p class="vrb-empty__title">{{ 'issueDetail.notFound' | translate }}</p>
-      <div class="vrb-empty__actions">
-        <a class="vrb-button vrb-button--outline" [routerLink]="['/proyectos', projectId()]">
-          {{ 'issueDetail.back' | translate }}
-        </a>
-      </div>
+      <!-- En el panel ya se está en el tablero: se cierra con su botón. -->
+      @if (mode() === 'page') {
+        <div class="vrb-empty__actions">
+          <a class="vrb-button vrb-button--outline" [routerLink]="['/proyectos', projectId()]">
+            {{ 'issueDetail.back' | translate }}
+          </a>
+        </div>
+      }
     </div>
   } @else if (store.selectedError(); as error) {
     <div class="vrb-empty vrb-empty--bordered vrb-empty--danger" role="alert">

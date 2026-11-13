@@ -38,6 +38,7 @@ import {
   filtersToParams,
   hasFilters,
 } from '../../data-access/issue-list.logic';
+import { ownsKeyboard } from '../../data-access/issue-panel.logic';
 import { IssueListStore } from '../../data-access/issue-list.store';
 
 /** Espera después de la última tecla antes de buscar (ListIssues: 300/min, ráfaga 60). */
@@ -240,11 +241,7 @@ export class IssueList {
   /** `/` enfoca la búsqueda (salvo que ya se esté escribiendo en un campo). */
   protected onDocumentKeydown(event: KeyboardEvent): void {
     if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
-    const target = event.target as HTMLElement | null;
-    const typing =
-      target?.closest('input, textarea, select, [contenteditable="true"]') ||
-      target?.isContentEditable;
-    if (typing || document.querySelector('dialog[open]')) return;
+    if (ownsKeyboard(event.target) || document.querySelector('dialog[open]')) return;
     event.preventDefault();
     this.searchInput()?.nativeElement.focus();
     this.searchInput()?.nativeElement.select();

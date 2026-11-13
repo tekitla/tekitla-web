@@ -109,7 +109,7 @@ const PRIORITIES: readonly Priority[] = ['urgente', 'alta', 'media', 'baja'];
  * Bocetos del tablero v2 (issue 033, paso 1). Solo en desarrollo
  * (`environment.production === false`): la ruta no existe en QA ni en prod.
  * Datos inventados y textos fijos en español a propósito: es un boceto para
- * elegir, no código de producto; se borra al empezar la parte 1.
+ * elegir, no código de producto; se borra antes de pedir el merge del PR.
  */
 @Component({
   selector: 'app-bocetos',

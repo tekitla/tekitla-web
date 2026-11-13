@@ -52,7 +52,9 @@ export function neighborInColumn(
 export function ownsKeyboard(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable) return true;
-  return !!target.closest('input, textarea, select, [role="menu"], [role="listbox"], dialog');
+  return !!target.closest(
+    'input, textarea, select, [contenteditable="true"], [role="menu"], [role="listbox"], dialog',
+  );
 }
 
 /**
@@ -120,7 +122,11 @@ export type CloseAction =
  */
 export function closeAction(state: unknown, leaving: unknown): CloseAction {
   if (!openedOverBoard(state)) return { kind: 'replace' };
-  const id = entryId(state);
-  if (leaving !== undefined && id === leaving) return { kind: 'ignore' };
-  return { kind: 'back', leaving: id };
+  if (isLeaving(state, leaving)) return { kind: 'ignore' };
+  return { kind: 'back', leaving: entryId(state) };
+}
+
+/** Ya se pidió «atrás» desde la entrada actual y todavía no llegó. */
+export function isLeaving(state: unknown, leaving: unknown): boolean {
+  return leaving !== undefined && entryId(state) === leaving;
 }

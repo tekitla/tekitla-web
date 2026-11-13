@@ -247,6 +247,20 @@ test.describe('desktop', () => {
   });
 });
 
+test('angostar la ventana con el panel abierto lo oculta, sin salir del tablero', async ({
+  page,
+}) => {
+  await page.setViewportSize(DESKTOP);
+  await openBoard(page);
+  await cardLink(page, 'TK-2').click();
+  await expect(panel(page)).toBeVisible();
+  await page.setViewportSize(MOBILE);
+  await expect(panel(page)).toHaveCount(0);
+  await expect(page).toHaveURL(/\/proyectos\/p-tk\?issue=TK-2$/);
+  await page.setViewportSize(DESKTOP);
+  await expect(panel(page)).toBeVisible();
+});
+
 test.describe('móvil', () => {
   test.use({ viewport: MOBILE, hasTouch: true, isMobile: true });
 
