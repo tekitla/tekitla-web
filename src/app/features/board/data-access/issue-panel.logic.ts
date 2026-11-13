@@ -1,4 +1,4 @@
-import { type UrlTree, DefaultUrlSerializer } from '@angular/router';
+import { UrlTree } from '@angular/router';
 
 import type { BoardColumn } from './board.logic';
 
@@ -10,7 +10,9 @@ import type { BoardColumn } from './board.logic';
 /**
  * Número del issue a partir del query param. Acepta la clave completa
  * (`RND-231`, sin importar mayúsculas) o solo el número (`231`). Una clave de
- * otro proyecto, o algo que no es un número positivo, no abre nada.
+ * otro proyecto, o algo que no es un número positivo, no abre nada. Con clave,
+ * hace falta saber la del proyecto: mientras carga (`''`) no abre nada, así un
+ * `TK-3` en el tablero de RND no abre RND-3.
  */
 export function parseIssueParam(
   value: string | null | undefined,
@@ -21,7 +23,7 @@ export function parseIssueParam(
   const match = /^(?:([A-Za-z][A-Za-z0-9]*)-)?(\d+)$/.exec(raw);
   if (!match) return null;
   const [, key, digits] = match;
-  if (key && projectKey && key.toUpperCase() !== projectKey.toUpperCase()) return null;
+  if (key && key.toUpperCase() !== projectKey.toUpperCase()) return null;
   const number = Number(digits);
   return Number.isSafeInteger(number) && number > 0 ? number : null;
 }
@@ -70,19 +72,21 @@ export function openedOverBoard(state: unknown): boolean {
   );
 }
 
-const serializer = new DefaultUrlSerializer();
-
 /** La URL sin `?issue=`: identifica la «página» que queda debajo del panel. */
-function withoutPanel(tree: UrlTree): string {
-  const copy = serializer.parse(serializer.serialize(tree));
-  delete copy.queryParams['issue'];
-  return serializer.serialize(copy);
+function withoutPanel(tree: UrlTree, serialize: (tree: UrlTree) => string): string {
+  const { issue: _panel, ...rest } = tree.queryParams;
+  return serialize(new UrlTree(tree.root, rest, tree.fragment));
 }
 
 /**
  * La navegación solo abre, cambia o cierra el panel (lo demás de la URL queda
  * igual): el tablero conserva su scroll en vez de volver arriba (CU-033-2).
+ * `serialize` es el del router (`router.serializeUrl`).
  */
-export function onlyPanelChanged(from: UrlTree, to: UrlTree): boolean {
-  return withoutPanel(from) === withoutPanel(to);
+export function onlyPanelChanged(
+  from: UrlTree,
+  to: UrlTree,
+  serialize: (tree: UrlTree) => string,
+): boolean {
+  return withoutPanel(from, serialize) === withoutPanel(to, serialize);
 }

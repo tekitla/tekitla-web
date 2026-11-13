@@ -25,8 +25,9 @@ describe('parseIssueParam', () => {
     expect(parseIssueParam('TK-3', 'RND')).toBeNull();
   });
 
-  it('sin clave del proyecto todavía (cargando), acepta cualquier prefijo', () => {
-    expect(parseIssueParam('RND-231', '')).toBe(231);
+  it('mientras no se conoce la clave del proyecto, una clave no abre nada', () => {
+    expect(parseIssueParam('TK-3', '')).toBeNull();
+    expect(parseIssueParam('3', '')).toBe(3);
   });
 
   it('ignora lo vacío o inválido', () => {
@@ -87,22 +88,19 @@ describe('openedOverBoard', () => {
 });
 
 describe('onlyPanelChanged', () => {
-  const url = (u: string) => new DefaultUrlSerializer().parse(u);
+  const serializer = new DefaultUrlSerializer();
+  const url = (u: string) => serializer.parse(u);
+  const onlyPanel = (a: string, b: string) =>
+    onlyPanelChanged(url(a), url(b), (t) => serializer.serialize(t));
 
   it('abrir, cambiar o cerrar el panel', () => {
-    expect(onlyPanelChanged(url('/proyectos/p1'), url('/proyectos/p1?issue=RND-2'))).toBe(true);
-    expect(
-      onlyPanelChanged(url('/proyectos/p1?issue=RND-2'), url('/proyectos/p1?issue=RND-3')),
-    ).toBe(true);
-    expect(onlyPanelChanged(url('/proyectos/p1?issue=RND-3&q=x'), url('/proyectos/p1?q=x'))).toBe(
-      true,
-    );
+    expect(onlyPanel('/proyectos/p1', '/proyectos/p1?issue=RND-2')).toBe(true);
+    expect(onlyPanel('/proyectos/p1?issue=RND-2', '/proyectos/p1?issue=RND-3')).toBe(true);
+    expect(onlyPanel('/proyectos/p1?issue=RND-3&q=x', '/proyectos/p1?q=x')).toBe(true);
   });
 
   it('ir a otra página o cambiar otros filtros no', () => {
-    expect(onlyPanelChanged(url('/proyectos/p1'), url('/proyectos/p1/issues'))).toBe(false);
-    expect(onlyPanelChanged(url('/proyectos/p1?issue=RND-2'), url('/proyectos/p1?q=x'))).toBe(
-      false,
-    );
+    expect(onlyPanel('/proyectos/p1', '/proyectos/p1/issues')).toBe(false);
+    expect(onlyPanel('/proyectos/p1?issue=RND-2', '/proyectos/p1?q=x')).toBe(false);
   });
 });

@@ -80,6 +80,36 @@ test.describe('desktop', () => {
     await expect.poll(scrollY).toBe(before);
   });
 
+  test('lo que se desplaza con el panel abierto se conserva al cerrar, sin saltar arriba', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 420 });
+    await openBoard(page);
+    const scrollY = () => page.evaluate(() => Math.round(window.scrollY));
+    // Cada posición por la que pasa la página (un salto arriba quedaría acá).
+    await page.evaluate(() => {
+      const w = window as unknown as { __ys: number[] };
+      w.__ys = [];
+      window.addEventListener('scroll', () => w.__ys.push(Math.round(window.scrollY)));
+    });
+
+    await cardLink(page, 'TK-3').click();
+    await expect(panel(page)).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, 150));
+    await expect.poll(scrollY).toBe(150);
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect.poll(scrollY).toBe(150);
+    const ys = await page.evaluate(() => (window as unknown as { __ys: number[] }).__ys);
+    expect(ys.filter((y) => y === 0)).toEqual([]);
+  });
+
+  test('una clave de otro proyecto en ?issue= no abre nada', async ({ page }) => {
+    await openBoard(page, '/proyectos/p-tk?issue=OTRO-1');
+    await expect(page.locator('app-issue-card').first()).toBeVisible();
+    await expect(panel(page)).toHaveCount(0);
+  });
+
   test('↑ y ↓ pasan al issue anterior o siguiente de la columna', async ({ page }) => {
     await openBoard(page);
     await cardLink(page, 'TK-1').click();
@@ -91,10 +121,21 @@ test.describe('desktop', () => {
     await expect(panel(page).getByRole('button', { name: /siguiente/ })).toBeDisabled();
     await page.keyboard.press('ArrowDown'); // último de la columna: se queda
     await expect(page).toHaveURL(/\?issue=TK-3$/);
+    // Con el botón: al llegar al borde queda deshabilitado y el foco va al panel.
+    await page.keyboard.press('ArrowUp');
+    await panel(page)
+      .getByRole('button', { name: /siguiente/ })
+      .click();
+    await expect(page).toHaveURL(/\?issue=TK-3$/);
+    await expect(panel(page)).toBeFocused();
 
     await panel(page)
       .getByRole('button', { name: /anterior/ })
       .click();
+    await expect(page).toHaveURL(/\?issue=TK-1$/);
+    // Con el foco en el contenido del panel, las flechas no cambian de issue.
+    await panel(page).getByRole('button', { name: 'Editar el título' }).focus();
+    await page.keyboard.press('ArrowDown');
     await expect(page).toHaveURL(/\?issue=TK-1$/);
     // Cambiar de issue no suma entradas: «atrás» cierra el panel.
     await page.goBack();

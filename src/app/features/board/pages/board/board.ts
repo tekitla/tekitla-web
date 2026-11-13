@@ -14,7 +14,7 @@ import {
 } from '@angular/core';
 import { Location } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationStart, Router, RouterLink, Scroll } from '@angular/router';
+import { NavigationEnd, NavigationStart, Router, RouterLink, Scroll } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import type { Issue, Status } from '@/app/api';
@@ -89,9 +89,13 @@ export class Board {
   /** Query param `?issue=RND-231`: el issue abierto en el panel lateral. */
   readonly issue = input<string>();
 
+  /** El issue pedido en `?issue=` (null hasta conocer la clave del proyecto). */
+  private readonly requestedNumber = computed(() =>
+    parseIssueParam(this.issue(), this.store.projectKey()),
+  );
   /** Número del issue del panel. En móvil no hay panel (página completa). */
   protected readonly panelNumber = computed(() =>
-    this.isMobile() ? null : parseIssueParam(this.issue(), this.store.projectKey()),
+    this.isMobile() ? null : this.requestedNumber(),
   );
   protected readonly panelKey = computed(() => {
     const number = this.panelNumber();
@@ -144,20 +148,24 @@ export class Board {
   // ── Panel lateral (033) ──────────────────────────────────────────────────
 
   private setUpPanel(): void {
-    // Al abrir: el foco va al panel. Al cerrar: vuelve a la tarjeta.
+    // Al abrir: el foco va al panel. Al cerrar: vuelve a la tarjeta; si ya no
+    // está en el tablero (se descartó o pasó a una columna oculta), a la primera.
     let previous: number | null = null;
     effect(() => {
       const number = this.panelNumber();
       untracked(() => {
-        this.overBoard.set(openedOverBoard(this.location.getState()));
         const closedNumber = previous;
         const opening = number !== null && previous === null;
         previous = number;
         afterNextRender(
           () => {
-            if (opening) document.getElementById('board-panel')?.focus({ preventScroll: true });
-            else if (number === null && closedNumber !== null) {
-              document.getElementById(`issue-link-${closedNumber}`)?.focus({ preventScroll: true });
+            if (opening) {
+              document.getElementById('board-panel')?.focus({ preventScroll: true });
+            } else if (number === null && closedNumber !== null) {
+              const card =
+                document.getElementById(`issue-link-${closedNumber}`) ??
+                document.querySelector<HTMLElement>('.board__kanban [id^="issue-link-"]');
+              card?.focus({ preventScroll: true });
             }
           },
           { injector: this.injector },
@@ -167,7 +175,7 @@ export class Board {
 
     // Un enlace `?issue=` abierto en el celular va a la página completa (CU-033-8).
     effect(() => {
-      const number = parseIssueParam(this.issue(), this.store.projectKey());
+      const number = this.requestedNumber();
       if (!this.isMobile() || number === null) return;
       untracked(
         () =>
@@ -177,22 +185,33 @@ export class Board {
       );
     });
 
-    // Abrir, cambiar o cerrar el panel no mueve el tablero: el router vuelve
-    // arriba en cada navegación (scrollPositionRestoration), así que se
-    // restaura la posición de antes (CU-033-2). «Atrás» ya la restaura el router.
+    // Abrir, cambiar o cerrar el panel no mueve el tablero (CU-033-2): el
+    // router lleva arriba en cada navegación, o con «atrás» a la posición
+    // guardada (scrollPositionRestoration), y acá se vuelve a donde estaba al
+    // empezar la navegación. También con «atrás»: lo que se desplazó con el
+    // panel abierto no se pierde. El router hace su scroll justo después de
+    // avisar `Scroll` a los suscriptores de `router.events`, en el mismo tick:
+    // una microtarea corre después y antes de pintar, sin salto visible.
     let saved: readonly [number, number] | null = null;
     this.router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
       if (event instanceof NavigationStart) {
-        const panelOnly =
-          event.navigationTrigger !== 'popstate' &&
-          onlyPanelChanged(this.router.parseUrl(this.router.url), this.router.parseUrl(event.url));
+        const panelOnly = onlyPanelChanged(
+          this.router.parseUrl(this.router.url),
+          this.router.parseUrl(event.url),
+          (tree) => this.router.serializeUrl(tree),
+        );
         saved = panelOnly ? [window.scrollX, window.scrollY] : null;
+      } else if (event instanceof NavigationEnd) {
+        // Cada entrada del historial trae su marca: se lee en cada navegación,
+        // también con «atrás» o «adelante» al mismo issue.
+        this.overBoard.set(openedOverBoard(this.location.getState()));
       } else if (event instanceof Scroll && saved) {
         const [x, y] = saved;
         saved = null;
-        setTimeout(() => window.scrollTo(x, y));
+        queueMicrotask(() => window.scrollTo(x, y));
       }
     });
+    this.overBoard.set(openedOverBoard(this.location.getState()));
   }
 
   private neighbor(direction: -1 | 1): number | null {
@@ -202,7 +221,7 @@ export class Board {
 
   /** Cierra el panel: «atrás» si lo abrió el tablero; si no, saca `?issue=`. */
   protected closePanel(): void {
-    if (this.overBoard()) {
+    if (openedOverBoard(this.location.getState())) {
       this.location.back();
       return;
     }
@@ -217,12 +236,26 @@ export class Board {
   protected stepPanel(direction: -1 | 1): void {
     const number = this.neighbor(direction);
     if (number === null) return;
-    void this.router.navigate([], {
-      queryParams: { issue: issueKey(this.store.projectKey(), number) },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-      state: { tkPanel: this.overBoard() },
-    });
+    const focused = document.activeElement;
+    void this.router
+      .navigate([], {
+        queryParams: { issue: issueKey(this.store.projectKey(), number) },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+        state: { tkPanel: openedOverBoard(this.location.getState()) },
+      })
+      .then(() =>
+        // Llegó al borde con el botón: queda deshabilitado y el foco se
+        // perdería en <body>. Pasa al panel.
+        afterNextRender(
+          () => {
+            if (focused instanceof HTMLButtonElement && focused.disabled) {
+              document.getElementById('board-panel')?.focus({ preventScroll: true });
+            }
+          },
+          { injector: this.injector },
+        ),
+      );
   }
 
   protected onPanelKeydown(event: KeyboardEvent): void {
@@ -232,7 +265,11 @@ export class Board {
     if (event.key === 'Escape') {
       event.preventDefault();
       this.closePanel();
-    } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+    } else if (
+      (event.key === 'ArrowUp' || event.key === 'ArrowDown') &&
+      // Dentro del contenido del panel, las flechas desplazan lo que se lee.
+      !(event.target instanceof Element && event.target.closest('.board__panel-body'))
+    ) {
       event.preventDefault();
       this.stepPanel(event.key === 'ArrowUp' ? -1 : 1);
     }
