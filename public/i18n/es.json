@@ -124,7 +124,14 @@
     "seeInList": "Ver en la lista",
     "wipOf": "de un máximo de",
     "wipOver": "WIP excedido",
-    "wipFull": "En el límite"
+    "wipFull": "En el límite",
+    "panel": {
+      "label": "Detalle de {{issue}}",
+      "prev": "Issue anterior de la columna (↑)",
+      "next": "Issue siguiente de la columna (↓)",
+      "fullPage": "Abrir en página completa",
+      "close": "Cerrar el detalle (Esc)"
+    }
   },
   "issue": {
     "priorityLabel": "Prioridad",

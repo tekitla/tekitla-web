@@ -6,6 +6,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import type { Issue, Label, Status } from '@/app/api';
 import { Icon } from '@/app/ui/components/icon/icon';
 import { LABEL_TONE, issueKey, statusTone } from '../../data-access/board.logic';
+import type { PanelHistoryState } from '../../data-access/issue-panel.logic';
 import { KANBAN_PRIORITY, PRIORITY_LEVEL } from '../priority-badge/priority-badge';
 
 /**
@@ -43,6 +44,18 @@ export class IssueCard {
   readonly statuses = input.required<readonly Status[]>();
   readonly labelsById = input.required<ReadonlyMap<string, Label>>();
   readonly pending = input(false);
+  /**
+   * Desktop (033): la tarjeta abre el detalle en el panel lateral del tablero
+   * (`?issue=RND-231`) en vez de ir a la página. Con el panel ya abierto,
+   * cambiar de issue reemplaza la entrada del historial: «atrás» cierra el
+   * panel en vez de recorrer cada issue visto.
+   */
+  readonly openInPanel = input(false);
+  readonly panelOpen = input(false);
+  /** `history.state` de la navegación al panel (lo arma el tablero). */
+  readonly panelState = input<PanelHistoryState | undefined>(undefined);
+  /** Es el issue abierto en el panel. */
+  readonly current = input(false);
 
   readonly move = output<MoveRequest>();
 
@@ -68,15 +81,22 @@ export class IssueCard {
       (s) => s.id !== this.statusId() && s.category !== 'ISSUE_STATE_CANCELED',
     ),
   );
-  protected readonly link = computed(() => [
+  /** La página del detalle (descartar, y abrir sin panel: móvil). */
+  private readonly page = computed(() => [
     '/proyectos',
     this.projectId(),
     'issues',
     this.issue().number,
   ]);
+  protected readonly link = computed(() =>
+    this.openInPanel() ? ['/proyectos', this.projectId()] : this.page(),
+  );
+  protected readonly queryParams = computed(() =>
+    this.openInPanel() ? { issue: this.key() } : null,
+  );
 
   protected discard(): void {
-    void this.router.navigate(this.link(), { queryParams: { descartar: 1 } });
+    void this.router.navigate(this.page(), { queryParams: { descartar: 1 } });
   }
 
   protected moveTo(statusId: string): void {

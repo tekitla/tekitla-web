@@ -1,4 +1,8 @@
-<article class="issue-detail" aria-labelledby="issue-detail-title">
+<article
+  class="issue-detail"
+  [class.issue-detail--panel]="mode() === 'panel'"
+  aria-labelledby="issue-detail-title"
+>
   @if (store.selected(); as issue) {
     <div class="vrb-page-header">
       <p class="vrb-page-header__eyebrow">// {{ key().toLowerCase() }}</p>
@@ -11,7 +15,12 @@
           <label class="u-visually-hidden" for="issue-title-input">
             {{ 'issueDetail.titleLabel' | translate }}
           </label>
-          <h1 id="issue-detail-title" class="u-visually-hidden">{{ issue.title }}</h1>
+          <!-- En el panel del tablero (033) el h1 es el del tablero. -->
+          @if (mode() === 'panel') {
+            <h2 id="issue-detail-title" class="u-visually-hidden">{{ issue.title }}</h2>
+          } @else {
+            <h1 id="issue-detail-title" class="u-visually-hidden">{{ issue.title }}</h1>
+          }
           <div class="vrb-cluster vrb-cluster--sm">
             <input
               #titleInput
@@ -43,7 +52,12 @@
         </form>
       } @else {
         <div class="vrb-cluster vrb-cluster--sm vrb-cluster--nowrap issue-detail__title-row">
-          <h1 id="issue-detail-title" class="vrb-page-header__title">{{ issue.title }}</h1>
+          <!-- En el panel del tablero (033) el h1 es el del tablero. -->
+          @if (mode() === 'panel') {
+            <h2 id="issue-detail-title" class="vrb-page-header__title">{{ issue.title }}</h2>
+          } @else {
+            <h1 id="issue-detail-title" class="vrb-page-header__title">{{ issue.title }}</h1>
+          }
           <button
             type="button"
             class="vrb-button vrb-button--ghost vrb-button--icon vrb-button--sm"

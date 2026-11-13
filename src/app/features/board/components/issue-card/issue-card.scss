@@ -15,6 +15,14 @@
   &--pending {
     opacity: 0.6;
   }
+
+  // La que está abierta en el panel lateral (033).
+  &--current {
+    border-color: var(--vrb-brand);
+    box-shadow:
+      0 0 0 1px var(--vrb-brand),
+      var(--vrb-shadow-raise);
+  }
 }
 
 .issue-card__top {

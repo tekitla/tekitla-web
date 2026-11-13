@@ -87,3 +87,56 @@
   height: 72px;
   border-radius: var(--vrb-radius-control);
 }
+
+// Detalle en panel lateral (033): columna fija a la derecha; el tablero se
+// angosta y sigue con su scroll horizontal. El panel queda pegado debajo del
+// header del shell y tiene su propio scroll.
+.board__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.board__body--panel {
+  grid-template-columns: minmax(0, 1fr) var(--board-panel-w, 420px);
+}
+
+.board__panel {
+  --board-panel-top: calc(56px + var(--space-6));
+
+  position: sticky;
+  top: var(--board-panel-top);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--board-panel-top) - var(--space-6));
+  min-width: 0;
+  border: 1px solid var(--vrb-card-border);
+  border-radius: var(--vrb-radius-card);
+  background: var(--vrb-surface);
+  box-shadow: var(--vrb-shadow-card);
+
+  &:focus-visible {
+    outline: 2px solid var(--vrb-brand);
+    outline-offset: 2px;
+  }
+
+  &:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+.board__panel-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--vrb-border);
+}
+
+.board__panel-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4);
+}
