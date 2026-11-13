@@ -28,7 +28,7 @@ import { ShellNav } from './shell-nav';
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:keydown.escape)': 'onEscape($event)' },
+  host: { '(document:keydown.escape)': 'closeMenu()' },
 })
 export class Shell {
   protected readonly session = inject(SessionStore);
@@ -51,13 +51,6 @@ export class Shell {
 
   protected toggleMenu(): void {
     this.menuOpen.update((open) => !open);
-  }
-
-  /** Esc cierra el menú; si estaba abierto, ese Esc es suyo (el panel del tablero no lo toma). */
-  protected onEscape(event: Event): void {
-    if (!this.menuOpen()) return;
-    event.preventDefault();
-    this.closeMenu();
   }
 
   protected closeMenu(): void {

@@ -123,6 +123,23 @@ test.describe('desktop', () => {
     await expect(page).toHaveURL(/\/proyectos$/);
   });
 
+  test('después de cerrar, «adelante» reabre el panel y sigue respondiendo', async ({ page }) => {
+    await openBoard(page);
+    await cardLink(page, 'TK-2').click();
+    await expect(panel(page)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await page.goForward();
+    await expect(panelTitle(panel(page))).toHaveText('Login con Google');
+    // Otra tarjeta cambia el issue y Esc vuelve a cerrar.
+    await cardLink(page, 'TK-1').click();
+    await expect(page).toHaveURL(/\?issue=TK-1$/);
+    await panel(page).focus();
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/proyectos\/p-tk$/);
+  });
+
   test('cerrar con Esc vuelve a la posición de cuando se abrió el panel', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 420 });
     await openBoard(page);

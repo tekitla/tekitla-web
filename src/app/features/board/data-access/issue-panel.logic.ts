@@ -126,7 +126,7 @@ export function closeAction(state: unknown, leaving: unknown): CloseAction {
   return { kind: 'back', leaving: entryId(state) };
 }
 
-/** Ya se pidió «atrás» desde la entrada actual y todavía no llegó. */
+/** Ya se pidió «atrás» desde la entrada actual (del panel) y todavía no llegó. */
 export function isLeaving(state: unknown, leaving: unknown): boolean {
-  return leaving !== undefined && entryId(state) === leaving;
+  return leaving !== undefined && openedOverBoard(state) && entryId(state) === leaving;
 }

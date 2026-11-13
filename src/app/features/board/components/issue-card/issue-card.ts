@@ -86,13 +86,15 @@ export class IssueCard {
     'issues',
     this.issue().number,
   ]);
-  /** Destino del enlace como texto: sin armar un UrlTree por tarjeta. */
-  protected readonly href = computed(() => {
-    const project = `/proyectos/${encodeURIComponent(this.projectId())}`;
-    return this.openInPanel()
-      ? `${project}?issue=${encodeURIComponent(this.key())}`
-      : `${project}/issues/${this.issue().number}`;
-  });
+  /** Destino del enlace, con el mismo serializador que el resto del router. */
+  private readonly target = computed(() =>
+    this.openInPanel()
+      ? this.router.createUrlTree(['/proyectos', this.projectId()], {
+          queryParams: { issue: this.key() },
+        })
+      : this.router.createUrlTree(this.page()),
+  );
+  protected readonly href = computed(() => this.router.serializeUrl(this.target()));
 
   /** Clic común: navega en la app. Con modificador o botón del medio, el navegador. */
   protected onClick(event: MouseEvent): void {
@@ -101,7 +103,7 @@ export class IssueCard {
     }
     event.preventDefault();
     if (this.openInPanel()) this.opened.emit(this.issue().number);
-    else void this.router.navigateByUrl(this.href());
+    else void this.router.navigateByUrl(this.target());
   }
 
   protected discard(): void {

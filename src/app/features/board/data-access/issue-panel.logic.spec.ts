@@ -126,9 +126,12 @@ describe('closeAction', () => {
 });
 
 describe('isLeaving', () => {
-  it('solo mientras la entrada sigue siendo la que se deja', () => {
-    expect(isLeaving({ navigationId: 7 }, 7)).toBe(true);
-    expect(isLeaving({ navigationId: 8 }, 7)).toBe(false);
-    expect(isLeaving({ navigationId: 7 }, undefined)).toBe(false);
+  it('solo mientras la entrada del panel sigue siendo la que se deja', () => {
+    const entry = (navigationId: number) => ({ ...panelHistoryState(), navigationId });
+    expect(isLeaving(entry(7), 7)).toBe(true);
+    expect(isLeaving(entry(8), 7)).toBe(false);
+    expect(isLeaving(entry(7), undefined)).toBe(false);
+    // Una entrada sin la marca del tablero nunca se está dejando.
+    expect(isLeaving({ navigationId: 7 }, 7)).toBe(false);
   });
 });

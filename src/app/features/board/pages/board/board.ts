@@ -158,6 +158,8 @@ export class Board {
   private leaving: unknown = undefined;
   /** El próximo panel que se abra lo pidió el usuario: el foco va a él. */
   private focusNextPanel = false;
+  /** Tarjeta pedida mientras llegaba el «atrás» de cerrar: se abre al llegar. */
+  private pendingOpen: number | null = null;
 
   private setUpPanel(): void {
     // Al abrir: el foco va al panel. Al cerrar, si el foco se perdió (estaba
@@ -170,15 +172,24 @@ export class Board {
         const closedNumber = previous;
         const opening = number !== null && previous === null;
         previous = number;
+        // Se pide una vez: lo consume el próximo cambio del panel, abra o no.
+        const focusPanel = this.focusNextPanel;
+        this.focusNextPanel = false;
+        if (number === null) {
+          // Llegó el «atrás» de cerrar (o el panel se cerró de otra forma).
+          this.leaving = undefined;
+          const pending = this.pendingOpen;
+          this.pendingOpen = null;
+          if (pending !== null) this.openPanel(pending);
+        }
         afterNextRender(
           () => {
             if (opening) {
               // Solo si lo abrió el usuario: un `?issue=` que se resuelve al
-              // cargar no le saca el foco de donde esté.
-              if (this.focusNextPanel) {
+              // cargar, o «atrás»/«adelante», no le saca el foco de donde esté.
+              if (focusPanel) {
                 document.getElementById('board-panel')?.focus({ preventScroll: true });
               }
-              this.focusNextPanel = false;
               return;
             }
             const lost = !document.activeElement || document.activeElement === document.body;
@@ -238,8 +249,11 @@ export class Board {
   protected openPanel(number: number): void {
     if (!this.cardsOpenPanel() || this.panelNumber() === number) return;
     // Hay un «atrás» de cerrar en camino: reemplazar ahora caería en la entrada
-    // que se está dejando y el issue pedido se perdería.
-    if (isLeaving(this.location.getState(), this.leaving)) return;
+    // que se está dejando. Se abre cuando llegue.
+    if (isLeaving(this.location.getState(), this.leaving)) {
+      this.pendingOpen = number;
+      return;
+    }
     this.focusNextPanel = true;
     // Con `?issue=` en la URL (aunque todavía no se resuelva), se reemplaza.
     void this.showInPanel(number, !!this.issue());
@@ -285,6 +299,8 @@ export class Board {
 
   protected onPanelKeydown(event: KeyboardEvent): void {
     if (this.panelNumber() === null || event.defaultPrevented) return;
+    // El menú lateral abierto encima (pantallas medianas): ese Esc es del shell.
+    if (document.querySelector<HTMLElement>('.vrb-shell__scrim')?.checkVisibility()) return;
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     if (ownsKeyboard(event.target)) return;
     if (event.key === 'Escape') {
@@ -293,11 +309,11 @@ export class Board {
     } else if (
       (event.key === 'ArrowUp' || event.key === 'ArrowDown') &&
       // Con el foco en el panel (fuera de su contenido, que se desplaza con
-      // las flechas) o en una tarjeta. En el resto de la página las flechas
-      // siguen desplazándola.
+      // las flechas). En el resto de la página las flechas siguen
+      // desplazándola, y en una tarjeta no confunden con el issue abierto.
       event.target instanceof Element &&
       !event.target.closest('.board__panel-body') &&
-      !!event.target.closest('#board-panel, .board__kanban')
+      !!event.target.closest('#board-panel')
     ) {
       event.preventDefault();
       this.stepPanel(event.key === 'ArrowUp' ? -1 : 1);
