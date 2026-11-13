@@ -7,7 +7,7 @@ import type { ActorView } from '../../data-access/actors.logic';
 const TOOL_ICON: Record<AgentTool, IconName> = {
   AGENT_TOOL_UNSPECIFIED: 'bot',
   AGENT_TOOL_CLAUDE_CODE: 'terminal',
-  AGENT_TOOL_CODEX: 'bot',
+  AGENT_TOOL_CODEX: 'code',
   AGENT_TOOL_CLOUD: 'cloud',
   AGENT_TOOL_OTHER: 'bot',
 };
@@ -46,7 +46,7 @@ const TOOL_ICON: Record<AgentTool, IconName> = {
     }
 
     .actor-avatar--agent {
-      border-radius: 6px;
+      border-radius: var(--vrb-radius-check);
       background: var(--vrb-ink);
       color: var(--vrb-ink-fg);
     }

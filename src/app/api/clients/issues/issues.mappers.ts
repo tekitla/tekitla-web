@@ -167,8 +167,12 @@ export function toIssueEvent(raw: RawIssueEvent = {}): IssueEvent {
     createdAt: raw.createdAt ?? '',
     change: toChange(raw),
     agentId: raw.agentId ?? '',
-    // Sin el campo (backend anterior a v0.6.0): en vivo.
-    source: oneOf(raw.source, EVENT_SOURCES, 'EVENT_SOURCE_LIVE'),
+    // Sin el campo (backend anterior a v0.6.0): en vivo. Un valor que esta
+    // versión no conoce queda UNSPECIFIED, como los demás enums.
+    source:
+      raw.source === undefined
+        ? 'EVENT_SOURCE_LIVE'
+        : oneOf(raw.source, EVENT_SOURCES, 'EVENT_SOURCE_UNSPECIFIED'),
     sourceRef: raw.sourceRef ?? '',
   };
 }

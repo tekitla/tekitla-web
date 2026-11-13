@@ -60,7 +60,7 @@
 .issue-card__end {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   min-width: 0;
   margin-left: auto;
 }
@@ -68,7 +68,7 @@
 .issue-card__who {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   min-width: 0;
 }
 
@@ -92,8 +92,8 @@
 
 // ── Compacta (033) ───────────────────────────────────────────────────────
 .issue-card--compact {
-  gap: 4px;
-  padding: 8px 10px;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
 }
 
 .issue-card__row {
@@ -107,7 +107,7 @@
   }
 
   &--meta {
-    gap: 6px;
+    gap: var(--space-2);
     min-height: 20px;
     color: var(--vrb-muted-fg);
     font-size: 12px;
@@ -141,7 +141,7 @@
 .issue-card__label-dots {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--space-1);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -180,10 +180,10 @@
 }
 
 // «Mover» solo con el icono: el área táctil mínima la pone vrb.
-// Discreto: en compacta lo que se lee es el título.
+// Discreto: en compacta lo que se lee es el título. Es `vrb-button--icon`:
+// el área táctil mínima (ancho y alto) la pone vrb; el margen negativo evita
+// que la fila crezca.
 .issue-card__move--icon {
-  margin: -6px 0;
-  padding-inline: 4px;
+  margin: calc(-1 * var(--space-2)) 0;
   color: var(--vrb-muted-fg);
-  --ui-icon-size: 14px;
 }

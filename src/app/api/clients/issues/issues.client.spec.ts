@@ -439,6 +439,33 @@ describe('IssuesClient', () => {
     expect(events[0]).toMatchObject({ actorId: 'u1', createdAt: '' });
   });
 
+  it('el origen de un evento: sin el campo, en vivo; desconocido, UNSPECIFIED', () => {
+    let events: IssueEvent[] = [];
+    client.listIssueEvents('p1', 1).subscribe((res) => (events = res.events));
+    httpMock
+      .expectOne((r) => r.url === url('/v1/projects/p1/issues/1/events'))
+      .flush({
+        events: [
+          { id: 'e1', created: {} },
+          {
+            id: 'e2',
+            created: {},
+            source: 'EVENT_SOURCE_IMPORT_SYNC',
+            sourceRef: 'abc',
+            agentId: 'a1',
+          },
+          { id: 'e3', created: {}, source: 'EVENT_SOURCE_DEL_FUTURO' },
+        ],
+      });
+    expect(events.map((e) => e.source)).toEqual([
+      'EVENT_SOURCE_LIVE',
+      'EVENT_SOURCE_IMPORT_SYNC',
+      'EVENT_SOURCE_UNSPECIFIED',
+    ]);
+    expect(events[1]).toMatchObject({ sourceRef: 'abc', agentId: 'a1' });
+    expect(events[0]).toMatchObject({ sourceRef: '', agentId: '' });
+  });
+
   it('un issue trae su asignado y su clave de origen (vacíos si se omiten)', () => {
     let issues: Issue[] = [];
     client.listIssues('p1').subscribe((res) => (issues = res.issues));

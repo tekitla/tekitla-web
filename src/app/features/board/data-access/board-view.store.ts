@@ -1,4 +1,4 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, signal, untracked } from '@angular/core';
 
 import {
   type BoardView,
@@ -24,7 +24,8 @@ export class BoardViewStore {
 
   /** Carga lo recordado del proyecto (una vez por proyecto). */
   use(projectId: string): void {
-    if (!projectId || projectId === this._projectId()) return;
+    // Sin leer `_projectId` como dependencia: `use` corre dentro de un effect.
+    if (!projectId || projectId === untracked(this._projectId)) return;
     this._projectId.set(projectId);
     this._view.set(parseStoredView(read(viewStorageKey(projectId))));
   }

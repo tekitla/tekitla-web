@@ -97,6 +97,22 @@ describe('ActorsStore', () => {
     expect(store.view('a1')).toBeNull();
   });
 
+  it('un pedido en vuelo de otra sesión se descarta y se pide de nuevo', () => {
+    const session = TestBed.inject(SessionStore);
+    session.setUser({ uid: 'uid-1', email: null, displayName: 'Ana Torres' });
+    const first = new Subject<Actor[]>();
+    listActors.mockReturnValueOnce(first);
+    store.load();
+
+    session.setUser({ uid: 'uid-2', email: null, displayName: 'Luis' });
+    listActors.mockReturnValueOnce(of([{ ...agent, id: 'b1' }]));
+    store.load();
+    expect(listActors).toHaveBeenCalledTimes(2);
+    first.next([agent]);
+    expect(store.view('b1')?.kind).toBe('agent');
+    expect(store.view('a1')).toBe(UNKNOWN_ACTOR);
+  });
+
   it('el nombre de la persona sale de la sesión cuando el servicio no lo trae', () => {
     TestBed.inject(SessionStore).setUser({ uid: 'uid-1', email: null, displayName: 'Ana Torres' });
     listActors.mockReturnValue(of([person, agent]));

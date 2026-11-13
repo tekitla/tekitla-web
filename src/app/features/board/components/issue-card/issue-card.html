@@ -52,6 +52,8 @@
             >
             <app-actor-avatar [actor]="who" size="sm" />
           </span>
+        } @else if (!issue().assigneeActorId) {
+          <span class="u-visually-hidden">{{ 'board.assignee.none' | translate }}</span>
         }
       </span>
     </div>
@@ -119,6 +121,7 @@
     type="button"
     class="vrb-button vrb-button--ghost vrb-button--sm issue-card__move"
     [class.issue-card__move--icon]="compact"
+    [class.vrb-button--icon]="compact"
     [cdkMenuTriggerFor]="moveMenu"
     [disabled]="pending()"
     [attr.aria-label]="'board.card.moveLabel' | translate: { issue: key() }"

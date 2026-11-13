@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Actor } from '@/app/api';
-import { initialsOf, toActorViews } from './actors.logic';
+import { toActorViews } from './actors.logic';
 
 const actor = (patch: Partial<Actor>): Actor => ({
   id: 'x',
@@ -13,21 +13,6 @@ const actor = (patch: Partial<Actor>): Actor => ({
   revokedAt: '',
   userId: '',
   ...patch,
-});
-
-describe('initialsOf', () => {
-  it('dos palabras, una, correo, vacío', () => {
-    expect(initialsOf('Ana Torres')).toBe('AT');
-    expect(initialsOf('  luis   m. pérez ')).toBe('LM');
-    expect(initialsOf('Codex PC-01')).toBe('CP');
-    expect(initialsOf('victor')).toBe('VI');
-    expect(initialsOf('ana.torres@example.com')).toBe('AT');
-    expect(initialsOf('')).toBe('?');
-  });
-
-  it('respeta letras fuera de ASCII', () => {
-    expect(initialsOf('óscar ñúñez')).toBe('ÓÑ');
-  });
 });
 
 describe('toActorViews', () => {
@@ -79,5 +64,19 @@ describe('toActorViews', () => {
       displayName: null,
     });
     expect(views.get('p')).toMatchObject({ name: 'ana@example.com', initials: 'AN' });
+  });
+
+  it('iniciales como el avatar del shell, también con una @ en el nombre', () => {
+    const views = toActorViews(
+      [
+        actor({ id: 'a', displayName: 'Ana @ QA' }),
+        actor({ id: 'b', displayName: 'victor' }),
+        actor({ id: 'c', kind: 'ACTOR_KIND_AGENT', displayName: 'Codex PC-01' }),
+      ],
+      null,
+    );
+    expect(views.get('a')?.initials).toBe('A@');
+    expect(views.get('b')?.initials).toBe('VI');
+    expect(views.get('c')?.initials).toBe('CP');
   });
 });

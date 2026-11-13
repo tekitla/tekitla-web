@@ -8,7 +8,7 @@ import type { Issue, Label, Status } from '@/app/api';
 import { Icon } from '@/app/ui/components/icon/icon';
 import type { ActorView } from '../../data-access/actors.logic';
 import { LABEL_TONE, issueKey, statusTone } from '../../data-access/board.logic';
-import type { ViewDensity } from '../../data-access/board-view';
+import { DEFAULT_VIEW, type ViewDensity } from '../../data-access/board-view';
 import { ActorAvatar } from '../actor-avatar/actor-avatar';
 import { KANBAN_PRIORITY, PRIORITY_LEVEL } from '../priority-badge/priority-badge';
 
@@ -71,7 +71,7 @@ export class IssueCard {
   readonly current = input(false);
   /** Asignado: `null` si no tiene o todavía no se sabe quién es. */
   readonly assignee = input<ActorView | null>(null);
-  readonly density = input<ViewDensity>('comoda');
+  readonly density = input<ViewDensity>(DEFAULT_VIEW.density);
 
   readonly move = output<MoveRequest>();
   /** Pedido de abrir el issue en el panel del tablero (`openInPanel`). */

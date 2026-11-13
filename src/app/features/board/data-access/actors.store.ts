@@ -29,6 +29,7 @@ export class ActorsStore {
 
   private readonly _loaded = signal<Loaded | null>(null);
   private request: Subscription | null = null;
+  private requestUid = '';
 
   private readonly uid = computed(() => this.session.user()?.uid ?? '');
   /** Lo cargado, solo si es de la sesión actual. */
@@ -41,10 +42,15 @@ export class ActorsStore {
   readonly loaded = computed(() => this.current() !== null);
   readonly byId = computed(() => toActorViews(this.current()?.actors ?? [], this.session.user()));
 
-  /** Pide la lista (si ya hay un pedido en vuelo, lo deja seguir). */
+  /**
+   * Pide la lista. Si ya hay un pedido en vuelo para la misma sesión, lo deja
+   * seguir; si es de otra (se salió y entró otra cuenta), lo descarta.
+   */
   load(): void {
-    if (this.request && !this.request.closed) return;
     const uid = this.uid();
+    if (this.request && !this.request.closed && this.requestUid === uid) return;
+    this.request?.unsubscribe();
+    this.requestUid = uid;
     this.request = this.client
       .listActors(true)
       .pipe(takeUntilDestroyed(this.destroyRef))
