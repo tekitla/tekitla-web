@@ -12,7 +12,14 @@ import {
   untracked,
 } from '@angular/core';
 import { Location } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  NavigationCancel,
+  NavigationError,
+  NavigationStart,
+  Router,
+  RouterLink,
+} from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import type { Issue, Status } from '@/app/api';
@@ -170,23 +177,16 @@ export class Board {
       const number = this.panelNumber();
       untracked(() => {
         const closedNumber = previous;
-        const opening = number !== null && previous === null;
         previous = number;
         // Se pide una vez: lo consume el próximo cambio del panel, abra o no.
         const focusPanel = this.focusNextPanel;
         this.focusNextPanel = false;
-        if (number === null) {
-          // Llegó el «atrás» de cerrar (o el panel se cerró de otra forma).
-          this.leaving = undefined;
-          const pending = this.pendingOpen;
-          this.pendingOpen = null;
-          if (pending !== null) this.openPanel(pending);
-        }
         afterNextRender(
           () => {
-            if (opening) {
-              // Solo si lo abrió el usuario: un `?issue=` que se resuelve al
-              // cargar, o «atrás»/«adelante», no le saca el foco de donde esté.
+            if (number !== null) {
+              // Solo si lo pidió el usuario (abrir o cambiar con una tarjeta):
+              // un `?issue=` que se resuelve al cargar, o «atrás»/«adelante»,
+              // no le saca el foco de donde esté.
               if (focusPanel) {
                 document.getElementById('board-panel')?.focus({ preventScroll: true });
               }
@@ -203,6 +203,34 @@ export class Board {
           { injector: this.injector },
         );
       });
+    });
+
+    // Llegó el «atrás» de cerrar: la URL ya no tiene `?issue=` (no basta con que
+    // el panel no se vea: al angostar la ventana también se oculta). Si se
+    // pidió una tarjeta mientras tanto, se abre ahora.
+    effect(() => {
+      if (this.requestedNumber() !== null) return;
+      untracked(() => {
+        this.leaving = undefined;
+        const pending = this.pendingOpen;
+        this.pendingOpen = null;
+        if (pending !== null) this.openPanel(pending);
+      });
+    });
+
+    // Un «atrás» (el de cerrar) que se cancela o falla deja la entrada del
+    // panel: se puede volver a cerrar y lo pendiente se descarta.
+    let popstate = -1;
+    this.router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (event instanceof NavigationStart && event.navigationTrigger === 'popstate') {
+        popstate = event.id;
+      } else if (
+        (event instanceof NavigationCancel || event instanceof NavigationError) &&
+        event.id === popstate
+      ) {
+        this.leaving = undefined;
+        this.pendingOpen = null;
+      }
     });
 
     // Un enlace `?issue=` abierto en el celular va a la página completa (CU-033-8).
@@ -256,7 +284,10 @@ export class Board {
     }
     this.focusNextPanel = true;
     // Con `?issue=` en la URL (aunque todavía no se resuelva), se reemplaza.
-    void this.showInPanel(number, !!this.issue());
+    void this.showInPanel(number, !!this.issue()).then((navigated) => {
+      // Navegación cancelada o sin cambios: el pedido de foco no queda para después.
+      if (!navigated) this.focusNextPanel = false;
+    });
   }
 
   /** Cierra el panel: «atrás» si lo abrió el tablero; si no, saca `?issue=`. */
@@ -297,12 +328,22 @@ export class Board {
     );
   }
 
+  /**
+   * El menú lateral del shell está abierto encima del contenido (pantallas
+   * medianas, con su fondo oscuro a la vista): Esc y las flechas son del menú.
+   */
+  private sidebarOverlayOpen(): boolean {
+    const scrim = document.querySelector<HTMLElement>(
+      '.vrb-shell[data-sidebar-open] .vrb-shell__scrim',
+    );
+    return !!scrim && getComputedStyle(scrim).display !== 'none';
+  }
+
   protected onPanelKeydown(event: KeyboardEvent): void {
     if (this.panelNumber() === null || event.defaultPrevented) return;
-    // El menú lateral abierto encima (pantallas medianas): ese Esc es del shell.
-    if (document.querySelector<HTMLElement>('.vrb-shell__scrim')?.checkVisibility()) return;
+    if (event.key !== 'Escape' && event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-    if (ownsKeyboard(event.target)) return;
+    if (ownsKeyboard(event.target) || this.sidebarOverlayOpen()) return;
     if (event.key === 'Escape') {
       event.preventDefault();
       this.closePanel();

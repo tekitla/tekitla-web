@@ -134,7 +134,10 @@ test.describe('desktop', () => {
     // Otra tarjeta cambia el issue y Esc vuelve a cerrar.
     await cardLink(page, 'TK-1').click();
     await expect(page).toHaveURL(/\?issue=TK-1$/);
-    await panel(page).focus();
+    // Cambiar con el mouse deja el foco en el panel: las flechas siguen andando.
+    await expect(panel(page)).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(page).toHaveURL(/\?issue=TK-3$/);
     await page.keyboard.press('Escape');
     await expect(panel(page)).toHaveCount(0);
     await expect(page).toHaveURL(/\/proyectos\/p-tk$/);
