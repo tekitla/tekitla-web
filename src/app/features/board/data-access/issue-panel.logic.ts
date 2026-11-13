@@ -86,7 +86,41 @@ export function openedOverBoard(state: unknown): boolean {
  * el router guarda en cada entrada las vuelve a escribir él al navegar.)
  */
 export function withPanelMark(state: unknown, mark: boolean): Record<string, unknown> {
-  const current = state && typeof state === 'object' ? (state as Record<string, unknown>) : {};
-  const { tkPanel: _mark, ...rest } = current;
+  const rest = Object.fromEntries(
+    Object.entries(asRecord(state)).filter(([key]) => key !== 'tkPanel' && !isRouterKey(key)),
+  );
   return mark ? { ...rest, ...panelHistoryState() } : rest;
+}
+
+/** Claves que el router escribe en cada entrada (`navigationId` y las `ɵ…`). */
+function isRouterKey(key: string): boolean {
+  return key === 'navigationId' || key.startsWith('ɵ');
+}
+
+function asRecord(state: unknown): Record<string, unknown> {
+  return state && typeof state === 'object' ? (state as Record<string, unknown>) : {};
+}
+
+/** Id de la entrada del historial (lo escribe el router en cada navegación). */
+function entryId(state: unknown): unknown {
+  return asRecord(state)['navigationId'];
+}
+
+export type CloseAction =
+  | { readonly kind: 'back'; readonly leaving: unknown }
+  | { readonly kind: 'replace' }
+  | { readonly kind: 'ignore' };
+
+/**
+ * Qué hace «cerrar el panel» con el `history.state` actual:
+ * - la entrada la abrió el tablero: «atrás» (y se recuerda cuál se deja);
+ * - ya se pidió «atrás» desde esta misma entrada y todavía no llegó (`back()`
+ *   es asíncrono): nada, si no un segundo Esc saldría del tablero;
+ * - si no (enlace directo, recarga): sacar `?issue=` reemplazando la URL.
+ */
+export function closeAction(state: unknown, leaving: unknown): CloseAction {
+  if (!openedOverBoard(state)) return { kind: 'replace' };
+  const id = entryId(state);
+  if (leaving !== undefined && id === leaving) return { kind: 'ignore' };
+  return { kind: 'back', leaving: id };
 }

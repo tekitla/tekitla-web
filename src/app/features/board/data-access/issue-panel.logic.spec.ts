@@ -6,6 +6,7 @@ import {
   neighborInColumn,
   openedOverBoard,
   ownsKeyboard,
+  closeAction,
   panelHistoryState,
   withPanelMark,
   parseIssueParam,
@@ -90,8 +91,8 @@ describe('openedOverBoard', () => {
 });
 
 describe('withPanelMark', () => {
-  it('pone la marca y conserva lo demás', () => {
-    const state = withPanelMark({ otro: 1 }, true);
+  it('pone la marca y conserva lo demás, sin las claves del router', () => {
+    const state = withPanelMark({ otro: 1, navigationId: 4, ɵrouterPageId: 2 }, true);
     expect(state).toEqual({ otro: 1, ...panelHistoryState() });
     expect(openedOverBoard(state)).toBe(true);
   });
@@ -99,5 +100,26 @@ describe('withPanelMark', () => {
   it('quita la marca y conserva lo demás', () => {
     expect(withPanelMark({ otro: 1, ...panelHistoryState() }, false)).toEqual({ otro: 1 });
     expect(withPanelMark(null, false)).toEqual({});
+  });
+});
+
+describe('closeAction', () => {
+  const panelEntry = (navigationId: number) => ({ ...panelHistoryState(), navigationId });
+
+  it('entrada abierta por el tablero: «atrás», recordando cuál se deja', () => {
+    expect(closeAction(panelEntry(7), undefined)).toEqual({ kind: 'back', leaving: 7 });
+  });
+
+  it('un segundo cierre desde la misma entrada (el «atrás» no llegó) no hace nada', () => {
+    expect(closeAction(panelEntry(7), 7)).toEqual({ kind: 'ignore' });
+  });
+
+  it('desde otra entrada del panel (se volvió a abrir) vuelve a cerrar', () => {
+    expect(closeAction(panelEntry(9), 7)).toEqual({ kind: 'back', leaving: 9 });
+  });
+
+  it('enlace directo o recarga: reemplaza la URL', () => {
+    expect(closeAction({ navigationId: 3 }, undefined)).toEqual({ kind: 'replace' });
+    expect(closeAction(null, 7)).toEqual({ kind: 'replace' });
   });
 });
