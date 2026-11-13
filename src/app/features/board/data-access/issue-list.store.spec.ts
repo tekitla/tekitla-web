@@ -21,6 +21,8 @@ const issue = (number: number, patch: Partial<Issue> = {}): Issue => ({
   statusId: 'todo',
   labelIds: [],
   discard: null,
+  assigneeActorId: '',
+  sourceKey: '',
   ...patch,
 });
 

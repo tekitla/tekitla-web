@@ -1,6 +1,10 @@
 import type {
+  Actor,
+  ActorKind,
+  AgentTool,
   Comment,
   DiscardInfo,
+  EventSource,
   Issue,
   IssueChange,
   IssueEvent,
@@ -10,6 +14,7 @@ import type {
   PageResponse,
   Priority,
   Project,
+  RawActor,
   RawComment,
   RawDiscardInfo,
   RawIssue,
@@ -48,6 +53,28 @@ const LABEL_COLOR_VALUES: readonly LabelColor[] = [
   'LABEL_COLOR_BRAND',
 ];
 
+const ACTOR_KINDS: readonly ActorKind[] = [
+  'ACTOR_KIND_UNSPECIFIED',
+  'ACTOR_KIND_PERSON',
+  'ACTOR_KIND_AGENT',
+];
+
+const AGENT_TOOLS: readonly AgentTool[] = [
+  'AGENT_TOOL_UNSPECIFIED',
+  'AGENT_TOOL_CLAUDE_CODE',
+  'AGENT_TOOL_CODEX',
+  'AGENT_TOOL_CLOUD',
+  'AGENT_TOOL_OTHER',
+];
+
+const EVENT_SOURCES: readonly EventSource[] = [
+  'EVENT_SOURCE_UNSPECIFIED',
+  'EVENT_SOURCE_LIVE',
+  'EVENT_SOURCE_IMPORT_HISTORY',
+  'EVENT_SOURCE_IMPORT_FILE',
+  'EVENT_SOURCE_IMPORT_SYNC',
+];
+
 /**
  * grpc-gateway omite los campos con valor por defecto: ausente = default del
  * proto ('' / 0 / false / primer valor del enum / lista vacía). Un enum
@@ -82,6 +109,8 @@ export function toIssue(raw: RawIssue = {}): Issue {
     statusId: raw.statusId ?? '',
     labelIds: raw.labelIds ?? [],
     discard: raw.discard ? toDiscardInfo(raw.discard) : null,
+    assigneeActorId: raw.assigneeActorId ?? '',
+    sourceKey: raw.sourceKey ?? '',
   };
 }
 
@@ -116,6 +145,7 @@ export function toLabel(raw: RawLabel = {}): Label {
     projectId: raw.projectId ?? '',
     name: raw.name ?? '',
     color: toColor(raw.color),
+    countsAsValue: raw.countsAsValue ?? false,
   };
 }
 
@@ -136,6 +166,14 @@ export function toIssueEvent(raw: RawIssueEvent = {}): IssueEvent {
     actorId: raw.actorId ?? '',
     createdAt: raw.createdAt ?? '',
     change: toChange(raw),
+    agentId: raw.agentId ?? '',
+    // Sin el campo (backend anterior a v0.6.0): en vivo. Un valor que esta
+    // versión no conoce queda UNSPECIFIED, como los demás enums.
+    source:
+      raw.source === undefined
+        ? 'EVENT_SOURCE_LIVE'
+        : oneOf(raw.source, EVENT_SOURCES, 'EVENT_SOURCE_UNSPECIFIED'),
+    sourceRef: raw.sourceRef ?? '',
   };
 }
 
@@ -203,6 +241,19 @@ function toChange(raw: RawIssueEvent): IssueChange {
   if (raw.descriptionChanged) return { kind: 'descriptionChanged' };
   if (raw.created) return { kind: 'created' };
   return { kind: 'unknown' };
+}
+
+export function toActor(raw: RawActor = {}): Actor {
+  return {
+    id: raw.id ?? '',
+    kind: oneOf(raw.kind, ACTOR_KINDS, 'ACTOR_KIND_UNSPECIFIED'),
+    displayName: raw.displayName ?? '',
+    ownerActorId: raw.ownerActorId ?? '',
+    tool: oneOf(raw.tool, AGENT_TOOLS, 'AGENT_TOOL_UNSPECIFIED'),
+    createdAt: raw.createdAt ?? '',
+    revokedAt: raw.revokedAt ?? '',
+    userId: raw.userId ?? '',
+  };
 }
 
 export function toPage(raw: RawPageResponse = {}): PageResponse {

@@ -7,6 +7,17 @@
         <p class="vrb-page-header__description">{{ project.description }}</p>
       }
       <div class="vrb-page-header__actions">
+        <button
+          type="button"
+          class="vrb-button vrb-button--outline vrb-button--sm board__link"
+          [cdkMenuTriggerFor]="viewMenu"
+        >
+          <ui-icon name="rows" />{{ 'board.view.button' | translate }}
+          <span class="u-visually-hidden">
+            ({{ 'board.view.density' | translate }}:
+            {{ 'board.view.' + view.density() | translate }})
+          </span>
+        </button>
         <a class="vrb-button vrb-button--outline vrb-button--sm board__link" routerLink="issues">
           <ui-icon name="list" />{{ 'board.list' | translate }}
         </a>
@@ -198,6 +209,8 @@
                     [pending]="store.pending().has(issue.number)"
                     [openInPanel]="cardsOpenPanel()"
                     [current]="panelNumber() === issue.number"
+                    [assignee]="actors.view(issue.assigneeActorId)"
+                    [density]="view.density()"
                     (move)="onMove($event)"
                     (opened)="openPanel($event)"
                   />
@@ -300,3 +313,24 @@
     }
   </div>
 </section>
+
+<ng-template #viewMenu>
+  <div class="vrb-menu board__view-menu" cdkMenu [attr.aria-label]="'board.view.label' | translate">
+    <div cdkMenuGroup role="group" aria-labelledby="board-view-density">
+      <p id="board-view-density" class="vrb-menu__label">{{ 'board.view.density' | translate }}</p>
+      @for (density of densities; track density) {
+        <button
+          type="button"
+          class="vrb-menu__item"
+          cdkMenuItemRadio
+          [cdkMenuItemChecked]="view.density() === density"
+          (cdkMenuItemTriggered)="view.update({ density })"
+        >
+          {{ 'board.view.' + density | translate }}
+        </button>
+      }
+    </div>
+    <div class="vrb-menu__separator" role="separator"></div>
+    <p class="board__view-note">{{ 'board.view.remembered' | translate }}</p>
+  </div>
+</ng-template>
