@@ -12,7 +12,8 @@ import {
   untracked,
 } from '@angular/core';
 import { Location } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationStart, Router, RouterLink, Scroll } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import type { Issue, Status } from '@/app/api';
@@ -26,8 +27,8 @@ import {
   neighborInColumn,
   openedOverBoard,
   ownsKeyboard,
-  panelHistoryState,
   parseIssueParam,
+  withPanelMark,
 } from '../../data-access/issue-panel.logic';
 import { IssueDetail } from '../issue-detail/issue-detail';
 import { boardNav } from '../../board-nav';
@@ -86,15 +87,12 @@ export class Board {
   /** Query param `?issue=RND-231`: el issue abierto en el panel lateral. */
   readonly issue = input<string>();
 
-  /**
-   * El issue pedido en `?issue=`. Null hasta conocer la clave del proyecto:
-   * así `?issue=3` y `?issue=TK-3` se comportan igual mientras carga, y una
-   * clave de otro proyecto nunca abre un issue de este.
-   */
-  private readonly requestedNumber = computed(() => {
-    const projectKey = this.store.projectKey();
-    return projectKey ? parseIssueParam(this.issue(), projectKey) : null;
-  });
+  /** El issue pedido en `?issue=` (null hasta conocer la clave del proyecto). */
+  private readonly requestedNumber = computed(() =>
+    parseIssueParam(this.issue(), this.store.projectKey()),
+  );
+  /** Las tarjetas abren el panel: desktop y con la clave del proyecto (para la URL). */
+  protected readonly cardsOpenPanel = computed(() => !this.isMobile() && !!this.store.projectKey());
   /** Número del issue del panel. En móvil no hay panel (página completa). */
   protected readonly panelNumber = computed(() =>
     this.isMobile() ? null : this.requestedNumber(),
@@ -152,7 +150,24 @@ export class Board {
   // y el router no lleva el tablero arriba. Con «atrás» (incluido `Esc`) el
   // router vuelve a la posición de cuando se abrió el panel.
 
+  /** Posición a conservar en el próximo «atrás» que hace `closePanel`. */
+  private keepScrollOnBack: readonly [number, number] | null = null;
+
   private setUpPanel(): void {
+    // El router hace su scroll al avisar `Scroll`, en el mismo tick en que lo
+    // reciben los suscriptores de `router.events`: una microtarea corre
+    // después y antes de pintar, sin salto visible. Solo para el «atrás» de
+    // `closePanel` (el del navegador sigue con la posición del router).
+    this.router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (event instanceof NavigationStart && event.navigationTrigger !== 'popstate') {
+        this.keepScrollOnBack = null;
+      } else if (event instanceof Scroll && this.keepScrollOnBack) {
+        const [x, y] = this.keepScrollOnBack;
+        this.keepScrollOnBack = null;
+        queueMicrotask(() => window.scrollTo(x, y));
+      }
+    });
+
     // Al abrir: el foco va al panel. Al cerrar, si el foco se perdió (estaba
     // en el panel), vuelve a la tarjeta; si ya no está en el tablero (se
     // descartó o pasó a una columna oculta), a la primera.
@@ -212,21 +227,25 @@ export class Board {
       queryParamsHandling: 'merge',
       replaceUrl,
       // Al reemplazar, la entrada conserva su marca: cerrar hace lo mismo que antes.
-      state: replaceUrl && !this.overBoard() ? {} : panelHistoryState(),
+      state: withPanelMark(this.location.getState(), !replaceUrl || this.overBoard()),
       scroll: 'manual',
     });
   }
 
   /** Clic en una tarjeta (desktop). La abierta no hace nada. */
   protected openPanel(number: number): void {
-    const open = this.panelNumber();
-    if (open === number) return;
-    void this.showInPanel(number, open !== null);
+    if (!this.store.projectKey() || this.panelNumber() === number) return;
+    // Con `?issue=` en la URL (aunque todavía no se resuelva), se reemplaza.
+    void this.showInPanel(number, !!this.issue());
   }
 
   /** Cierra el panel: «atrás» si lo abrió el tablero; si no, saca `?issue=`. */
   protected closePanel(): void {
     if (this.overBoard()) {
+      // «Atrás» deja que el router vuelva a la posición de cuando se abrió el
+      // panel; al cerrar con Esc o con el botón se queda donde está ahora
+      // (lo que se desplazó con el panel abierto no se pierde).
+      this.keepScrollOnBack = [window.scrollX, window.scrollY];
       this.location.back();
       return;
     }

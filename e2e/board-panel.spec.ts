@@ -93,15 +93,32 @@ test.describe('desktop', () => {
       window.addEventListener('scroll', () => w.__ys.push(Math.round(window.scrollY)));
     });
 
-    await cardLink(page, 'TK-1').click();
+    // TK-3 está entera a la vista: el clic no desplaza la página por su cuenta.
+    await cardLink(page, 'TK-3').click();
     await expect(panel(page)).toBeVisible();
-    await page.keyboard.press('ArrowDown');
-    await expect(page).toHaveURL(/\?issue=TK-3$/);
+    await page.keyboard.press('ArrowUp');
+    await expect(page).toHaveURL(/\?issue=TK-1$/);
     await page.keyboard.press('Escape');
     await expect(panel(page)).toHaveCount(0);
     await expect.poll(scrollY).toBe(120);
     const ys = await page.evaluate(() => (window as unknown as { __ys: number[] }).__ys);
     expect(ys.filter((y) => y !== 120)).toEqual([]);
+  });
+
+  test('lo que se desplaza con el panel abierto se conserva al cerrar con Esc', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 420 });
+    await openBoard(page);
+    const scrollY = () => page.evaluate(() => Math.round(window.scrollY));
+    await cardLink(page, 'TK-3').click();
+    await expect(panel(page)).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, 150));
+    await expect.poll(scrollY).toBe(150);
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/proyectos\/p-tk$/);
+    await expect.poll(scrollY).toBe(150);
   });
 
   test('después de recargar, cerrar saca ?issue= sin salir de la página', async ({ page }) => {

@@ -7,6 +7,7 @@ import {
   openedOverBoard,
   ownsKeyboard,
   panelHistoryState,
+  withPanelMark,
   parseIssueParam,
 } from './issue-panel.logic';
 
@@ -24,8 +25,9 @@ describe('parseIssueParam', () => {
     expect(parseIssueParam('TK-3', 'RND')).toBeNull();
   });
 
-  it('mientras no se conoce la clave del proyecto, una clave no abre nada', () => {
+  it('mientras no se conoce la clave del proyecto no abre nada, ni con número', () => {
     expect(parseIssueParam('TK-3', '')).toBeNull();
+    expect(parseIssueParam('3', '')).toBeNull();
   });
 
   it('ignora lo vacío o inválido', () => {
@@ -84,5 +86,18 @@ describe('openedOverBoard', () => {
     expect(openedOverBoard({ tkPanel: true })).toBe(false);
     expect(openedOverBoard({ navigationId: 3 })).toBe(false);
     expect(openedOverBoard(null)).toBe(false);
+  });
+});
+
+describe('withPanelMark', () => {
+  it('pone la marca y conserva lo demás', () => {
+    const state = withPanelMark({ otro: 1, navigationId: 4 }, true);
+    expect(state).toMatchObject({ otro: 1, navigationId: 4 });
+    expect(openedOverBoard(state)).toBe(true);
+  });
+
+  it('quita la marca y conserva lo demás', () => {
+    expect(withPanelMark({ otro: 1, ...panelHistoryState() }, false)).toEqual({ otro: 1 });
+    expect(withPanelMark(null, false)).toEqual({});
   });
 });

@@ -8,16 +8,17 @@ import type { BoardColumn } from './board.logic';
 /**
  * Número del issue a partir del query param. Acepta la clave completa
  * (`RND-231`, sin importar mayúsculas) o solo el número (`231`). Una clave de
- * otro proyecto, o algo que no es un número positivo, no abre nada. Con clave,
- * hace falta saber la del proyecto: mientras carga (`''`) no abre nada, así un
- * `TK-3` en el tablero de RND no abre RND-3.
+ * otro proyecto, o algo que no es un número positivo, no abre nada. Sin la
+ * clave del proyecto (todavía cargando: `''`) no abre nada, ni con número: así
+ * `?issue=3` y `?issue=TK-3` se comportan igual, y un `TK-3` en el tablero de
+ * RND nunca abre RND-3.
  */
 export function parseIssueParam(
   value: string | null | undefined,
   projectKey: string,
 ): number | null {
   const raw = value?.trim();
-  if (!raw) return null;
+  if (!raw || !projectKey) return null;
   const match = /^(?:([A-Za-z][A-Za-z0-9]*)-)?(\d+)$/.exec(raw);
   if (!match) return null;
   const [, key, digits] = match;
@@ -77,4 +78,14 @@ export function openedOverBoard(state: unknown): boolean {
     typeof state === 'object' &&
     (state as Record<string, unknown>)['tkPanel'] === DOCUMENT_ID
   );
+}
+
+/**
+ * `history.state` para una navegación del panel: conserva lo demás que tenga
+ * la entrada actual y pone o quita la marca del tablero.
+ */
+export function withPanelMark(state: unknown, mark: boolean): Record<string, unknown> {
+  const current = state && typeof state === 'object' ? (state as Record<string, unknown>) : {};
+  const { tkPanel: _mark, ...rest } = current;
+  return mark ? { ...rest, ...panelHistoryState() } : rest;
 }

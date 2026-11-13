@@ -196,7 +196,7 @@
                     [statuses]="store.statuses()"
                     [labelsById]="store.labelsById()"
                     [pending]="store.pending().has(issue.number)"
-                    [openInPanel]="!isMobile()"
+                    [openInPanel]="cardsOpenPanel()"
                     [current]="panelNumber() === issue.number"
                     (move)="onMove($event)"
                     (opened)="openPanel($event)"
