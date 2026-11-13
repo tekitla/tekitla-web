@@ -131,6 +131,30 @@
       "next": "Issue siguiente de la columna (↓)",
       "fullPage": "Abrir en página completa",
       "close": "Cerrar el detalle (Esc)"
+    },
+    "assignee": {
+      "label": "Asignado",
+      "none": "Sin asignar",
+      "unknown": "Otra persona",
+      "noName": "Persona sin nombre",
+      "agent": "{{name}}, agente de {{tool}}",
+      "agentOf": "{{name}}, agente de {{tool}} de {{owner}}",
+      "revoked": "revocado",
+      "tool": {
+        "AGENT_TOOL_UNSPECIFIED": "otra herramienta",
+        "AGENT_TOOL_CLAUDE_CODE": "Claude Code",
+        "AGENT_TOOL_CODEX": "Codex",
+        "AGENT_TOOL_CLOUD": "la nube",
+        "AGENT_TOOL_OTHER": "otra herramienta"
+      }
+    },
+    "view": {
+      "button": "Vista",
+      "label": "Vista del tablero",
+      "density": "Densidad",
+      "comoda": "Cómoda",
+      "compacta": "Compacta",
+      "remembered": "Se recuerda en este proyecto."
     }
   },
   "issue": {

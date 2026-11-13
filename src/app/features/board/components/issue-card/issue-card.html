@@ -1,24 +1,103 @@
+@let compact = density() === 'compacta';
+@let who = assignee();
+@let toolName = who ? ('board.assignee.tool.' + who.tool | translate) : '';
+@let whoName =
+  !who
+    ? ''
+    : who.kind === 'agent'
+      ? ((who.ownerName ? 'board.assignee.agentOf' : 'board.assignee.agent')
+        | translate: { name: who.name, tool: toolName, owner: who.ownerName })
+      : who.kind === 'unknown'
+        ? ('board.assignee.unknown' | translate)
+        : who.name || ('board.assignee.noName' | translate);
+@let whoText = who?.revoked ? whoName + ' · ' + ('board.assignee.revoked' | translate) : whoName;
 <article
   class="vrb-kanban-card issue-card"
+  [class.issue-card--compact]="compact"
   [class.issue-card--pending]="pending()"
   [class.issue-card--current]="current()"
   [attr.data-priority]="kanbanPriority()"
   [attr.aria-busy]="pending() || null"
 >
-  <div class="issue-card__top">
-    <span class="vrb-kanban-card__code">{{ key() }}</span>
-    <button
-      type="button"
-      class="vrb-button vrb-button--ghost vrb-button--sm issue-card__move"
-      [cdkMenuTriggerFor]="moveMenu"
-      [disabled]="pending()"
-      [attr.aria-label]="'board.card.moveLabel' | translate: { issue: key() }"
-    >
-      <ui-icon name="move" />
-      <span aria-hidden="true">{{ 'board.card.move' | translate }}</span>
-    </button>
-  </div>
+  @if (compact) {
+    <div class="issue-card__row issue-card__row--title">
+      <span class="issue-card__dot" aria-hidden="true"></span>
+      <span class="vrb-kanban-card__code" aria-hidden="true">{{ key() }}</span>
+      <ng-container [ngTemplateOutlet]="link" />
+    </div>
+    <div class="issue-card__row issue-card__row--meta">
+      <span class="u-visually-hidden">
+        {{ 'issue.priorityLabel' | translate }}: {{ 'issue.priority.' + level() | translate }}
+      </span>
+      @if (labels().length) {
+        <ul class="issue-card__label-dots" [attr.aria-label]="'issue.labels' | translate">
+          @for (label of labels(); track label.id) {
+            <li
+              [class]="'issue-card__label-dot issue-card__label-dot--' + labelTone[label.color]"
+              [title]="label.name"
+            >
+              <span class="u-visually-hidden">{{ label.name }}</span>
+            </li>
+          }
+        </ul>
+      }
+      <span class="issue-card__end">
+        <ng-container [ngTemplateOutlet]="moveButton" />
+        @if (who) {
+          <span class="issue-card__who" [title]="whoText">
+            <span class="u-visually-hidden"
+              >{{ 'board.assignee.label' | translate }}: {{ whoText }}</span
+            >
+            <app-actor-avatar [actor]="who" size="sm" />
+          </span>
+        }
+      </span>
+    </div>
+  } @else {
+    <div class="issue-card__top">
+      <span class="vrb-kanban-card__code">{{ key() }}</span>
+      <ng-container [ngTemplateOutlet]="moveButton" />
+    </div>
 
+    <ng-container [ngTemplateOutlet]="link" />
+
+    @if (labels().length) {
+      <ul class="vrb-kanban-card__labels" [attr.aria-label]="'issue.labels' | translate">
+        @for (label of labels(); track label.id) {
+          <li [class]="'vrb-kanban-card__label vrb-kanban-card__label--' + labelTone[label.color]">
+            {{ label.name }}
+          </li>
+        }
+      </ul>
+    }
+
+    <div class="vrb-kanban-card__meta">
+      <span class="vrb-kanban-card__priority">
+        <span class="u-visually-hidden">{{ 'issue.priorityLabel' | translate }}: </span>
+        {{ 'issue.priority.' + level() | translate }}
+      </span>
+      @if (who) {
+        <span class="issue-card__who issue-card__end" [title]="whoText">
+          <span class="u-visually-hidden">
+            {{ 'board.assignee.label' | translate }}: {{ whoText }}
+          </span>
+          <!-- Un agente lleva su nombre a la vista (CU-033-5); una persona, solo las iniciales. -->
+          @if (who.kind === 'agent') {
+            <span class="issue-card__agent-name" aria-hidden="true">{{ who.name }}</span>
+          }
+          <app-actor-avatar [actor]="who" />
+        </span>
+      } @else if (!issue().assigneeActorId) {
+        <span class="issue-card__who issue-card__end" [title]="'board.assignee.none' | translate">
+          <span class="u-visually-hidden">{{ 'board.assignee.none' | translate }}</span>
+          <span class="issue-card__unassigned" aria-hidden="true"><ui-icon name="user" /></span>
+        </span>
+      }
+    </div>
+  }
+</article>
+
+<ng-template #link>
   <a
     class="vrb-kanban-card__title issue-card__link"
     [id]="'issue-link-' + issue().number"
@@ -31,24 +110,23 @@
   >
     <span class="u-visually-hidden">{{ key() }}: </span>{{ issue().title }}
   </a>
+</ng-template>
 
-  @if (labels().length) {
-    <ul class="vrb-kanban-card__labels" [attr.aria-label]="'issue.labels' | translate">
-      @for (label of labels(); track label.id) {
-        <li [class]="'vrb-kanban-card__label vrb-kanban-card__label--' + labelTone[label.color]">
-          {{ label.name }}
-        </li>
-      }
-    </ul>
-  }
-
-  <div class="vrb-kanban-card__meta">
-    <span class="vrb-kanban-card__priority">
-      <span class="u-visually-hidden">{{ 'issue.priorityLabel' | translate }}: </span>
-      {{ 'issue.priority.' + level() | translate }}
-    </span>
-  </div>
-</article>
+<ng-template #moveButton>
+  <button
+    type="button"
+    class="vrb-button vrb-button--ghost vrb-button--sm issue-card__move"
+    [class.issue-card__move--icon]="compact"
+    [cdkMenuTriggerFor]="moveMenu"
+    [disabled]="pending()"
+    [attr.aria-label]="'board.card.moveLabel' | translate: { issue: key() }"
+  >
+    <ui-icon name="move" />
+    @if (!compact) {
+      <span aria-hidden="true">{{ 'board.card.move' | translate }}</span>
+    }
+  </button>
+</ng-template>
 
 <ng-template #moveMenu>
   <div class="vrb-menu" cdkMenu>

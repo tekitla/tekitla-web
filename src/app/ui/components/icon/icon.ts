@@ -22,6 +22,11 @@ const PATHS = {
   list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   restore: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
   expand: 'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7',
+  user: 'M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10z',
+  bot: 'M12 4V2M5 8h14a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a1 1 0 0 1 1-1zM9 13h.01M15 13h.01M2 13h2M20 13h2',
+  terminal: 'm4 17 6-5-6-5M12 19h8',
+  cloud: 'M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.6 12.3 3.5 3.5 0 0 0 6.5 19z',
+  rows: 'M3 5h18M3 10h18M3 15h18M3 20h18',
 } as const;
 
 export type IconName = keyof typeof PATHS;
