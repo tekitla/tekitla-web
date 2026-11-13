@@ -76,7 +76,7 @@ for (const { name, viewport, mobile } of VIEWPORTS) {
       test('Tablero con tarjetas cómodas (033)', async ({ page }) => {
         // La densidad recordada del proyecto (la de por defecto es compacta).
         await page.addInitScript(() =>
-          localStorage.setItem('tk.tablero.vista.TK', '{"density":"comoda"}'),
+          localStorage.setItem('tekitla-web.tablero.vista.p-tk', '{"density":"comoda"}'),
         );
         await open(page, '/proyectos/p-tk', (p) =>
           expect(p.locator('.issue-card__agent-name').first()).toBeVisible(),

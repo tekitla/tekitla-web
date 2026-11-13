@@ -1,15 +1,25 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import type { Subscription } from 'rxjs';
 
 import { type Actor, IssuesClient } from '@/app/api';
 import { SessionStore } from '@/app/core/auth/session.store';
 import { type ActorView, UNKNOWN_ACTOR, toActorViews } from './actors.logic';
 
+/** Lo que devolvió `ListActors` y para quién (el uid de la sesión). */
+interface Loaded {
+  readonly uid: string;
+  readonly actors: readonly Actor[];
+}
+
 /**
  * Actores que pueden estar asignados: la persona del usuario y sus agentes,
- * también los revocados (un issue puede seguir asignado a uno). Se piden una
- * vez; si falla, las tarjetas no muestran asignado y el próximo `load()`
- * reintenta. Provisto en la ruta del proyecto (board.routes.ts).
+ * también los revocados (un issue puede seguir asignado a uno). El tablero
+ * los pide cada vez que se abre (un agente nuevo aparece al volver a él);
+ * mientras tanto se muestra lo anterior. Si falla, las tarjetas no muestran
+ * asignado hasta la próxima vez. Lo de otra sesión (salir y entrar con otra
+ * cuenta en la misma pestaña) nunca se muestra. Provisto en la ruta del
+ * proyecto (board.routes.ts).
  */
 @Injectable()
 export class ActorsStore {
@@ -17,25 +27,30 @@ export class ActorsStore {
   private readonly session = inject(SessionStore);
   private readonly destroyRef = inject(DestroyRef);
 
-  private readonly _actors = signal<readonly Actor[] | null>(null);
-  private loading = false;
+  private readonly _loaded = signal<Loaded | null>(null);
+  private request: Subscription | null = null;
+
+  private readonly uid = computed(() => this.session.user()?.uid ?? '');
+  /** Lo cargado, solo si es de la sesión actual. */
+  private readonly current = computed(() => {
+    const loaded = this._loaded();
+    return loaded && loaded.uid === this.uid() ? loaded : null;
+  });
 
   /** Ya llegó la lista: un id que no está es de alguien desconocido. */
-  readonly loaded = computed(() => this._actors() !== null);
-  readonly byId = computed(() => toActorViews(this._actors() ?? [], this.session.user()));
+  readonly loaded = computed(() => this.current() !== null);
+  readonly byId = computed(() => toActorViews(this.current()?.actors ?? [], this.session.user()));
 
+  /** Pide la lista (si ya hay un pedido en vuelo, lo deja seguir). */
   load(): void {
-    if (this.loading || this._actors() !== null) return;
-    this.loading = true;
-    this.client
+    if (this.request && !this.request.closed) return;
+    const uid = this.uid();
+    this.request = this.client
       .listActors(true)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (actors) => {
-          this.loading = false;
-          this._actors.set(actors);
-        },
-        error: () => (this.loading = false),
+        next: (actors) => this._loaded.set({ uid, actors }),
+        error: () => undefined,
       });
   }
 

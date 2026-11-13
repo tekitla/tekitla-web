@@ -139,8 +139,8 @@ export class Board {
       untracked(() => this.store.load(id));
     });
     this.actors.load();
-    // La vista recordada es por proyecto: se lee al conocer su clave.
-    effect(() => this.view.use(this.store.projectKey()));
+    // La vista recordada es por proyecto: el id llega con la ruta, antes que el proyecto.
+    effect(() => this.view.use(this.projectId()));
 
     const nav = inject(ShellNav);
     effect(() => {

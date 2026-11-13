@@ -137,6 +137,7 @@
       "none": "Sin asignar",
       "unknown": "Otra persona",
       "noName": "Persona sin nombre",
+      "unnamedAgent": "Agente sin nombre",
       "agent": "{{name}}, agente de {{tool}}",
       "agentOf": "{{name}}, agente de {{tool}} de {{owner}}",
       "revoked": "revocado",

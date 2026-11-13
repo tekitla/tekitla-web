@@ -40,7 +40,7 @@ describe('ActorsStore', () => {
     store = TestBed.inject(ActorsStore);
   });
 
-  it('pide los actores (con revocados) una sola vez', () => {
+  it('pide los actores (con revocados), sin repetir el pedido en vuelo', () => {
     const response = new Subject<Actor[]>();
     listActors.mockReturnValue(response);
     store.load();
@@ -52,11 +52,24 @@ describe('ActorsStore', () => {
     expect(store.view('zz')).toBeNull();
 
     response.next([agent]);
-    store.load();
-    expect(listActors).toHaveBeenCalledTimes(1);
+    response.complete();
     expect(store.view('a1')).toMatchObject({ kind: 'agent', name: 'Claude Code PC-01' });
     expect(store.view('zz')).toBe(UNKNOWN_ACTOR);
     expect(store.view('')).toBeNull();
+  });
+
+  it('volver al tablero los pide de nuevo: un agente nuevo aparece, y mientras tanto queda lo anterior', () => {
+    listActors.mockReturnValueOnce(of([agent]));
+    store.load();
+    const again = new Subject<Actor[]>();
+    listActors.mockReturnValueOnce(again);
+    store.load();
+    expect(listActors).toHaveBeenCalledTimes(2);
+    expect(store.view('a1')?.kind).toBe('agent');
+    expect(store.view('a2')).toBe(UNKNOWN_ACTOR);
+
+    again.next([agent, { ...agent, id: 'a2', displayName: 'Codex PC-02' }]);
+    expect(store.view('a2')?.name).toBe('Codex PC-02');
   });
 
   it('si falla, no muestra asignados y el próximo load reintenta', () => {
@@ -69,6 +82,19 @@ describe('ActorsStore', () => {
     store.load();
     expect(listActors).toHaveBeenCalledTimes(2);
     expect(store.view('a1')?.kind).toBe('agent');
+  });
+
+  it('lo cargado para otra sesión no se muestra', () => {
+    const session = TestBed.inject(SessionStore);
+    session.setUser({ uid: 'uid-1', email: null, displayName: 'Ana Torres' });
+    listActors.mockReturnValue(of([agent]));
+    store.load();
+    expect(store.view('a1')?.kind).toBe('agent');
+
+    // Sale y entra otra cuenta en la misma pestaña (el store de la ruta sigue vivo).
+    session.setUser({ uid: 'uid-2', email: null, displayName: 'Luis' });
+    expect(store.loaded()).toBe(false);
+    expect(store.view('a1')).toBeNull();
   });
 
   it('el nombre de la persona sale de la sesión cuando el servicio no lo trae', () => {

@@ -9,31 +9,31 @@ import {
 } from './board-view';
 
 /**
- * La vista del tablero de UN proyecto, recordada en localStorage
- * (`tk.tablero.vista.<CLAVE>`). Sin localStorage (modo privado estricto,
+ * La vista del tablero de UN proyecto, recordada en localStorage (ver
+ * `viewStorageKey`). Sin localStorage (modo privado estricto,
  * cuota llena) sigue funcionando, solo que no se recuerda. Provisto en la
  * ruta del proyecto (board.routes.ts).
  */
 @Injectable()
 export class BoardViewStore {
-  private readonly _projectKey = signal('');
+  private readonly _projectId = signal('');
   private readonly _view = signal<BoardView>(DEFAULT_VIEW);
 
   readonly view = this._view.asReadonly();
   readonly density = computed(() => this._view().density);
 
-  /** Carga lo recordado del proyecto (una vez por clave). */
-  use(projectKey: string): void {
-    if (!projectKey || projectKey === this._projectKey()) return;
-    this._projectKey.set(projectKey);
-    this._view.set(parseStoredView(read(viewStorageKey(projectKey))));
+  /** Carga lo recordado del proyecto (una vez por proyecto). */
+  use(projectId: string): void {
+    if (!projectId || projectId === this._projectId()) return;
+    this._projectId.set(projectId);
+    this._view.set(parseStoredView(read(viewStorageKey(projectId))));
   }
 
   update(patch: Partial<Omit<BoardView, 'filters'>>): void {
     const view = { ...this._view(), ...patch };
     this._view.set(view);
-    const key = this._projectKey();
-    if (key) write(viewStorageKey(key), serializeStoredView(view));
+    const projectId = this._projectId();
+    if (projectId) write(viewStorageKey(projectId), serializeStoredView(view));
   }
 }
 

@@ -8,6 +8,8 @@
  * proyecto, y los filtros van en la URL (parte 6). Hoy el tablero usa la
  * densidad; panel y agrupar llegan con las partes 5 y 6.
  */
+import { environment } from '@/environments/environment';
+
 export type PanelLayout = 'acoplado' | 'dividido';
 export type ViewGroupBy = 'ninguno' | 'asignado' | 'prioridad' | 'etiqueta';
 export type ViewDensity = 'comoda' | 'compacta';
@@ -36,8 +38,13 @@ export const DENSITIES: readonly ViewDensity[] = ['comoda', 'compacta'];
 const PANELS: readonly PanelLayout[] = ['acoplado', 'dividido'];
 const GROUPS: readonly ViewGroupBy[] = ['ninguno', 'asignado', 'prioridad', 'etiqueta'];
 
-export function viewStorageKey(projectKey: string): string {
-  return `tk.tablero.vista.${projectKey}`;
+/**
+ * Clave en localStorage: con el prefijo de la app (`environment.appName`,
+ * aísla apps que comparten dominio) y el id del proyecto, que no cambia si
+ * se renombra su clave.
+ */
+export function viewStorageKey(projectId: string): string {
+  return `${environment.appName}.tablero.vista.${projectId}`;
 }
 
 function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {

@@ -35,6 +35,6 @@ describe('board-view', () => {
   });
 
   it('una clave por proyecto', () => {
-    expect(viewStorageKey('TK')).toBe('tk.tablero.vista.TK');
+    expect(viewStorageKey('p-tk')).toBe('tekitla-web.tablero.vista.p-tk');
   });
 });

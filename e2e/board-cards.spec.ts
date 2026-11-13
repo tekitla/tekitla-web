@@ -113,7 +113,9 @@ test.describe('desktop', () => {
       'false',
     );
     expect(
-      await page.evaluate(() => JSON.parse(localStorage.getItem('tk.tablero.vista.TK') ?? '{}')),
+      await page.evaluate(() =>
+        JSON.parse(localStorage.getItem('tekitla-web.tablero.vista.p-tk') ?? '{}'),
+      ),
     ).toMatchObject({ density: 'compacta' });
   });
 });

@@ -1,12 +1,14 @@
 @let compact = density() === 'compacta';
 @let who = assignee();
-@let toolName = who ? ('board.assignee.tool.' + who.tool | translate) : '';
+@let toolName = who && who.kind === 'agent' ? ('board.assignee.tool.' + who.tool | translate) : '';
+@let agentName =
+  who && who.kind === 'agent' ? who.name || ('board.assignee.unnamedAgent' | translate) : '';
 @let whoName =
   !who
     ? ''
     : who.kind === 'agent'
       ? ((who.ownerName ? 'board.assignee.agentOf' : 'board.assignee.agent')
-        | translate: { name: who.name, tool: toolName, owner: who.ownerName })
+        | translate: { name: agentName, tool: toolName, owner: who.ownerName })
       : who.kind === 'unknown'
         ? ('board.assignee.unknown' | translate)
         : who.name || ('board.assignee.noName' | translate);
@@ -83,7 +85,7 @@
           </span>
           <!-- Un agente lleva su nombre a la vista (CU-033-5); una persona, solo las iniciales. -->
           @if (who.kind === 'agent') {
-            <span class="issue-card__agent-name" aria-hidden="true">{{ who.name }}</span>
+            <span class="issue-card__agent-name" aria-hidden="true">{{ agentName }}</span>
           }
           <app-actor-avatar [actor]="who" />
         </span>
