@@ -13,7 +13,15 @@ import {
 } from '@angular/core';
 import { Location } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationStart, Router, RouterLink, Scroll } from '@angular/router';
+import {
+  NavigationCancel,
+  NavigationError,
+  NavigationSkipped,
+  NavigationStart,
+  Router,
+  RouterLink,
+  Scroll,
+} from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import type { Issue, Status } from '@/app/api';
@@ -27,6 +35,7 @@ import {
   neighborInColumn,
   openedOverBoard,
   ownsKeyboard,
+  panelHistoryState,
   parseIssueParam,
   withPanelMark,
 } from '../../data-access/issue-panel.logic';
@@ -147,22 +156,40 @@ export class Board {
   // `?issue=` reemplazando la URL.
   //
   // Scroll (CU-033-2): las navegaciones del panel van con `scroll: 'manual'`
-  // y el router no lleva el tablero arriba. Con «atrás» (incluido `Esc`) el
-  // router vuelve a la posición de cuando se abrió el panel.
+  // y el router no lleva el tablero arriba. Cerrar con Esc o con el botón
+  // (que es un «atrás») se queda donde está ahora: ver `keepScrollOnBack`. El
+  // «atrás» del navegador vuelve, como siempre, a la posición de cuando se
+  // abrió el panel.
 
-  /** Posición a conservar en el próximo «atrás» que hace `closePanel`. */
-  private keepScrollOnBack: readonly [number, number] | null = null;
+  /**
+   * Posición a conservar en el «atrás» de `closePanel`, y el id de esa
+   * navegación cuando empieza. Se usa solo con el `Scroll` de esa misma
+   * navegación, y se olvida si se cancela, se salta o falla.
+   */
+  private keepScrollOnBack: { position: readonly [number, number]; id: number | null } | null =
+    null;
 
   private setUpPanel(): void {
     // El router hace su scroll al avisar `Scroll`, en el mismo tick en que lo
     // reciben los suscriptores de `router.events`: una microtarea corre
-    // después y antes de pintar, sin salto visible. Solo para el «atrás» de
-    // `closePanel` (el del navegador sigue con la posición del router).
+    // después y antes de pintar, sin salto visible. Depende de ese orden del
+    // router (no es contrato público): lo cuida el e2e «lo que se desplaza con
+    // el panel abierto se conserva al cerrar con Esc».
     this.router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
-      if (event instanceof NavigationStart && event.navigationTrigger !== 'popstate') {
+      const keep = this.keepScrollOnBack;
+      if (!keep) return;
+      if (event instanceof NavigationStart) {
+        if (event.navigationTrigger === 'popstate' && keep.id === null) keep.id = event.id;
+        else this.keepScrollOnBack = null;
+      } else if (
+        (event instanceof NavigationCancel ||
+          event instanceof NavigationError ||
+          event instanceof NavigationSkipped) &&
+        event.id === keep.id
+      ) {
         this.keepScrollOnBack = null;
-      } else if (event instanceof Scroll && this.keepScrollOnBack) {
-        const [x, y] = this.keepScrollOnBack;
+      } else if (event instanceof Scroll && event.routerEvent.id === keep.id) {
+        const [x, y] = keep.position;
         this.keepScrollOnBack = null;
         queueMicrotask(() => window.scrollTo(x, y));
       }
@@ -226,15 +253,18 @@ export class Board {
       queryParams: { issue: issueKey(this.store.projectKey(), number) },
       queryParamsHandling: 'merge',
       replaceUrl,
-      // Al reemplazar, la entrada conserva su marca: cerrar hace lo mismo que antes.
-      state: withPanelMark(this.location.getState(), !replaceUrl || this.overBoard()),
+      // Entrada nueva: solo la marca (el state de la anterior es de ella). Al
+      // reemplazar se conserva el state y su marca: cerrar hace lo mismo que antes.
+      state: replaceUrl
+        ? withPanelMark(this.location.getState(), this.overBoard())
+        : panelHistoryState(),
       scroll: 'manual',
     });
   }
 
   /** Clic en una tarjeta (desktop). La abierta no hace nada. */
   protected openPanel(number: number): void {
-    if (!this.store.projectKey() || this.panelNumber() === number) return;
+    if (!this.cardsOpenPanel() || this.panelNumber() === number) return;
     // Con `?issue=` en la URL (aunque todavía no se resuelva), se reemplaza.
     void this.showInPanel(number, !!this.issue());
   }
@@ -245,7 +275,7 @@ export class Board {
       // «Atrás» deja que el router vuelva a la posición de cuando se abrió el
       // panel; al cerrar con Esc o con el botón se queda donde está ahora
       // (lo que se desplazó con el panel abierto no se pierde).
-      this.keepScrollOnBack = [window.scrollX, window.scrollY];
+      this.keepScrollOnBack = { position: [window.scrollX, window.scrollY], id: null };
       this.location.back();
       return;
     }
