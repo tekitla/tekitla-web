@@ -12,7 +12,14 @@ import {
   untracked,
 } from '@angular/core';
 import { Location } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  NavigationCancel,
+  NavigationError,
+  NavigationSkipped,
+  Router,
+  RouterLink,
+} from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import type { Issue, Status } from '@/app/api';
@@ -35,8 +42,6 @@ import { boardNav } from '../../board-nav';
 import { BoardStore } from '../../data-access/board.store';
 
 /** Los avisos de éxito se van solos; los de error quedan hasta cerrarlos. */
-/** Ventana en la que un segundo «cerrar» no vuelve atrás otra vez. */
-const CLOSE_GUARD_MS = 600;
 
 const INFO_NOTICE_MS = 5000;
 
@@ -155,8 +160,13 @@ export class Board {
   // router vuelve a la posición de cuando se abrió el panel, como cualquier
   // «atrás». Decisión del 2026-11-13: no se pelea con el scroll del router.
 
-  /** Cuándo `closePanel` pidió «atrás»: un segundo Esc enseguida no vuelve otra vez. */
-  private closingAt = 0;
+  /**
+   * `closePanel` pidió «atrás» y todavía no terminó: mientras tanto la entrada
+   * sigue siendo la del panel, y un segundo Esc (o Esc y el botón) volvería
+   * dos veces, fuera del tablero. Se apaga cuando el panel se cierra o cuando
+   * esa navegación no llega a buen puerto.
+   */
+  private closing = false;
 
   private setUpPanel(): void {
     // Al abrir: el foco va al panel. Al cerrar, si el foco se perdió (estaba
@@ -166,6 +176,7 @@ export class Board {
     effect(() => {
       const number = this.panelNumber();
       untracked(() => {
+        if (number === null) this.closing = false;
         const closedNumber = previous;
         const opening = number !== null && previous === null;
         previous = number;
@@ -186,6 +197,17 @@ export class Board {
           { injector: this.injector },
         );
       });
+    });
+
+    // El «atrás» de closePanel se canceló, falló o no hizo nada: se puede cerrar de nuevo.
+    this.router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (
+        event instanceof NavigationCancel ||
+        event instanceof NavigationError ||
+        event instanceof NavigationSkipped
+      ) {
+        this.closing = false;
+      }
     });
 
     // Un enlace `?issue=` abierto en el celular va a la página completa (CU-033-8).
@@ -236,12 +258,8 @@ export class Board {
   /** Cierra el panel: «atrás» si lo abrió el tablero; si no, saca `?issue=`. */
   protected closePanel(): void {
     if (this.overBoard()) {
-      // `back()` es asíncrono: mientras no llega, la entrada sigue siendo la
-      // del panel y un segundo Esc (o Esc y el botón) volvería dos veces,
-      // fuera del tablero.
-      const now = Date.now();
-      if (now - this.closingAt < CLOSE_GUARD_MS) return;
-      this.closingAt = now;
+      if (this.closing) return;
+      this.closing = true;
       this.location.back();
       return;
     }

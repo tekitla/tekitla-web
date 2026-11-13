@@ -82,11 +82,11 @@ export function openedOverBoard(state: unknown): boolean {
 
 /**
  * `history.state` para reemplazar la entrada del panel: conserva lo demás que
- * tenga la entrada actual (menos lo que pone el router en cada navegación) y
- * pone o quita la marca del tablero.
+ * tenga la entrada actual y pone o quita la marca del tablero. (Las claves que
+ * el router guarda en cada entrada las vuelve a escribir él al navegar.)
  */
 export function withPanelMark(state: unknown, mark: boolean): Record<string, unknown> {
   const current = state && typeof state === 'object' ? (state as Record<string, unknown>) : {};
-  const { tkPanel: _mark, navigationId: _id, ɵrouterPageId: _page, ...rest } = current;
+  const { tkPanel: _mark, ...rest } = current;
   return mark ? { ...rest, ...panelHistoryState() } : rest;
 }

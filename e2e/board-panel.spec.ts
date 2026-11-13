@@ -118,8 +118,26 @@ test.describe('desktop', () => {
     await page.keyboard.press('Escape');
     await expect(panel(page)).toHaveCount(0);
     await expect(page).toHaveURL(/\/proyectos\/p-tk$/);
-    await page.waitForTimeout(300);
-    await expect(page).toHaveURL(/\/proyectos\/p-tk$/);
+    // Solo se volvió una vez: la entrada anterior sigue siendo Proyectos.
+    await page.goBack();
+    await expect(page).toHaveURL(/\/proyectos$/);
+  });
+
+  test('cerrar con Esc vuelve a la posición de cuando se abrió el panel', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 420 });
+    await openBoard(page);
+    await page.evaluate(() => window.scrollTo(0, 120));
+    const scrollY = () => page.evaluate(() => Math.round(window.scrollY));
+    await expect.poll(scrollY).toBe(120);
+    await cardLink(page, 'TK-3').click();
+    await expect(panel(page)).toBeVisible();
+    // Con el panel abierto se desplaza la página; al cerrar, el router vuelve
+    // a donde estaba al abrir (como cualquier «atrás»), nunca arriba de todo.
+    await page.evaluate(() => window.scrollTo(0, 40));
+    await expect.poll(scrollY).toBe(40);
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect.poll(scrollY).toBe(120);
   });
 
   test('después de recargar, cerrar saca ?issue= sin salir de la página', async ({ page }) => {
