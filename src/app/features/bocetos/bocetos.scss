@@ -1,0 +1,288 @@
+// Boceto (issue 033): todo lee --vrb-*. Se borra al empezar la parte 1.
+:host {
+  display: block;
+  min-height: 100dvh;
+  background: var(--vrb-bg);
+}
+
+.bocetos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100dvh;
+  padding: 0 24px 16px;
+  color: var(--vrb-fg);
+  font-family: var(--vrb-font-sans);
+}
+
+.bocetos__switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 0 -24px;
+  padding: 10px 24px;
+  background: var(--vrb-ink);
+  color: var(--vrb-ink-fg);
+}
+
+.bocetos__switch-label {
+  font: 600 12px/1 var(--vrb-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.bocetos__switch-summary {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.bocetos__header {
+  margin: 0;
+}
+
+.bocetos__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.bocetos__search {
+  width: 260px;
+  height: var(--vrb-control-h-sm);
+}
+
+.bocetos__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--vrb-muted-fg);
+}
+
+.bocetos__select {
+  height: var(--vrb-control-h-sm);
+  font-size: 13px;
+}
+
+.bocetos__body {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.bocetos__body--docked {
+  grid-template-columns: minmax(0, 1fr) 400px;
+}
+
+.bocetos__body--split {
+  grid-template-columns: minmax(0, 3fr) minmax(380px, 2fr);
+}
+
+.bocetos__board {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+// Con carriles, el scroll es del tablero entero y cada carril no se desplaza solo.
+.bocetos__board--lanes .bocetos__kanban {
+  overflow: visible;
+  contain: none;
+  padding-bottom: 4px;
+}
+
+.bocetos__heads {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--vrb-kanban-col);
+  gap: 16px;
+  padding-bottom: 8px;
+  background: var(--vrb-bg);
+}
+
+.bocetos__head {
+  padding: 6px 10px;
+}
+
+.bocetos__lane {
+  position: sticky;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 6px;
+  padding: 4px 8px 4px 4px;
+  border: 0;
+  border-radius: var(--vrb-radius-control);
+  background: transparent;
+  color: var(--vrb-fg);
+  font: 600 14px/20px var(--vrb-font-sans);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--vrb-fill);
+  }
+}
+
+.bocetos__lane-count {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--vrb-fill);
+  color: var(--vrb-muted-fg);
+  font: 500 12px/1.2 var(--vrb-font-mono);
+}
+
+.bocetos__list {
+  overflow: visible;
+}
+
+.bocetos__item {
+  position: relative;
+}
+
+.bocetos__more {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+  opacity: 0;
+
+  .bocetos__item:hover &,
+  &:focus-visible,
+  &--on {
+    opacity: 1;
+  }
+}
+
+.bocetos__menu {
+  position: fixed;
+  z-index: 30;
+  width: 240px;
+}
+
+.bocetos__menu-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 6px 6px;
+}
+
+.bocetos__chip {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  box-shadow: none;
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    border-color: var(--vrb-brand);
+  }
+}
+
+.bocetos__keys {
+  text-transform: none;
+}
+
+.bocetos__quick {
+  height: var(--vrb-control-h-sm);
+  font-size: 13px;
+}
+
+.bocetos__quick--top {
+  background: var(--vrb-surface);
+}
+
+.bocetos__detail {
+  min-height: 0;
+}
+
+.bocetos__detail--overlay {
+  position: absolute;
+  top: 0;
+  right: -24px;
+  bottom: -16px;
+  z-index: 10;
+  width: min(520px, 100%);
+}
+
+.bocetos__bulk {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 16px;
+  translate: -50% 0;
+  border-radius: var(--vrb-radius-overlay);
+  background: var(--vrb-ink);
+  color: var(--vrb-ink-fg);
+  box-shadow: var(--vrb-shadow-overlay);
+  font-size: 13px;
+  white-space: nowrap;
+
+  .vrb-select {
+    min-width: 140px;
+  }
+
+  .vrb-button {
+    color: inherit;
+  }
+}
+
+.bocetos__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--vrb-muted-fg);
+}
+
+// Con carriles, «+ Agregar» es un botón chico en la esquina de la celda que
+// aparece al pasar por ella: menos ruido y celdas más bajas.
+.bocetos__board--lanes .vrb-kanban__column {
+  position: relative;
+  min-height: 56px;
+  padding-bottom: 28px;
+}
+
+.bocetos__board--lanes .vrb-kanban__add {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  width: auto;
+  height: 22px;
+  font-size: 12px;
+  opacity: 0;
+
+  &:focus-visible {
+    opacity: 1;
+  }
+}
+
+.bocetos__board--lanes .vrb-kanban__column:hover .vrb-kanban__add {
+  opacity: 1;
+}
+
+.bocetos__board--lanes .bocetos__quick {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  left: 6px;
+  width: auto;
+}
+
+.bocetos__board--lanes .vrb-kanban__column.bocetos__head {
+  min-height: 0;
+  padding: 6px 10px;
+}

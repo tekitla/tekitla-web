@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { authGuard, guestGuard } from './core/auth/auth.guard';
+import { BOCETOS_ROUTES } from './features/bocetos/bocetos.routes';
 import { Shell } from './layout/shell/shell';
 
 // `title` es una clave de i18n (ver core/i18n/translated-title.strategy.ts).
@@ -41,6 +42,10 @@ export const routes: Routes = [
       },
     ],
   },
+
+  // Bocetos del tablero v2 (issue 033): solo en desarrollo (QA y prod los
+  // reemplazan por una lista vacía en angular.json).
+  ...BOCETOS_ROUTES,
 
   { path: '**', redirectTo: '' },
 ];
