@@ -21,6 +21,7 @@ const PATHS = {
   more: 'M12 5h.01M12 12h.01M12 19h.01',
   list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   restore: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
+  expand: 'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7',
 } as const;
 
 export type IconName = keyof typeof PATHS;

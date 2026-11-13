@@ -71,6 +71,18 @@ for (const { name, viewport, mobile } of VIEWPORTS) {
       await expect(page).toHaveScreenshot(`tablero-${name}.png`, { fullPage: true });
     });
 
+    // En el celular no hay panel: `?issue=` lleva a la página completa (detalle-375).
+    if (!mobile) {
+      test('Tablero con el detalle en panel lateral (033)', async ({ page }) => {
+        await open(page, '/proyectos/p-tk?issue=TK-1', (p) =>
+          expect(p.locator('#board-panel app-issue-activity')).toContainText('creó el issue'),
+        );
+        // Sin el anillo de foco que deja abrir el panel: la captura es del diseño.
+        await page.locator('#board-panel').evaluate((el) => (el as HTMLElement).blur());
+        await expect(page).toHaveScreenshot(`tablero-panel-${name}.png`);
+      });
+    }
+
     test('Detalle del issue', async ({ page }) => {
       await open(page, '/proyectos/p-tk/issues/1', (p) =>
         expect(p.locator('app-issue-activity')).toContainText('creó el issue'),

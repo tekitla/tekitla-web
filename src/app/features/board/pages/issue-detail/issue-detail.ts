@@ -59,6 +59,8 @@ type Field = 'title' | 'description' | 'priority' | 'labels';
  *   diálogo al entrar;
  * - actividad (`IssueActivity`): historial paginado y comentarios. Se refresca
  *   cuando el servidor confirma un cambio del issue (cambia su `updatedAt`).
+ *
+ * El tablero lo usa también como panel lateral (`mode="panel"`).
  */
 @Component({
   selector: 'app-issue-detail',
@@ -91,6 +93,12 @@ export class IssueDetail {
   readonly number = input.required({ transform: numberAttribute });
   /** Query param `?descartar=1`: abrir el diálogo al entrar. */
   readonly descartar = input<string>();
+  /**
+   * `page`: la página `issues/:number`. `panel`: dentro del tablero, en el
+   * panel lateral (033): no toca las migas del shell (son del tablero), el
+   * título baja a nivel 2 y los datos van arriba de la descripción.
+   */
+  readonly mode = input<'page' | 'panel'>('page');
 
   private readonly titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
   private readonly discardDialog = viewChild(DiscardDialog);
@@ -161,6 +169,7 @@ export class IssueDetail {
 
     const nav = inject(ShellNav);
     effect(() => {
+      if (this.mode() === 'panel') return;
       const project = this.store.project();
       const { crumbs, project: shellProject } = boardNav(project, this.projectId(), {
         label: this.key(),

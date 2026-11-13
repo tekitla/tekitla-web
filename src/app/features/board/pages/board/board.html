@@ -122,87 +122,150 @@
       </div>
     }
 
-    <div class="vrb-kanban board__kanban" cdkDropListGroup>
-      @for (column of store.columns(); track column.status.id) {
-        @let status = column.status;
-        @let category = 'status.category.' + status.category | translate;
-        @let limit = wip(column);
-        <section
-          [class]="'vrb-kanban__column board__column vrb-kanban__column--' + tone(status)"
-          [attr.data-over-limit]="limit === 'over' || null"
-          [id]="'board-panel-' + status.id"
-          [hidden]="isMobile() && store.activeColumn() !== status.id"
-          [attr.role]="isMobile() ? 'tabpanel' : null"
-          [attr.aria-labelledby]="
-            isMobile() ? 'board-tab-' + status.id : 'board-heading-' + status.id
-          "
-        >
-          <header class="vrb-kanban__header">
-            <h2 class="vrb-kanban__title" [id]="'board-heading-' + status.id">
-              {{ status.name }}
-            </h2>
-            @if (category !== status.name) {
-              <span class="vrb-kanban__category">
-                <span class="u-visually-hidden">{{ 'status.categoryLabel' | translate }}: </span
-                >{{ category }}
-              </span>
-            }
-            <span class="vrb-kanban__count">
-              <span class="u-visually-hidden">(</span>{{ column.issues.length }}
-              @if (status.wipLimit) {
-                <span class="vrb-kanban__limit"
-                  ><span aria-hidden="true">/ </span
-                  ><span class="u-visually-hidden">{{ 'board.wipOf' | translate }} </span
-                  >{{ status.wipLimit }}</span
-                >
-              }
-              <span class="u-visually-hidden">)</span>
-            </span>
-            @if (limit === 'over') {
-              <span class="vrb-kanban__status">{{ 'board.wipOver' | translate }}</span>
-            } @else if (limit === 'full') {
-              <span class="vrb-kanban__status vrb-kanban__status--full">{{
-                'board.wipFull' | translate
-              }}</span>
-            }
-          </header>
-
-          <ul
-            class="vrb-kanban__list board__list"
-            cdkDropList
-            [cdkDropListData]="status.id"
-            [cdkDropListEnterPredicate]="canEnter(status)"
-            [cdkDropListDisabled]="isMobile()"
-            (cdkDropListDropped)="onDrop($event)"
+    <div class="board__body" [class.board__body--panel]="panelNumber() !== null">
+      <div class="vrb-kanban board__kanban" cdkDropListGroup>
+        @for (column of store.columns(); track column.status.id) {
+          @let status = column.status;
+          @let category = 'status.category.' + status.category | translate;
+          @let limit = wip(column);
+          <section
+            [class]="'vrb-kanban__column board__column vrb-kanban__column--' + tone(status)"
+            [attr.data-over-limit]="limit === 'over' || null"
+            [id]="'board-panel-' + status.id"
+            [hidden]="isMobile() && store.activeColumn() !== status.id"
+            [attr.role]="isMobile() ? 'tabpanel' : null"
+            [attr.aria-labelledby]="
+              isMobile() ? 'board-tab-' + status.id : 'board-heading-' + status.id
+            "
           >
-            @for (issue of column.issues; track issue.id) {
-              <li
-                class="vrb-kanban__item board__item"
-                cdkDrag
-                cdkDragPreviewContainer="parent"
-                [cdkDragData]="issue"
-                [cdkDragDisabled]="
-                  isMobile() ||
-                  store.pending().has(issue.number) ||
-                  status.category === 'ISSUE_STATE_CANCELED'
-                "
+            <header class="vrb-kanban__header">
+              <h2 class="vrb-kanban__title" [id]="'board-heading-' + status.id">
+                {{ status.name }}
+              </h2>
+              @if (category !== status.name) {
+                <span class="vrb-kanban__category">
+                  <span class="u-visually-hidden">{{ 'status.categoryLabel' | translate }}: </span
+                  >{{ category }}
+                </span>
+              }
+              <span class="vrb-kanban__count">
+                <span class="u-visually-hidden">(</span>{{ column.issues.length }}
+                @if (status.wipLimit) {
+                  <span class="vrb-kanban__limit"
+                    ><span aria-hidden="true">/ </span
+                    ><span class="u-visually-hidden">{{ 'board.wipOf' | translate }} </span
+                    >{{ status.wipLimit }}</span
+                  >
+                }
+                <span class="u-visually-hidden">)</span>
+              </span>
+              @if (limit === 'over') {
+                <span class="vrb-kanban__status">{{ 'board.wipOver' | translate }}</span>
+              } @else if (limit === 'full') {
+                <span class="vrb-kanban__status vrb-kanban__status--full">{{
+                  'board.wipFull' | translate
+                }}</span>
+              }
+            </header>
+
+            <ul
+              class="vrb-kanban__list board__list"
+              cdkDropList
+              [cdkDropListData]="status.id"
+              [cdkDropListEnterPredicate]="canEnter(status)"
+              [cdkDropListDisabled]="isMobile()"
+              (cdkDropListDropped)="onDrop($event)"
+            >
+              @for (issue of column.issues; track issue.id) {
+                <li
+                  class="vrb-kanban__item board__item"
+                  cdkDrag
+                  cdkDragPreviewContainer="parent"
+                  [cdkDragData]="issue"
+                  [cdkDragDisabled]="
+                    isMobile() ||
+                    store.pending().has(issue.number) ||
+                    status.category === 'ISSUE_STATE_CANCELED'
+                  "
+                >
+                  <app-issue-card
+                    [issue]="issue"
+                    [projectId]="projectId()"
+                    [projectKey]="store.projectKey()"
+                    [statusId]="status.id"
+                    [statuses]="store.statuses()"
+                    [labelsById]="store.labelsById()"
+                    [pending]="store.pending().has(issue.number)"
+                    [openInPanel]="cardsOpenPanel()"
+                    [current]="panelNumber() === issue.number"
+                    (move)="onMove($event)"
+                    (opened)="openPanel($event)"
+                  />
+                </li>
+              } @empty {
+                <li class="vrb-kanban__empty">{{ 'board.emptyColumn' | translate }}</li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+
+      @if (panelNumber(); as number) {
+        <aside
+          id="board-panel"
+          class="board__panel"
+          tabindex="-1"
+          [attr.aria-label]="'board.panel.label' | translate: { issue: panelKey() }"
+        >
+          <div class="board__panel-bar">
+            <span class="vrb-kanban-card__code">{{ panelKey() }}</span>
+            <div class="vrb-cluster vrb-cluster--sm vrb-cluster--nowrap">
+              <button
+                type="button"
+                class="vrb-button vrb-button--ghost vrb-button--sm vrb-button--icon"
+                aria-keyshortcuts="ArrowUp"
+                [attr.aria-label]="'board.panel.prev' | translate"
+                [title]="'board.panel.prev' | translate"
+                [disabled]="panelPrev() === null"
+                (click)="stepPanel(-1)"
               >
-                <app-issue-card
-                  [issue]="issue"
-                  [projectId]="projectId()"
-                  [projectKey]="store.projectKey()"
-                  [statusId]="status.id"
-                  [statuses]="store.statuses()"
-                  [labelsById]="store.labelsById()"
-                  [pending]="store.pending().has(issue.number)"
-                  (move)="onMove($event)"
-                />
-              </li>
-            } @empty {
-              <li class="vrb-kanban__empty">{{ 'board.emptyColumn' | translate }}</li>
-            }
-          </ul>
-        </section>
+                <ui-icon name="arrowUp" />
+              </button>
+              <button
+                type="button"
+                class="vrb-button vrb-button--ghost vrb-button--sm vrb-button--icon"
+                aria-keyshortcuts="ArrowDown"
+                [attr.aria-label]="'board.panel.next' | translate"
+                [title]="'board.panel.next' | translate"
+                [disabled]="panelNext() === null"
+                (click)="stepPanel(1)"
+              >
+                <ui-icon name="arrowDown" />
+              </button>
+              <a
+                class="vrb-button vrb-button--ghost vrb-button--sm vrb-button--icon"
+                [routerLink]="['issues', number]"
+                [attr.aria-label]="'board.panel.fullPage' | translate"
+                [title]="'board.panel.fullPage' | translate"
+              >
+                <ui-icon name="expand" />
+              </a>
+              <button
+                type="button"
+                class="vrb-button vrb-button--ghost vrb-button--sm vrb-button--icon"
+                aria-keyshortcuts="Escape"
+                [attr.aria-label]="'board.panel.close' | translate"
+                [title]="'board.panel.close' | translate"
+                (click)="closePanel()"
+              >
+                <ui-icon name="close" />
+              </button>
+            </div>
+          </div>
+          <div class="board__panel-body">
+            <app-issue-detail mode="panel" [projectId]="projectId()" [number]="number" />
+          </div>
+        </aside>
       }
     </div>
   }

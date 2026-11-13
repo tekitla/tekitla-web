@@ -1,6 +1,7 @@
 <article
   class="vrb-kanban-card issue-card"
   [class.issue-card--pending]="pending()"
+  [class.issue-card--current]="current()"
   [attr.data-priority]="kanbanPriority()"
   [attr.aria-busy]="pending() || null"
 >
@@ -21,7 +22,9 @@
   <a
     class="vrb-kanban-card__title issue-card__link"
     [id]="'issue-link-' + issue().number"
-    [routerLink]="link()"
+    [attr.href]="href()"
+    [attr.aria-current]="current() || null"
+    (click)="onClick($event)"
     aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp Shift+ArrowDown"
     aria-describedby="board-shortcut-hint"
     (keydown)="onKeydown($event)"

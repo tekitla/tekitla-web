@@ -87,3 +87,37 @@
 .issue-detail__discard {
   color: var(--vrb-danger);
 }
+
+// En el panel lateral del tablero (033): angosto, todo en una columna y con
+// los datos (estado, prioridad, etiquetas) primero, que es lo que se cambia.
+.issue-detail--panel {
+  .vrb-page-header {
+    margin-bottom: var(--space-4);
+  }
+
+  // La clave ya está en la barra del panel.
+  .vrb-page-header__eyebrow {
+    display: none;
+  }
+
+  .vrb-page-header__title {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  .issue-detail__layout {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: var(--space-4);
+  }
+
+  .issue-detail__main,
+  .issue-detail__aside {
+    flex: none;
+  }
+
+  .issue-detail__aside {
+    order: -1;
+  }
+}
