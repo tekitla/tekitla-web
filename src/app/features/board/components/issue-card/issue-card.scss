@@ -66,6 +66,10 @@
 }
 
 .issue-card__who {
+  // Por encima del enlace estirado, para que el `title` aparezca al pasar
+  // el mouse (en compacta es lo único que dice el nombre a la vista).
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -180,10 +184,14 @@
 }
 
 // «Mover» solo con el icono: el área táctil mínima la pone vrb.
-// Discreto: en compacta lo que se lee es el título. Es `vrb-button--icon`:
-// el área táctil mínima (ancho y alto) la pone vrb; el margen negativo evita
-// que la fila crezca.
+// Discreto: en compacta lo que se lee es el título. Es `vrb-button--icon`
+// (en táctil, vrb le da 44px de ancho); el alto mínimo va acá. El margen
+// negativo evita que la fila crezca.
 .issue-card__move--icon {
   margin: calc(-1 * var(--space-2)) 0;
   color: var(--vrb-muted-fg);
+
+  @media (pointer: coarse) {
+    min-height: var(--touch-target);
+  }
 }

@@ -138,7 +138,9 @@ export class Board {
       const id = this.projectId();
       untracked(() => this.store.load(id));
     });
-    this.actors.load();
+    // Pide los actores al abrir el tablero y otra vez si cambia la sesión
+    // (`load` lee el uid: es la dependencia de este effect).
+    effect(() => this.actors.load());
     // La vista recordada es por proyecto: el id llega con la ruta, antes que el proyecto.
     effect(() => this.view.use(this.projectId()));
 

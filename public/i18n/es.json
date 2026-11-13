@@ -140,7 +140,7 @@
       "unnamedAgent": "Agente sin nombre",
       "agent": "{{name}}, agente de {{tool}}",
       "agentOf": "{{name}}, agente de {{tool}} de {{owner}}",
-      "revoked": "revocado",
+      "revoked": "{{name}} · revocado",
       "tool": {
         "AGENT_TOOL_UNSPECIFIED": "otra herramienta",
         "AGENT_TOOL_CLAUDE_CODE": "Claude Code",

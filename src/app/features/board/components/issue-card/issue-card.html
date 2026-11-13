@@ -12,7 +12,7 @@
       : who.kind === 'unknown'
         ? ('board.assignee.unknown' | translate)
         : who.name || ('board.assignee.noName' | translate);
-@let whoText = who?.revoked ? whoName + ' · ' + ('board.assignee.revoked' | translate) : whoName;
+@let whoText = who?.revoked ? ('board.assignee.revoked' | translate: { name: whoName }) : whoName;
 <article
   class="vrb-kanban-card issue-card"
   [class.issue-card--compact]="compact"

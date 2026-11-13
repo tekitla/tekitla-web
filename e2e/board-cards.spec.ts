@@ -73,6 +73,14 @@ test.describe('desktop', () => {
       'title',
       'Claude Code PC-01, agente de Claude Code de Victor',
     );
+    // El mouse sobre el avatar le llega a él (no al enlace que cubre la
+    // tarjeta): así aparece el `title`.
+    const box = (await agent.boundingBox())!;
+    const hit = await page.evaluate(
+      ([x, y]) => !!document.elementFromPoint(x!, y!)?.closest('.issue-card__who'),
+      [box.x + box.width / 2, box.y + box.height / 2],
+    );
+    expect(hit).toBe(true);
     await expect(card(page, 'TK-3').locator('.issue-card__who')).toHaveCount(0);
     // «Mover» queda como icono, con su nombre accesible.
     await expect(
