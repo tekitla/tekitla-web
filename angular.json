@@ -56,10 +56,6 @@
                 {
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.prod.ts"
-                },
-                {
-                  "replace": "src/app/features/bocetos/bocetos.routes.ts",
-                  "with": "src/app/features/bocetos/bocetos.routes.prod.ts"
                 }
               ],
               "budgets": [
@@ -81,10 +77,6 @@
                 {
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.qa.ts"
-                },
-                {
-                  "replace": "src/app/features/bocetos/bocetos.routes.ts",
-                  "with": "src/app/features/bocetos/bocetos.routes.prod.ts"
                 }
               ],
               "outputHashing": "all"
