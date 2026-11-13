@@ -39,50 +39,178 @@
         (input)="setQuery($event)"
       />
     </div>
-    <button type="button" class="vrb-button vrb-button--outline vrb-button--sm">
-      <app-sketch-icon name="user" />Asignado
-    </button>
+    <div class="bocetos__drop">
+      <button
+        type="button"
+        class="vrb-button vrb-button--sm"
+        [class.vrb-button--outline]="!assigneeFilter().size"
+        [class.vrb-button--secondary]="assigneeFilter().size"
+        [attr.aria-expanded]="assigneeMenuOpen()"
+        (click)="assigneeMenuOpen.set(!assigneeMenuOpen()); viewMenuOpen.set(false)"
+      >
+        <app-sketch-icon name="user" />Asignado{{
+          assigneeFilter().size ? ' · ' + assigneeFilter().size : ''
+        }}
+      </button>
+      @if (assigneeMenuOpen()) {
+        <div class="vrb-menu bocetos__pop" role="menu" aria-label="Filtrar por asignado">
+          <p class="vrb-menu__label">Filtrar por asignado</p>
+          @for (a of actors; track a.id) {
+            <button
+              type="button"
+              class="vrb-menu__item"
+              role="menuitemcheckbox"
+              [attr.aria-checked]="assigneeFilter().has(a.id)"
+              (click)="toggleAssignee(a.id)"
+            >
+              <app-sketch-avatar [actor]="a" size="sm" />{{ a.name }}
+            </button>
+          }
+          <button
+            type="button"
+            class="vrb-menu__item"
+            role="menuitemcheckbox"
+            [attr.aria-checked]="assigneeFilter().has(unassigned)"
+            (click)="toggleAssignee(unassigned)"
+          >
+            Sin asignar
+          </button>
+          @if (assigneeFilter().size) {
+            <div class="vrb-menu__separator" role="separator"></div>
+            <button type="button" class="vrb-menu__item" (click)="clearAssignees()">
+              Quitar filtro
+            </button>
+          }
+        </div>
+      }
+    </div>
     <button type="button" class="vrb-button vrb-button--outline vrb-button--sm">
       <app-sketch-icon name="flag" />Prioridad
     </button>
     <button type="button" class="vrb-button vrb-button--outline vrb-button--sm">
       <app-sketch-icon name="tag" />Etiqueta
     </button>
-    <label class="bocetos__group">
-      <span>Agrupar por</span>
-      <div class="vrb-select">
-        <select class="vrb-input bocetos__select" [value]="groupBy()" (change)="setGroup($event)">
-          <option value="ninguno" [selected]="groupBy() === 'ninguno'">Ninguno</option>
-          <option value="asignado" [selected]="groupBy() === 'asignado'">Asignado</option>
-          <option value="prioridad" [selected]="groupBy() === 'prioridad'">Prioridad</option>
-          <option value="etiqueta" [selected]="groupBy() === 'etiqueta'">Etiqueta</option>
-        </select>
+    @if (variant().id === 'd') {
+      <div class="bocetos__drop bocetos__view">
+        <button
+          type="button"
+          class="vrb-button vrb-button--outline vrb-button--sm"
+          [attr.aria-expanded]="viewMenuOpen()"
+          (click)="viewMenuOpen.set(!viewMenuOpen()); assigneeMenuOpen.set(false)"
+        >
+          <app-sketch-icon name="rows" />Vista:
+          {{ panelLayout() === 'acoplado' ? 'acoplado' : 'dividido' }} ·
+          {{ groupBy() === 'asignado' ? 'por asignado' : 'sin agrupar' }} ·
+          {{ density() === 'comoda' ? 'cómoda' : 'compacta' }}
+          <app-sketch-icon name="chevronDown" />
+        </button>
+        @if (viewMenuOpen()) {
+          <div class="vrb-menu bocetos__pop bocetos__pop--end" role="dialog" aria-label="Vista">
+            <p class="vrb-menu__label">Panel de detalle</p>
+            <div class="vrb-segmented vrb-segmented--sm vrb-segmented--block bocetos__seg">
+              <button
+                type="button"
+                class="vrb-segmented__option"
+                [attr.aria-pressed]="panelLayout() === 'acoplado'"
+                (click)="setView({ panel: 'acoplado' })"
+              >
+                Acoplado
+              </button>
+              <button
+                type="button"
+                class="vrb-segmented__option"
+                [attr.aria-pressed]="panelLayout() === 'dividido'"
+                (click)="setView({ panel: 'dividido' })"
+              >
+                Dividido 60/40
+              </button>
+            </div>
+            <p class="vrb-menu__label">Agrupar</p>
+            <div class="vrb-segmented vrb-segmented--sm vrb-segmented--block bocetos__seg">
+              <button
+                type="button"
+                class="vrb-segmented__option"
+                [attr.aria-pressed]="groupBy() !== 'asignado'"
+                (click)="setView({ groupBy: 'ninguno' })"
+              >
+                Ninguno
+              </button>
+              <button
+                type="button"
+                class="vrb-segmented__option"
+                [attr.aria-pressed]="groupBy() === 'asignado'"
+                (click)="setView({ groupBy: 'asignado' })"
+              >
+                Por asignado
+              </button>
+            </div>
+            <p class="vrb-menu__label">Densidad</p>
+            <div class="vrb-segmented vrb-segmented--sm vrb-segmented--block bocetos__seg">
+              <button
+                type="button"
+                class="vrb-segmented__option"
+                [attr.aria-pressed]="density() === 'comoda'"
+                (click)="setView({ density: 'comoda' })"
+              >
+                Cómoda
+              </button>
+              <button
+                type="button"
+                class="vrb-segmented__option"
+                [attr.aria-pressed]="density() === 'compacta'"
+                (click)="setView({ density: 'compacta' })"
+              >
+                Compacta
+              </button>
+            </div>
+            <div class="vrb-menu__separator" role="separator"></div>
+            <p class="bocetos__pop-note">
+              Se recuerda en este proyecto. Con el 034: «Guardar como vista…».
+            </p>
+          </div>
+        }
       </div>
-    </label>
-    <div class="vrb-segmented vrb-segmented--sm bocetos__density" aria-label="Densidad">
-      <button
-        type="button"
-        class="vrb-segmented__option"
-        [attr.aria-pressed]="density() === 'comoda'"
-        (click)="density.set('comoda')"
-      >
-        Cómoda
-      </button>
-      <button
-        type="button"
-        class="vrb-segmented__option"
-        [attr.aria-pressed]="density() === 'compacta'"
-        (click)="density.set('compacta')"
-      >
-        Compacta
-      </button>
-    </div>
+    } @else {
+      <label class="bocetos__group">
+        <span>Agrupar por</span>
+        <div class="vrb-select">
+          <select class="vrb-input bocetos__select" [value]="groupBy()" (change)="setGroup($event)">
+            <option value="ninguno" [selected]="groupBy() === 'ninguno'">Ninguno</option>
+            <option value="asignado" [selected]="groupBy() === 'asignado'">Asignado</option>
+            <option value="prioridad" [selected]="groupBy() === 'prioridad'">Prioridad</option>
+            <option value="etiqueta" [selected]="groupBy() === 'etiqueta'">Etiqueta</option>
+          </select>
+        </div>
+      </label>
+      <div class="vrb-segmented vrb-segmented--sm bocetos__density" aria-label="Densidad">
+        <button
+          type="button"
+          class="vrb-segmented__option"
+          [attr.aria-pressed]="density() === 'comoda'"
+          (click)="density.set('comoda')"
+        >
+          Cómoda
+        </button>
+        <button
+          type="button"
+          class="vrb-segmented__option"
+          [attr.aria-pressed]="density() === 'compacta'"
+          (click)="density.set('compacta')"
+        >
+          Compacta
+        </button>
+      </div>
+    }
   </div>
 
   <div
     class="bocetos__body"
-    [class.bocetos__body--docked]="variant().id === 'a' && openIssue()"
-    [class.bocetos__body--split]="variant().id === 'c' && openIssue()"
+    [class.bocetos__body--docked]="
+      variant().id !== 'b' && panelLayout() === 'acoplado' && openIssue()
+    "
+    [class.bocetos__body--split]="
+      variant().id !== 'b' && panelLayout() === 'dividido' && openIssue()
+    "
   >
     <div class="bocetos__board" [class.bocetos__board--lanes]="groupBy() !== 'ninguno'">
       @if (groupBy() !== 'ninguno') {

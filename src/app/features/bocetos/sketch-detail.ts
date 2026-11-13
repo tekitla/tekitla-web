@@ -199,6 +199,7 @@ import { SketchIcon } from './sketch-icon';
     }
     .sketch-detail__nav {
       display: flex;
+      align-items: center;
       gap: 2px;
     }
     .sketch-detail__body {

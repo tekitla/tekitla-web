@@ -286,3 +286,37 @@
   min-height: 0;
   padding: 6px 10px;
 }
+
+// Propuesta: menús de la barra (filtro por asignado y «Vista»).
+.bocetos__drop {
+  position: relative;
+}
+
+.bocetos__view {
+  margin-left: auto;
+}
+
+.bocetos__pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 30;
+  width: 260px;
+}
+
+.bocetos__pop--end {
+  right: 0;
+  left: auto;
+  width: 300px;
+}
+
+.bocetos__seg {
+  margin: 0 6px 8px;
+}
+
+.bocetos__pop-note {
+  margin: 0;
+  padding: 4px 8px 6px;
+  font-size: 12px;
+  color: var(--vrb-muted-fg);
+}

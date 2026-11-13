@@ -24,10 +24,18 @@ import {
 } from './bocetos.data';
 import { SketchAvatar } from './sketch-avatar';
 import { type CardPick, type Density, SketchCard } from './sketch-card';
+import {
+  type BoardView,
+  type PanelLayout,
+  UNASSIGNED,
+  parseStoredView,
+  serializeStoredView,
+  viewStorageKey,
+} from './board-view';
 import { SketchDetail } from './sketch-detail';
 import { SketchIcon } from './sketch-icon';
 
-type Variant = 'a' | 'b' | 'c';
+type Variant = 'd' | 'a' | 'b' | 'c';
 type GroupBy = 'ninguno' | 'asignado' | 'prioridad' | 'etiqueta';
 
 interface Lane {
@@ -49,6 +57,17 @@ interface VariantInfo {
 }
 
 const VARIANTS: readonly VariantInfo[] = [
+  {
+    id: 'd',
+    name: 'Propuesta · Vista',
+    summary:
+      'Lo que eligió Victor el 2026-11-13: un menú «Vista» en la barra elige el panel (acoplado o dividido), agrupar (ninguno o por asignado) y la densidad, y se recuerda por proyecto. El filtro por asignado queda en la barra. Densidad por defecto, lugar del alta rápida y atajos P/A/M: pendientes.',
+    density: 'comoda',
+    groupBy: 'ninguno',
+    open: 22,
+    selected: [],
+    menu: null,
+  },
   {
     id: 'a',
     name: 'A · Panel acoplado',
@@ -75,7 +94,7 @@ const VARIANTS: readonly VariantInfo[] = [
     id: 'c',
     name: 'C · Vista dividida',
     summary:
-      'Tablero y detalle comparten la pantalla (60/40) y el detalle siempre muestra un issue. Alta rápida arriba de cada columna. Edición en línea con el menú de la tarjeta abierto.',
+      'Tablero y detalle comparten la pantalla (60/40). Alta rápida arriba de cada columna. Edición en línea con el menú de la tarjeta abierto.',
     density: 'compacta',
     groupBy: 'ninguno',
     open: 26,
@@ -130,6 +149,19 @@ export class Bocetos {
 
   protected readonly issues = signal<SketchIssue[]>([...ISSUES]);
   protected readonly density = signal<Density>('comoda');
+  protected readonly panelLayout = signal<PanelLayout>('acoplado');
+  protected readonly assigneeFilter = signal<ReadonlySet<string>>(new Set());
+  protected readonly viewMenuOpen = signal(false);
+  protected readonly assigneeMenuOpen = signal(false);
+  protected readonly unassigned = UNASSIGNED;
+
+  /** La vista actual con el modelo que después guarda el 034. */
+  protected readonly view = computed<BoardView>(() => ({
+    panel: this.panelLayout(),
+    groupBy: this.groupBy() === 'asignado' ? 'asignado' : 'ninguno',
+    density: this.density(),
+    filters: { assigneeIds: [...this.assigneeFilter()] },
+  }));
   protected readonly groupBy = signal<GroupBy>('ninguno');
   protected readonly selected = signal<ReadonlySet<number>>(new Set());
   protected readonly collapsed = signal<ReadonlySet<string>>(new Set());
@@ -147,8 +179,12 @@ export class Bocetos {
 
   protected readonly visible = computed(() => {
     const q = this.query().trim().toLowerCase();
-    if (!q) return this.issues();
-    return this.issues().filter(
+    const who = this.assigneeFilter();
+    const byWho = who.size
+      ? this.issues().filter((i) => who.has(i.assigneeId ?? UNASSIGNED))
+      : this.issues();
+    if (!q) return byWho;
+    return byWho.filter(
       (i) => i.title.toLowerCase().includes(q) || issueKey(i.number).toLowerCase().includes(q),
     );
   });
@@ -197,7 +233,17 @@ export class Bocetos {
       if (v.id === last) return;
       last = v.id;
       this.density.set(v.density);
+      this.panelLayout.set(v.id === 'c' ? 'dividido' : 'acoplado');
+      this.assigneeFilter.set(new Set());
+      this.viewMenuOpen.set(false);
       this.groupBy.set(v.groupBy);
+      if (v.id === 'd') {
+        // La propuesta lee la vista recordada para este proyecto.
+        const stored = parseStoredView(localStorage.getItem(viewStorageKey(PROJECT.key)));
+        this.panelLayout.set(stored.panel);
+        this.groupBy.set(stored.groupBy);
+        this.density.set(stored.density);
+      }
       this.selected.set(new Set(v.selected));
       this.menuFor.set(null);
       if (v.menu !== null) {
@@ -245,12 +291,32 @@ export class Bocetos {
   }
 
   protected close(replace = false): void {
-    if (this.variant().id === 'c') return; // en la vista dividida siempre hay uno
     void this.router.navigate([], {
       queryParams: { issue: null },
       queryParamsHandling: 'merge',
       replaceUrl: replace,
     });
+  }
+
+  /** Cambia una parte de la vista; en la propuesta se recuerda por proyecto. */
+  protected setView(change: Partial<Pick<BoardView, 'panel' | 'groupBy' | 'density'>>): void {
+    if (change.panel) this.panelLayout.set(change.panel);
+    if (change.groupBy) this.groupBy.set(change.groupBy);
+    if (change.density) this.density.set(change.density);
+    if (this.variant().id === 'd') {
+      localStorage.setItem(viewStorageKey(PROJECT.key), serializeStoredView(this.view()));
+    }
+  }
+
+  protected toggleAssignee(id: string): void {
+    const next = new Set(this.assigneeFilter());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.assigneeFilter.set(next);
+  }
+
+  protected clearAssignees(): void {
+    this.assigneeFilter.set(new Set());
   }
 
   /** ↑ / ↓ en el detalle: issue anterior o siguiente de la misma columna. */
@@ -267,7 +333,10 @@ export class Bocetos {
     const target = e.target as HTMLElement;
     const typing = target.matches('input, select, textarea');
     if (e.key === 'Escape') {
-      if (this.menuFor() !== null) this.menuFor.set(null);
+      if (this.viewMenuOpen() || this.assigneeMenuOpen()) {
+        this.viewMenuOpen.set(false);
+        this.assigneeMenuOpen.set(false);
+      } else if (this.menuFor() !== null) this.menuFor.set(null);
       else if (this.addingIn() !== null && typing) this.addingIn.set(null);
       else if (this.selected().size) this.selected.set(new Set());
       else if (this.openIssue()) this.close();
