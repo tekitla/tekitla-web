@@ -57,6 +57,8 @@ const issue = (number: number, patch: Partial<Issue> = {}): Issue => {
     statusId,
     labelIds: [],
     discard: null,
+    assigneeActorId: '',
+    sourceKey: '',
     ...patch,
   };
 };

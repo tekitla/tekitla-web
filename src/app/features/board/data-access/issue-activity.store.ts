@@ -93,6 +93,9 @@ export class IssueActivityStore {
           actorId: comment.authorId,
           createdAt: comment.createdAt,
           change: { kind: 'commented', comment },
+          agentId: '',
+          source: 'EVENT_SOURCE_LIVE',
+          sourceRef: '',
         };
         this._events.update((list) => [...list, event]);
         if (this.refreshing) this.refresh();

@@ -21,6 +21,7 @@ const label = (id: string, name: string): Label => ({
   projectId: 'p1',
   name,
   color: 'LABEL_COLOR_INFO',
+  countsAsValue: false,
 });
 
 const todo = status('todo', 'ISSUE_STATE_TODO', 'a');

@@ -4,7 +4,7 @@ import { environment } from '../../src/environments/environment';
 
 /**
  * Backend falso para los e2e: sesión de Firebase + API de Tekitla (contrato
- * `issues.v1` de tekitla-protos 0.4.0), todo con `page.route`. Los tests no
+ * `issues.v1` de tekitla-protos 0.7.0), todo con `page.route`. Los tests no
  * dependen de Firebase real ni del gateway. Los errores salen con el sobre del
  * gateway: `{"error": {"code", "message", "reason"?}}`.
  */
@@ -23,6 +23,17 @@ export interface FakeIssue {
   createdAt?: string;
   updatedAt?: string;
   discard?: { reason: string; actorId: string; discardedAt: string };
+  assigneeActorId?: string;
+}
+
+export interface FakeActor {
+  id: string;
+  kind: string;
+  displayName?: string;
+  ownerActorId?: string;
+  tool?: string;
+  userId?: string;
+  revokedAt?: string;
 }
 
 export interface FakeProject {
@@ -55,6 +66,9 @@ export interface FakeBackendOptions {
   issues?: FakeIssue[];
   statuses?: FakeStatus[];
   labels?: FakeLabel[];
+  actors?: FakeActor[];
+  /** ListActors responde 500 (las tarjetas siguen sin asignado). */
+  actorsFail?: boolean;
   /**
    * Fuerza un error en MoveIssue: 500 (rollback) o 400 (FAILED_PRECONDITION,
    * vista vieja).
@@ -113,6 +127,29 @@ export const LABELS: FakeLabel[] = [
   { id: 'l-back', projectId: 'p-tk', name: 'Backend', color: 'LABEL_COLOR_ACCENT' },
 ];
 
+/**
+ * La persona del usuario (sin nombre: el panel usa el de Firebase) y sus
+ * agentes. ListActors sin `include_revoked` no trae al revocado.
+ */
+export const ACTORS: FakeActor[] = [
+  { id: 'act-me', kind: 'ACTOR_KIND_PERSON', userId: 'e2e-uid' },
+  {
+    id: 'act-claude',
+    kind: 'ACTOR_KIND_AGENT',
+    displayName: 'Claude Code PC-01',
+    ownerActorId: 'act-me',
+    tool: 'AGENT_TOOL_CLAUDE_CODE',
+  },
+  {
+    id: 'act-codex',
+    kind: 'ACTOR_KIND_AGENT',
+    displayName: 'Codex nube',
+    ownerActorId: 'act-me',
+    tool: 'AGENT_TOOL_CLOUD',
+    revokedAt: '2026-11-01T00:00:00Z',
+  },
+];
+
 export const ISSUES: FakeIssue[] = [
   {
     id: 'i1',
@@ -127,6 +164,7 @@ export const ISSUES: FakeIssue[] = [
     labelIds: ['l-front'],
     createdAt: '2026-10-01T10:00:00Z',
     updatedAt: '2026-10-01T10:00:00Z',
+    assigneeActorId: 'act-claude',
   },
   {
     id: 'i2',
@@ -138,6 +176,7 @@ export const ISSUES: FakeIssue[] = [
     priority: 'PRIORITY_URGENT',
     rank: '000200',
     createdAt: '2026-10-02T10:00:00Z',
+    assigneeActorId: 'act-me',
   },
   {
     // Sin state, statusId ni priority: grpc-gateway omite los valores por
@@ -159,6 +198,9 @@ export const ISSUES: FakeIssue[] = [
     priority: 'PRIORITY_LOW',
     rank: '000400',
     createdAt: '2026-10-04T10:00:00Z',
+
+    // Asignado a un agente ya revocado: se sigue mostrando.
+    assigneeActorId: 'act-codex',
   },
   {
     id: 'i5',
@@ -389,6 +431,12 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
       if (options.forbidden) return fail(403, 'PERMISSION_DENIED', 'forbidden');
 
       const path = url.pathname;
+      if (path === '/v1/actors' && method === 'GET') {
+        if (options.actorsFail) return fail(500, 'INTERNAL', 'boom');
+        const all = options.actors ?? ACTORS;
+        const revoked = url.searchParams.get('include_revoked') === 'true';
+        return reply(200, { actors: revoked ? all : all.filter((a) => !a.revokedAt) });
+      }
       if (path === '/v1/projects' && method === 'GET') return reply(200, { projects, page: {} });
       if (path === '/v1/projects' && method === 'POST') {
         if (projects.some((p) => p.key === body?.['key'])) {

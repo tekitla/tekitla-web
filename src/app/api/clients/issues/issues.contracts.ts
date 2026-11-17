@@ -1,3 +1,4 @@
+import type * as actorsPb from '@tekitla/tekitla-protos/issues/v1/actors_pb';
 import type * as pb from '@tekitla/tekitla-protos/issues/v1/issues_pb';
 
 /**
@@ -76,6 +77,12 @@ export const LABEL_COLORS: readonly Exclude<LabelColor, 'LABEL_COLOR_UNSPECIFIED
   'LABEL_COLOR_BRAND',
 ];
 
+/**
+ * De dónde sale un evento del historial: en vivo (también los anteriores al
+ * campo) o importado con `ImportIssue`/`ImportIssueEvents`.
+ */
+export type EventSource = `EVENT_SOURCE_${keyof typeof pb.EventSource}`;
+
 /** Timestamps en RFC 3339; vacío si no vino. */
 interface Timestamps {
   createdAt: string;
@@ -100,7 +107,9 @@ export type DiscardInfo = Json<pb.DiscardInfo, { discardedAt: string }>;
  * compara como string; vacío si no vino). `statusId`: su estado (columna);
  * `state` es la categoría de ese estado. `labelIds`: ordenadas por nombre.
  * `discard`: solo mientras está descartado con motivo; `null` si no está
- * descartado o se descartó moviéndolo (sin motivo).
+ * descartado o se descartó moviéndolo (sin motivo). `assigneeActorId`: actor
+ * asignado (persona o agente, ver `Actor`), vacío si no tiene; puede estar
+ * revocado. `sourceKey`: clave en el tracker de origen si se importó.
  */
 export type Issue = Json<
   pb.Issue,
@@ -144,10 +153,33 @@ export type IssueChange =
   /** Un cambio que esta versión del panel todavía no conoce. */
   | { kind: 'unknown' };
 
-/** Evento del historial de un issue. `actorId`: uid de quien hizo el cambio. */
-export type IssueEvent = Omit<Json<pb.IssueEvent, { createdAt: string }>, 'change'> & {
+/**
+ * Evento del historial de un issue. `actorId`: uid de la persona que hizo el
+ * cambio (también si lo hizo uno de sus agentes: `agentId`, vacío si no).
+ */
+export type IssueEvent = Omit<
+  Json<pb.IssueEvent, { createdAt: string; source: EventSource }>,
+  'change'
+> & {
   change: IssueChange;
 };
+
+/** Persona o agente (`ActorService`, issue 025). */
+export type ActorKind = `ACTOR_KIND_${keyof typeof actorsPb.ActorKind}`;
+
+/** Herramienta de un agente; UNSPECIFIED en una persona. */
+export type AgentTool = `AGENT_TOOL_${keyof typeof actorsPb.AgentTool}`;
+
+/**
+ * Quien hace el trabajo: una persona (`userId`: su uid de Firebase) o uno de
+ * sus agentes (`ownerActorId`, `tool`). `displayName` de una persona puede
+ * venir vacío: el cliente lo resuelve con el uid. `revokedAt`: vacío si no
+ * está revocado.
+ */
+export type Actor = Json<
+  actorsPb.Actor,
+  { kind: ActorKind; tool: AgentTool; createdAt: string; revokedAt: string }
+>;
 
 /** Paginación por cursor opaco. `limit <= 0` usa el default del servicio. */
 export type PageRequest = Partial<Json<pb.PageRequest>>;
@@ -309,6 +341,11 @@ export type RawPageResponse = Partial<PageResponse>;
 export type RawStatus = Partial<Status>;
 export type RawLabel = Partial<Label>;
 export type RawComment = Partial<Comment>;
+export type RawActor = Partial<Actor>;
+
+export interface RawListActorsResponse {
+  actors?: RawActor[];
+}
 
 /** Evento crudo: del `oneof change` viene a lo sumo uno de estos campos. */
 export interface RawIssueEvent {
@@ -316,6 +353,9 @@ export interface RawIssueEvent {
   issueId?: string;
   actorId?: string;
   createdAt?: string;
+  agentId?: string;
+  source?: string;
+  sourceRef?: string;
   created?: object;
   statusChanged?: RawChange<'statusChanged'>;
   titleChanged?: RawChange<'titleChanged'>;

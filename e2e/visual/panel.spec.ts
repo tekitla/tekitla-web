@@ -73,6 +73,17 @@ for (const { name, viewport, mobile } of VIEWPORTS) {
 
     // En el celular no hay panel: `?issue=` lleva a la página completa (detalle-375).
     if (!mobile) {
+      test('Tablero con tarjetas cómodas (033)', async ({ page }) => {
+        // La densidad recordada del proyecto (la de por defecto es compacta).
+        await page.addInitScript(() =>
+          localStorage.setItem('tekitla-web.tablero.vista.p-tk', '{"density":"comoda"}'),
+        );
+        await open(page, '/proyectos/p-tk', (p) =>
+          expect(p.locator('.issue-card__agent-name').first()).toBeVisible(),
+        );
+        await expect(page).toHaveScreenshot(`tablero-comoda-${name}.png`, { fullPage: true });
+      });
+
       test('Tablero con el detalle en panel lateral (033)', async ({ page }) => {
         await open(page, '/proyectos/p-tk?issue=TK-1', (p) =>
           expect(p.locator('#board-panel app-issue-activity')).toContainText('creó el issue'),

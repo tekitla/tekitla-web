@@ -65,7 +65,10 @@ test.describe('desktop', () => {
 
     // TK-3 llega sin statusId ni state: cae en el primer estado «Por hacer».
     expect(await keysIn(column(page, 'Por hacer'))).toEqual(['TK-1', 'TK-3']);
-    await expect(card(page, 'TK-1').locator('.vrb-kanban-card__label')).toHaveText('Frontend');
+    // Compacta (por defecto): la etiqueta es un punto con su nombre para el lector.
+    await expect(card(page, 'TK-1').getByRole('list', { name: 'Etiquetas' })).toHaveText(
+      'Frontend',
+    );
     await expect(card(page, 'TK-5')).toHaveCount(0);
     await expect(page.getByText('1 issue en una columna oculta')).toBeVisible();
     // Las columnas que no caben se recorren dentro del tablero: la página no

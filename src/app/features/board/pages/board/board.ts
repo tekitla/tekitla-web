@@ -1,4 +1,5 @@
 import { CdkDrag, CdkDragDrop, CdkDropList, CdkDropListGroup } from '@angular/cdk/drag-drop';
+import { CdkMenu, CdkMenuGroup, CdkMenuItemRadio, CdkMenuTrigger } from '@angular/cdk/menu';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -41,7 +42,10 @@ import {
 } from '../../data-access/issue-panel.logic';
 import { IssueDetail } from '../issue-detail/issue-detail';
 import { boardNav } from '../../board-nav';
+import { ActorsStore } from '../../data-access/actors.store';
 import { BoardStore } from '../../data-access/board.store';
+import { DENSITIES } from '../../data-access/board-view';
+import { BoardViewStore } from '../../data-access/board-view.store';
 
 /** Los avisos de éxito se van solos; los de error quedan hasta cerrarlos. */
 const INFO_NOTICE_MS = 5000;
@@ -73,6 +77,10 @@ const INFO_NOTICE_MS = 5000;
     CdkDropListGroup,
     CdkDropList,
     CdkDrag,
+    CdkMenuTrigger,
+    CdkMenu,
+    CdkMenuGroup,
+    CdkMenuItemRadio,
     IssueCard,
     IssueDetail,
     Button,
@@ -86,6 +94,9 @@ const INFO_NOTICE_MS = 5000;
 })
 export class Board {
   protected readonly store = inject(BoardStore);
+  protected readonly actors = inject(ActorsStore);
+  protected readonly view = inject(BoardViewStore);
+  protected readonly densities = DENSITIES;
   protected readonly isMobile = inject(Viewport).isMobile;
   private readonly injector = inject(Injector);
   private readonly router = inject(Router);
@@ -127,6 +138,11 @@ export class Board {
       const id = this.projectId();
       untracked(() => this.store.load(id));
     });
+    // Pide los actores al abrir el tablero y otra vez si cambia la sesión
+    // (`load` lee el uid: es la dependencia de este effect).
+    effect(() => this.actors.load());
+    // La vista recordada es por proyecto: el id llega con la ruta, antes que el proyecto.
+    effect(() => this.view.use(this.projectId()));
 
     const nav = inject(ShellNav);
     effect(() => {

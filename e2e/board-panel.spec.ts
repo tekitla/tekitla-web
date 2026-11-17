@@ -83,9 +83,9 @@ test.describe('desktop', () => {
   test('abrir, cambiar de issue y cerrar nunca llevan el tablero arriba', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 420 });
     await openBoard(page);
-    await page.evaluate(() => window.scrollTo(0, 120));
+    await page.evaluate(() => window.scrollTo(0, 60));
     const scrollY = () => page.evaluate(() => Math.round(window.scrollY));
-    await expect.poll(scrollY).toBe(120);
+    await expect.poll(scrollY).toBe(60);
     // Cada posición por la que pasa la página: un salto arriba quedaría acá.
     await page.evaluate(() => {
       const w = window as unknown as { __ys: number[] };
@@ -100,9 +100,9 @@ test.describe('desktop', () => {
     await expect(page).toHaveURL(/\?issue=TK-1$/);
     await page.keyboard.press('Escape');
     await expect(panel(page)).toHaveCount(0);
-    await expect.poll(scrollY).toBe(120);
+    await expect.poll(scrollY).toBe(60);
     const ys = await page.evaluate(() => (window as unknown as { __ys: number[] }).__ys);
-    expect(ys.filter((y) => y !== 120)).toEqual([]);
+    expect(ys.filter((y) => y !== 60)).toEqual([]);
   });
 
   test('dos Esc seguidos cierran el panel y se quedan en el tablero', async ({ page }) => {
@@ -146,18 +146,18 @@ test.describe('desktop', () => {
   test('cerrar con Esc vuelve a la posición de cuando se abrió el panel', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 420 });
     await openBoard(page);
-    await page.evaluate(() => window.scrollTo(0, 120));
+    await page.evaluate(() => window.scrollTo(0, 60));
     const scrollY = () => page.evaluate(() => Math.round(window.scrollY));
-    await expect.poll(scrollY).toBe(120);
+    await expect.poll(scrollY).toBe(60);
     await cardLink(page, 'TK-3').click();
     await expect(panel(page)).toBeVisible();
     // Con el panel abierto se desplaza la página; al cerrar, el router vuelve
     // a donde estaba al abrir (como cualquier «atrás»), nunca arriba de todo.
-    await page.evaluate(() => window.scrollTo(0, 40));
-    await expect.poll(scrollY).toBe(40);
+    await page.evaluate(() => window.scrollTo(0, 20));
+    await expect.poll(scrollY).toBe(20);
     await page.keyboard.press('Escape');
     await expect(panel(page)).toHaveCount(0);
-    await expect.poll(scrollY).toBe(120);
+    await expect.poll(scrollY).toBe(60);
   });
 
   test('después de recargar, cerrar saca ?issue= sin salir de la página', async ({ page }) => {

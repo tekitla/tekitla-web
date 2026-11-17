@@ -11,6 +11,9 @@ export { IssuesClient, fetchPages } from './clients/issues/issues.client';
 export type { Pages } from './clients/issues/issues.client';
 export { LABEL_COLORS, PRIORITIES, STATUS_CATEGORIES } from './clients/issues/issues.contracts';
 export type {
+  Actor,
+  ActorKind,
+  AgentTool,
   BatchUpdateStatusesRequest,
   Comment,
   CreateIssueRequest,

@@ -1,11 +1,15 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import type { Issue, Label, Status } from '@/app/api';
 import { Icon } from '@/app/ui/components/icon/icon';
+import type { ActorView } from '../../data-access/actors.logic';
 import { LABEL_TONE, issueKey, statusTone } from '../../data-access/board.logic';
+import { DEFAULT_VIEW, type ViewDensity } from '../../data-access/board-view';
+import { ActorAvatar } from '../actor-avatar/actor-avatar';
 import { KANBAN_PRIORITY, PRIORITY_LEVEL } from '../priority-badge/priority-badge';
 
 /**
@@ -25,10 +29,23 @@ export type MoveRequest =
  * el foco en la tarjeta, Shift+← / Shift+→ la pasa a la columna vecina y
  * Shift+↑ / Shift+↓ la sube o baja en la suya. «Descartar…» lleva al detalle
  * con el diálogo del motivo abierto (descartar pide un motivo).
+ *
+ * Densidad (033): cómoda lleva clave, título, etiquetas, prioridad y
+ * asignado (un agente con su nombre y el icono de su herramienta); compacta,
+ * clave y título en una fila y debajo puntos de etiqueta, «Mover» como icono
+ * y el avatar.
  */
 @Component({
   selector: 'app-issue-card',
-  imports: [CdkMenuTrigger, CdkMenu, CdkMenuItem, Icon, TranslatePipe],
+  imports: [
+    ActorAvatar,
+    CdkMenuTrigger,
+    CdkMenu,
+    CdkMenuItem,
+    Icon,
+    NgTemplateOutlet,
+    TranslatePipe,
+  ],
   templateUrl: './issue-card.html',
   styleUrl: './issue-card.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,6 +69,9 @@ export class IssueCard {
   readonly openInPanel = input(false);
   /** Es el issue abierto en el panel. */
   readonly current = input(false);
+  /** Asignado: `null` si no tiene o todavía no se sabe quién es. */
+  readonly assignee = input<ActorView | null>(null);
+  readonly density = input<ViewDensity>(DEFAULT_VIEW.density);
 
   readonly move = output<MoveRequest>();
   /** Pedido de abrir el issue en el panel del tablero (`openInPanel`). */

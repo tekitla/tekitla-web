@@ -11,6 +11,9 @@ const event = (id: string): IssueEvent => ({
   actorId: 'u1',
   createdAt: '',
   change: { kind: 'created' },
+  agentId: '',
+  source: 'EVENT_SOURCE_LIVE',
+  sourceRef: '',
 });
 
 const page = (ids: string[], nextCursor = ''): ListIssueEventsResponse => ({
