@@ -92,6 +92,15 @@
     "hintDesktop": "Arrastra las tarjetas para cambiarlas de columna o de lugar, o usa «Mover». Con el teclado: Shift + ← / → cambia de columna y Shift + ↑ / ↓ sube o baja la tarjeta enfocada.",
     "hintMobile": "Usa «Mover» en cada tarjeta para cambiarla de columna.",
     "emptyColumn": "Sin issues",
+    "quickAdd": {
+      "button": "Agregar",
+      "buttonLabel": "Agregar un issue en {{column}}",
+      "label": "Título del issue nuevo en {{column}}",
+      "placeholder": "Título del issue",
+      "hint": "Enter crea el issue · Esc cierra",
+      "required": "Escribe un título.",
+      "failed": "No se pudo crear {{titles}}. Intenta de nuevo."
+    },
     "notFound": "No encontramos este proyecto.",
     "loadError": "No pudimos cargar el tablero",
     "card": {

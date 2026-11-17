@@ -118,6 +118,11 @@ export class BoardStore {
   readonly selectedNotFound = this._selectedNotFound.asReadonly();
 
   private loadRequestId = 0;
+  /**
+   * Sube cada vez que el tablero se vacía para cargar un proyecto (otro, o el
+   * mismo después de ir a otro): una respuesta de antes no lo toca.
+   */
+  private generation = 0;
   /** Escrituras confirmadas (mover, crear, editar): un refresco anterior a ellas es viejo. */
   private writes = 0;
   private detailRequestId = 0;
@@ -143,6 +148,7 @@ export class BoardStore {
   load(projectId: string): void {
     const sameProject = this._projectId() === projectId && this._loaded();
     if (!sameProject) {
+      this.generation++;
       this._projectId.set(projectId);
       this._project.set(null);
       this._issues.set([]);
@@ -384,16 +390,17 @@ export class BoardStore {
 
   /**
    * Una escritura de un issue que espera al servidor y deja su respuesta en
-   * la lista. Si se cambió de proyecto con el pedido en vuelo, la respuesta no
-   * toca el store. Un movimiento optimista en vuelo del mismo issue es más
+   * la lista. Si se cambió de proyecto con el pedido en vuelo (aunque se haya
+   * vuelto a este), la respuesta no toca el store. Un movimiento optimista en vuelo del mismo issue es más
    * nuevo: su posición se respeta hasta que responda.
    */
   private write(number: number, call: (projectId: string) => Observable<Issue>): Observable<Issue> {
     const projectId = this._projectId();
+    const generation = this.generation;
     if (!projectId) return throwError(() => toDomainError(new Error('BoardStore sin proyecto')));
     return call(projectId).pipe(
       tap((issue) => {
-        if (this._projectId() !== projectId) return;
+        if (this.generation !== generation) return;
         // Cuenta aunque haya un movimiento en vuelo: un refresco anterior es viejo.
         this.writes++;
         if (!this.isPending(number)) this._issues.update((list) => upsertIssue(list, issue));
@@ -408,17 +415,42 @@ export class BoardStore {
 
   /** Crea un issue (el backend lo pone en el primer estado «Por hacer») y lo suma al tablero. */
   create(req: CreateIssueRequest): Observable<Issue> {
+    return this.insert(req, true);
+  }
+
+  /**
+   * Alta rápida desde una columna (CU-033-3): crea el issue con solo el título
+   * en la columna `statusId`, al final del orden. A diferencia de `create`, no
+   * cambia la columna elegida en móvil (ya se está en ella). Errores como
+   * `DomainError`.
+   */
+  quickAdd(statusId: string, title: string): Observable<Issue> {
+    const target = this.config.statuses().find((s) => s.id === statusId);
+    if (!target || target.category === 'ISSUE_STATE_CANCELED') {
+      return throwError(() => toDomainError(new Error('BoardStore.quickAdd sin columna')));
+    }
+    return this.insert({ title, description: '', priority: 'PRIORITY_MEDIUM', statusId }, false);
+  }
+
+  /**
+   * Crea y suma el issue al tablero, con el aviso de dónde quedó. Si el tablero
+   * se recargó para otro proyecto (o para este después de otro) con el pedido
+   * en vuelo, la respuesta no lo toca. `select`: elegir su columna en móvil.
+   */
+  private insert(req: CreateIssueRequest, select: boolean): Observable<Issue> {
     const projectId = this._projectId();
-    if (!projectId) return throwError(() => new Error('BoardStore.create sin proyecto'));
+    const generation = this.generation;
+    if (!projectId) return throwError(() => toDomainError(new Error('BoardStore sin proyecto')));
     return this.client.createIssue(projectId, req).pipe(
       tap((issue) => {
+        if (this.generation !== generation) return;
         this.writes++;
         this._issues.update((list) => upsertIssue(list, issue));
         const status = this.statusOf(issue);
-        if (status) this._activeColumn.set(status.id);
+        if (status && select) this._activeColumn.set(status.id);
         // Sin estados cargados todavía (entrada directa al alta) no hay nombre.
         const message = status ? 'board.notice.created' : 'board.notice.createdNoColumn';
-        this.notify('info', message, issueKey(this.projectKey(), issue.number), status?.name);
+        this.notify('info', message, this.keyOf(issue.number), status?.name);
       }),
       catchError((err: unknown) => throwError(() => toDomainError(err))),
     );
@@ -430,10 +462,12 @@ export class BoardStore {
    */
   update(number: number, req: UpdateIssueRequest): Observable<Issue> {
     const projectId = this._projectId();
+    const generation = this.generation;
     if (!projectId) return throwError(() => new Error('BoardStore.update sin proyecto'));
     return this.client.updateIssue(projectId, number, req).pipe(
       tap((issue) => {
-        if (this._projectId() !== projectId) return;
+        // Otro proyecto, o este cargado de nuevo después de otro: es vieja.
+        if (this.generation !== generation) return;
         this.writes++;
         // Un movimiento en vuelo manda sobre la posición: se conserva la optimista.
         const local = this._issues().find((i) => i.number === number);

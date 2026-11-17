@@ -216,11 +216,16 @@ export interface ListIssuesRequest {
   page?: PageRequest;
 }
 
-/** POST /v1/projects/{projectId}/issues — se crea en ISSUE_STATE_TODO. */
+/**
+ * POST /v1/projects/{projectId}/issues. Sin `statusId`, se crea en el primer
+ * estado ISSUE_STATE_TODO; con él, en esa columna (alta rápida, CU-033-3).
+ * Siempre al final del orden.
+ */
 export type CreateIssueRequest = Pick<
   Json<pb.CreateIssueRequest, { priority: Priority }>,
   'title' | 'description' | 'priority'
->;
+> &
+  Partial<Pick<Json<pb.CreateIssueRequest>, 'statusId'>>;
 
 /**
  * POST /v1/projects/{projectId}/issues/{number}:move. `statusId`: estado

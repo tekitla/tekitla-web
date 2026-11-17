@@ -468,6 +468,79 @@ describe('BoardStore', () => {
     });
   });
 
+  describe('quickAdd (alta rápida por columna)', () => {
+    it('crea con el título en esa columna, lo suma al final y no cambia la columna elegida', () => {
+      store.setActiveColumn('todo');
+      client.createIssue.mockReturnValue(
+        of(issue(4, { title: 'Nuevo', statusId: 'doing', rank: '0|a9' })),
+      );
+      let result: Issue | undefined;
+
+      store.quickAdd('doing', 'Nuevo').subscribe((i) => (result = i));
+
+      expect(client.createIssue).toHaveBeenCalledWith('p1', {
+        title: 'Nuevo',
+        description: '',
+        priority: 'PRIORITY_MEDIUM',
+        statusId: 'doing',
+      });
+      expect(client.moveIssue).not.toHaveBeenCalled();
+      expect(numbersIn('doing')).toEqual([2, 4]);
+      expect(store.activeColumn()).toBe('todo');
+      expect(result?.number).toBe(4);
+      expect(store.notice()).toMatchObject({
+        kind: 'info',
+        message: 'board.notice.created',
+        issue: 'TK-4',
+        column: 'En curso',
+      });
+    });
+
+    it('si falla el alta, falla el observable con un DomainError y no toca el tablero', () => {
+      client.createIssue.mockReturnValue(throwError(() => apiError(400, 'INVALID_ARGUMENT')));
+      let failure: unknown;
+
+      store.quickAdd('todo', 'Nuevo').subscribe({ error: (e) => (failure = e) });
+
+      expect(failure).toBeInstanceOf(DomainError);
+      expect(numbersIn('todo')).toEqual([1, 3]);
+      expect(store.notice()).toBeNull();
+    });
+
+    it('no crea en una columna de descarte ni en una que no existe', () => {
+      const errors = vi.fn();
+      store.quickAdd('canceled', 'x').subscribe({ error: errors });
+      store.quickAdd('nope', 'x').subscribe({ error: errors });
+      expect(errors).toHaveBeenCalledTimes(2);
+      expect(errors.mock.calls[0]![0]).toBeInstanceOf(DomainError);
+      expect(client.createIssue).not.toHaveBeenCalled();
+    });
+
+    it('si se cambió de proyecto con el alta en vuelo, la respuesta no toca el tablero nuevo', () => {
+      const created = new Subject<Issue>();
+      client.createIssue.mockReturnValue(created);
+      store.quickAdd('todo', 'Nuevo').subscribe();
+
+      client.listAllIssues.mockReturnValue(of([]));
+      store.load('p2');
+      created.next(issue(4));
+      expect(store.issues()).toEqual([]);
+      expect(store.notice()).toBeNull();
+    });
+
+    it('tampoco si se fue a otro proyecto y se volvió (el tablero se cargó de nuevo)', () => {
+      const created = new Subject<Issue>();
+      client.createIssue.mockReturnValue(created);
+      store.quickAdd('todo', 'Nuevo').subscribe();
+
+      store.load('p2');
+      store.load('p1');
+      created.next(issue(4));
+      expect(numbersIn('todo')).toEqual([1, 3]);
+      expect(store.notice()).toBeNull();
+    });
+  });
+
   describe('update', () => {
     it('guarda lo que devuelve el servidor', () => {
       client.updateIssue.mockReturnValue(of(issue(1, { title: 'Nuevo título', labelIds: ['l1'] })));
@@ -499,6 +572,17 @@ describe('BoardStore', () => {
       store.update(1, { title: 'x' }).subscribe({ error: (e: unknown) => (error = e) });
 
       expect(error).toBeInstanceOf(DomainError);
+      expect(store.issues().find((i) => i.number === 1)?.title).toBe('Issue 1');
+    });
+
+    it('una respuesta de antes de ir a otro proyecto y volver no toca el tablero recargado', () => {
+      const answer = new Subject<Issue>();
+      client.updateIssue.mockReturnValue(answer);
+      store.update(1, { title: 'Viejo' }).subscribe();
+
+      store.load('p2');
+      store.load('p1');
+      answer.next(issue(1, { title: 'Viejo' }));
       expect(store.issues().find((i) => i.number === 1)?.title).toBe('Issue 1');
     });
   });

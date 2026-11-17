@@ -1,0 +1,45 @@
+@let id = 'quick-add-' + statusId();
+@if (open()) {
+  <form class="quick-add" novalidate (submit)="$event.preventDefault(); submit()">
+    <label class="u-visually-hidden" [for]="id">{{
+      'board.quickAdd.label' | translate: { column: column() }
+    }}</label>
+    <input
+      #field
+      class="vrb-input quick-add__input"
+      type="text"
+      autocomplete="off"
+      enterkeyhint="done"
+      [id]="id"
+      [maxLength]="max"
+      [placeholder]="'board.quickAdd.placeholder' | translate"
+      [value]="title()"
+      [attr.aria-invalid]="required() || failed().length > 0 ? true : null"
+      [attr.aria-describedby]="required() || failed().length > 0 ? id + '-error' : id + '-hint'"
+      (input)="onInput(field.value)"
+      (keydown.escape)="close($event)"
+      (blur)="onBlur()"
+    />
+    @if (required() || failed().length > 0) {
+      <p class="vrb-field__error quick-add__note" role="alert" [id]="id + '-error'">
+        @if (failed().length > 0) {
+          {{ 'board.quickAdd.failed' | translate: { titles: failedText() } }}
+        } @else {
+          {{ 'board.quickAdd.required' | translate }}
+        }
+      </p>
+    } @else {
+      <p class="vrb-field__hint quick-add__note" [id]="id + '-hint'">
+        {{ 'board.quickAdd.hint' | translate }}
+      </p>
+    }
+  </form>
+} @else {
+  <button #opener type="button" class="vrb-kanban__add" (click)="show()">
+    <ui-icon name="plus" />
+    <span aria-hidden="true">{{ 'board.quickAdd.button' | translate }}</span>
+    <span class="u-visually-hidden">{{
+      'board.quickAdd.buttonLabel' | translate: { column: column() }
+    }}</span>
+  </button>
+}
