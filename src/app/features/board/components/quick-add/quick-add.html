@@ -14,16 +14,16 @@
       [maxLength]="max"
       [placeholder]="'board.quickAdd.placeholder' | translate"
       [value]="title()"
-      [attr.aria-invalid]="error() ? true : null"
-      [attr.aria-describedby]="error() ? id + '-error' : id + '-hint'"
+      [attr.aria-invalid]="required() || failed().length > 0 ? true : null"
+      [attr.aria-describedby]="required() || failed().length > 0 ? id + '-error' : id + '-hint'"
       (input)="onInput(field.value)"
       (keydown.escape)="close($event)"
       (blur)="onBlur()"
     />
-    @if (error(); as error) {
+    @if (required() || failed().length > 0) {
       <p class="vrb-field__error quick-add__note" role="alert" [id]="id + '-error'">
-        @if (error.kind === 'failed') {
-          {{ 'board.quickAdd.failed' | translate: { title: error.title } }}
+        @if (failed().length > 0) {
+          {{ 'board.quickAdd.failed' | translate: { titles: failedText() } }}
         } @else {
           {{ 'board.quickAdd.required' | translate }}
         }

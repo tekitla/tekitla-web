@@ -390,16 +390,17 @@ export class BoardStore {
 
   /**
    * Una escritura de un issue que espera al servidor y deja su respuesta en
-   * la lista. Si se cambió de proyecto con el pedido en vuelo, la respuesta no
-   * toca el store. Un movimiento optimista en vuelo del mismo issue es más
+   * la lista. Si se cambió de proyecto con el pedido en vuelo (aunque se haya
+   * vuelto a este), la respuesta no toca el store. Un movimiento optimista en vuelo del mismo issue es más
    * nuevo: su posición se respeta hasta que responda.
    */
   private write(number: number, call: (projectId: string) => Observable<Issue>): Observable<Issue> {
     const projectId = this._projectId();
+    const generation = this.generation;
     if (!projectId) return throwError(() => toDomainError(new Error('BoardStore sin proyecto')));
     return call(projectId).pipe(
       tap((issue) => {
-        if (this._projectId() !== projectId) return;
+        if (this.generation !== generation) return;
         // Cuenta aunque haya un movimiento en vuelo: un refresco anterior es viejo.
         this.writes++;
         if (!this.isPending(number)) this._issues.update((list) => upsertIssue(list, issue));
@@ -461,10 +462,12 @@ export class BoardStore {
    */
   update(number: number, req: UpdateIssueRequest): Observable<Issue> {
     const projectId = this._projectId();
+    const generation = this.generation;
     if (!projectId) return throwError(() => new Error('BoardStore.update sin proyecto'));
     return this.client.updateIssue(projectId, number, req).pipe(
       tap((issue) => {
-        if (this._projectId() !== projectId) return;
+        // Otro proyecto, o este cargado de nuevo después de otro: es vieja.
+        if (this.generation !== generation) return;
         this.writes++;
         // Un movimiento en vuelo manda sobre la posición: se conserva la optimista.
         const local = this._issues().find((i) => i.number === number);

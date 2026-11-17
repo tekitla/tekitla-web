@@ -4,6 +4,7 @@ import {
   ElementRef,
   Injector,
   afterNextRender,
+  computed,
   inject,
   input,
   signal,
@@ -12,10 +13,8 @@ import {
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { Icon } from '@/app/ui/components/icon/icon';
+import { ISSUE_TITLE_MAX } from '../../data-access/board.logic';
 import { BoardStore } from '../../data-access/board.store';
-
-/** El mismo máximo que el alta completa (`issue-new.ts`). */
-export const QUICK_ADD_MAX = 200;
 
 /**
  * «+ Agregar» al pie de una columna (CU-033-3). Abre un campo: `Enter` crea el
@@ -42,13 +41,18 @@ export class QuickAdd {
   private readonly field = viewChild<ElementRef<HTMLInputElement>>('field');
   private readonly opener = viewChild<ElementRef<HTMLButtonElement>>('opener');
 
-  protected readonly max = QUICK_ADD_MAX;
+  protected readonly max = ISSUE_TITLE_MAX;
   protected readonly open = signal(false);
   protected readonly title = signal('');
-  /** Error visible: `required` o el título que no se pudo crear. */
-  protected readonly error = signal<
-    { kind: 'required' } | { kind: 'failed'; title: string } | null
-  >(null);
+  /** Pidió crear sin título (se borra al escribir). */
+  protected readonly required = signal(false);
+  /** Títulos que no se pudieron crear desde el último intento: se nombran todos. */
+  protected readonly failed = signal<readonly string[]>([]);
+  protected readonly failedText = computed(() =>
+    this.failed()
+      .map((t) => `«${t}»`)
+      .join(', '),
+  );
 
   protected show(): void {
     this.open.set(true);
@@ -57,42 +61,53 @@ export class QuickAdd {
 
   protected onInput(value: string): void {
     this.title.set(value);
-    if (this.error()?.kind === 'required') this.error.set(null);
+    this.required.set(false);
   }
 
   protected submit(): void {
     const title = this.title().trim();
     if (!title) {
-      this.error.set({ kind: 'required' });
+      this.required.set(true);
       return;
     }
     this.title.set('');
-    this.error.set(null);
-    this.store.quickAdd(this.statusId(), title).subscribe({
-      // Aunque el campo ya se haya cerrado (Esc o salir de él con el pedido en
-      // vuelo): se abre de nuevo con el título, y el error se anuncia.
-      error: () => {
-        if (!this.open() || !this.title()) this.title.set(title);
-        this.open.set(true);
-        this.error.set({ kind: 'failed', title });
-      },
-    });
+    this.required.set(false);
+    this.failed.set([]);
+    this.store.quickAdd(this.statusId(), title).subscribe({ error: () => this.fail(title) });
+  }
+
+  /**
+   * Un alta falló, aunque el campo ya se haya cerrado (Esc o salir de él con
+   * el pedido en vuelo): se abre con el título si no tiene otro, y el error
+   * nombra todos los que fallaron. Si el foco estaba en «+ Agregar» (que
+   * desaparece al abrir) o se perdió, pasa al campo.
+   */
+  private fail(title: string): void {
+    const active = document.activeElement;
+    const opener = this.opener()?.nativeElement;
+    const lost = !active || active === document.body || (!!opener && active === opener);
+    if (!this.open() || !this.title().trim()) this.title.set(title);
+    this.open.set(true);
+    this.failed.update((list) => [...list, title]);
+    if (lost) this.focus(() => this.field());
   }
 
   protected close(event?: Event): void {
     event?.stopPropagation();
-    this.open.set(false);
-    this.title.set('');
-    this.error.set(null);
+    this.reset();
     this.focus(() => this.opener());
   }
 
   /** Al salir del campo vacío se cierra; con texto queda abierto (no se pierde lo escrito). */
   protected onBlur(): void {
-    if (!this.title().trim() && this.error()?.kind !== 'failed') {
-      this.open.set(false);
-      this.error.set(null);
-    }
+    if (!this.title().trim()) this.reset();
+  }
+
+  private reset(): void {
+    this.open.set(false);
+    this.title.set('');
+    this.required.set(false);
+    this.failed.set([]);
   }
 
   private focus(target: () => ElementRef<HTMLElement> | undefined): void {

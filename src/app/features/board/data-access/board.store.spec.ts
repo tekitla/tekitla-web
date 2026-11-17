@@ -574,6 +574,17 @@ describe('BoardStore', () => {
       expect(error).toBeInstanceOf(DomainError);
       expect(store.issues().find((i) => i.number === 1)?.title).toBe('Issue 1');
     });
+
+    it('una respuesta de antes de ir a otro proyecto y volver no toca el tablero recargado', () => {
+      const answer = new Subject<Issue>();
+      client.updateIssue.mockReturnValue(answer);
+      store.update(1, { title: 'Viejo' }).subscribe();
+
+      store.load('p2');
+      store.load('p1');
+      answer.next(issue(1, { title: 'Viejo' }));
+      expect(store.issues().find((i) => i.number === 1)?.title).toBe('Issue 1');
+    });
   });
 
   it('select refresca el issue desde el servidor y el detalle refleja los movimientos', () => {

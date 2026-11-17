@@ -23,8 +23,7 @@ import { Markdown } from '@/app/ui/components/markdown/markdown';
 import { PRIORITY_LEVEL, PRIORITY_TONE } from '../../components/priority-badge/priority-badge';
 import { boardNav } from '../../board-nav';
 import { BoardStore } from '../../data-access/board.store';
-
-const TITLE_MAX = 200;
+import { ISSUE_TITLE_MAX } from '../../data-access/board.logic';
 
 /**
  * Alta de issue: título, prioridad (selector segmentado) y descripción en
@@ -53,9 +52,9 @@ export class IssueNew {
   );
   /** Color del punto de cada prioridad en el selector. */
   protected readonly priorityDot = (priority: Priority) => PRIORITY_TONE[PRIORITY_LEVEL[priority]];
-  protected readonly titleMax = TITLE_MAX;
+  protected readonly titleMax = ISSUE_TITLE_MAX;
   protected readonly form = inject(FormBuilder).nonNullable.group({
-    title: ['', [Validators.required, Validators.maxLength(TITLE_MAX)]],
+    title: ['', [Validators.required, Validators.maxLength(ISSUE_TITLE_MAX)]],
     description: [''],
     priority: ['PRIORITY_MEDIUM' as Priority],
   });

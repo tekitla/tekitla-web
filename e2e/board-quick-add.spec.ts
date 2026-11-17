@@ -109,12 +109,15 @@ test.describe('desktop', () => {
     await field.press('Enter');
     await field.press('Escape');
     await expect(field).toHaveCount(0);
+    await expect(open).toBeFocused();
 
     release();
     await expect(
       page.getByRole('alert').filter({ hasText: 'No se pudo crear «Se pierde»' }),
     ).toBeVisible();
     await expect(field).toHaveValue('Se pierde');
+    // El botón que tenía el foco desapareció: el foco pasa al campo.
+    await expect(field).toBeFocused();
     expect(await keysIn(page, 'En curso')).not.toContain('TK-6');
   });
 
@@ -135,23 +138,36 @@ test.describe('desktop', () => {
     expect(api.calls.some((c) => c.method === 'POST' && c.path.endsWith('/issues'))).toBe(false);
   });
 
-  test('si falla el alta, el título vuelve al campo con el error', async ({ page }) => {
+  test('si fallan dos altas seguidas, el error nombra las dos; vaciar y salir cierra', async ({
+    page,
+  }) => {
     await openBoard(page);
-    await page.route(/\/v1\/projects\/p-tk\/issues$/, (route) =>
-      route.request().method() === 'POST'
-        ? route.fulfill({ status: 500, json: { code: 13, message: 'boom' } })
-        : route.fallback(),
-    );
+    let release!: () => void;
+    const answered = new Promise<void>((resolve) => (release = resolve));
+    await page.route(/\/v1\/projects\/p-tk\/issues$/, async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      await answered;
+      await route.fulfill({ status: 500, json: { code: 13, message: 'boom' } });
+    });
 
     await page.getByRole('button', { name: 'Agregar un issue en Por hacer' }).click();
     const field = page.getByRole('textbox', { name: 'Título del issue nuevo en Por hacer' });
-    await field.fill('No llega');
+    await field.fill('Uno');
     await field.press('Enter');
+    await field.fill('Dos');
+    await field.press('Enter');
+    release();
 
     await expect(
-      page.getByRole('alert').filter({ hasText: 'No se pudo crear «No llega»' }),
+      page.getByRole('alert').filter({ hasText: /No se pudo crear «(Uno|Dos)», «(Uno|Dos)»/ }),
     ).toBeVisible();
-    await expect(field).toHaveValue('No llega');
+    await expect(field).toHaveValue(/^(Uno|Dos)$/);
+    await expect(field).toHaveAttribute('aria-invalid', 'true');
+
+    await field.fill('');
+    await page.locator('#board-title').click();
+    await expect(field).toHaveCount(0);
+    await expect(page.getByRole('alert').filter({ hasText: 'No se pudo crear' })).toHaveCount(0);
   });
 
   test('la columna de descarte no tiene alta rápida', async ({ page }) => {

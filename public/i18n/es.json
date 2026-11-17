@@ -99,7 +99,7 @@
       "placeholder": "Título del issue",
       "hint": "Enter crea el issue · Esc cierra",
       "required": "Escribe un título.",
-      "failed": "No se pudo crear «{{title}}». Intenta de nuevo."
+      "failed": "No se pudo crear {{titles}}. Intenta de nuevo."
     },
     "notFound": "No encontramos este proyecto.",
     "loadError": "No pudimos cargar el tablero",

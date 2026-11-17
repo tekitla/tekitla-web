@@ -37,13 +37,12 @@ import {
   PRIORITY_TONE,
   PriorityBadge,
 } from '../../components/priority-badge/priority-badge';
-import { LABEL_TONE, issueKey, statusTone } from '../../data-access/board.logic';
+import { ISSUE_TITLE_MAX, LABEL_TONE, issueKey, statusTone } from '../../data-access/board.logic';
 import { boardNav } from '../../board-nav';
 import { BoardStore } from '../../data-access/board.store';
 import { IssueActivityStore } from '../../data-access/issue-activity.store';
 
 /** Límites del backend (tekitla-issues: `IssueTitleMaxLen`, `IssueDescriptionMaxLen`). */
-const TITLE_MAX = 200;
 const DESCRIPTION_MAX = 20_000;
 
 /** Campo que se está guardando (o que falló), para mostrar el error a su lado. */
@@ -107,7 +106,7 @@ export class IssueDetail {
   protected readonly labelTone = LABEL_TONE;
   protected readonly priorities = PRIORITIES;
   protected readonly priorityDot = (priority: Priority) => PRIORITY_TONE[PRIORITY_LEVEL[priority]];
-  protected readonly titleMax = TITLE_MAX;
+  protected readonly titleMax = ISSUE_TITLE_MAX;
   protected readonly descriptionMax = DESCRIPTION_MAX;
 
   protected readonly key = computed(() => issueKey(this.store.projectKey(), this.number()));

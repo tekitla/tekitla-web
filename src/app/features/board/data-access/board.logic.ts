@@ -189,3 +189,6 @@ export function upsertIssue(issues: readonly Issue[], issue: Issue): Issue[] {
 export function issueKey(projectKey: string, number: number): string {
   return projectKey ? `${projectKey}-${number}` : `#${number}`;
 }
+
+/** Largo máximo del título de un issue (alta, alta rápida y detalle). */
+export const ISSUE_TITLE_MAX = 200;
