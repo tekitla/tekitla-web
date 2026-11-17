@@ -118,6 +118,11 @@ export class BoardStore {
   readonly selectedNotFound = this._selectedNotFound.asReadonly();
 
   private loadRequestId = 0;
+  /**
+   * Sube cada vez que el tablero se vacía para cargar un proyecto (otro, o el
+   * mismo después de ir a otro): una respuesta de antes no lo toca.
+   */
+  private generation = 0;
   /** Escrituras confirmadas (mover, crear, editar): un refresco anterior a ellas es viejo. */
   private writes = 0;
   private detailRequestId = 0;
@@ -143,6 +148,7 @@ export class BoardStore {
   load(projectId: string): void {
     const sameProject = this._projectId() === projectId && this._loaded();
     if (!sameProject) {
+      this.generation++;
       this._projectId.set(projectId);
       this._project.set(null);
       this._issues.set([]);
@@ -408,59 +414,42 @@ export class BoardStore {
 
   /** Crea un issue (el backend lo pone en el primer estado «Por hacer») y lo suma al tablero. */
   create(req: CreateIssueRequest): Observable<Issue> {
-    const projectId = this._projectId();
-    if (!projectId) return throwError(() => new Error('BoardStore.create sin proyecto'));
-    return this.client.createIssue(projectId, req).pipe(
-      tap((issue) => {
-        this.writes++;
-        this._issues.update((list) => upsertIssue(list, issue));
-        const status = this.statusOf(issue);
-        if (status) this._activeColumn.set(status.id);
-        // Sin estados cargados todavía (entrada directa al alta) no hay nombre.
-        const message = status ? 'board.notice.created' : 'board.notice.createdNoColumn';
-        this.notify('info', message, issueKey(this.projectKey(), issue.number), status?.name);
-      }),
-      catchError((err: unknown) => throwError(() => toDomainError(err))),
-    );
+    return this.insert(req, true);
   }
 
   /**
    * Alta rápida desde una columna (CU-033-3): crea el issue con solo el título
-   * en la columna `statusId`, al final (el backend le da el rank al final del
-   * orden). Espera al servidor: el campo ya quedó libre para el siguiente. Si
-   * el issue nace en otra columna (un backend que todavía no recibe
-   * `statusId`), el aviso lo dice. Errores como `DomainError`.
+   * en la columna `statusId`, al final del orden. A diferencia de `create`, no
+   * cambia la columna elegida en móvil (ya se está en ella). Errores como
+   * `DomainError`.
    */
   quickAdd(statusId: string, title: string): Observable<Issue> {
-    const projectId = this._projectId();
     const target = this.config.statuses().find((s) => s.id === statusId);
-    if (!projectId || !target || target.category === 'ISSUE_STATE_CANCELED') {
+    if (!target || target.category === 'ISSUE_STATE_CANCELED') {
       return throwError(() => toDomainError(new Error('BoardStore.quickAdd sin columna')));
     }
-    const req: CreateIssueRequest = {
-      title,
-      description: '',
-      priority: 'PRIORITY_MEDIUM',
-      statusId,
-    };
+    return this.insert({ title, description: '', priority: 'PRIORITY_MEDIUM', statusId }, false);
+  }
+
+  /**
+   * Crea y suma el issue al tablero, con el aviso de dónde quedó. Si el tablero
+   * se recargó para otro proyecto (o para este después de otro) con el pedido
+   * en vuelo, la respuesta no lo toca. `select`: elegir su columna en móvil.
+   */
+  private insert(req: CreateIssueRequest, select: boolean): Observable<Issue> {
+    const projectId = this._projectId();
+    const generation = this.generation;
+    if (!projectId) return throwError(() => toDomainError(new Error('BoardStore sin proyecto')));
     return this.client.createIssue(projectId, req).pipe(
       tap((issue) => {
-        if (this._projectId() !== projectId) return;
+        if (this.generation !== generation) return;
         this.writes++;
         this._issues.update((list) => upsertIssue(list, issue));
-        const key = this.keyOf(issue.number);
-        const column = this.statusOf(issue);
-        if (column?.id === statusId) {
-          this.notify('info', 'board.notice.created', key, column.name);
-        } else {
-          this.notify(
-            'error',
-            'board.notice.createdElsewhere',
-            key,
-            column?.name,
-            'board.notice.createdElsewhereDetail',
-          );
-        }
+        const status = this.statusOf(issue);
+        if (status && select) this._activeColumn.set(status.id);
+        // Sin estados cargados todavía (entrada directa al alta) no hay nombre.
+        const message = status ? 'board.notice.created' : 'board.notice.createdNoColumn';
+        this.notify('info', message, this.keyOf(issue.number), status?.name);
       }),
       catchError((err: unknown) => throwError(() => toDomainError(err))),
     );

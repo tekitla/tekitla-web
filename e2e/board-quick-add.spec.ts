@@ -90,22 +90,32 @@ test.describe('desktop', () => {
     expect(await keysIn(page, 'En revisión')).toEqual([...before, 'TK-6']);
   });
 
-  test('si el backend no respeta la columna, el issue queda donde nació y el aviso lo dice', async ({
+  test('si el alta falla después de cerrar el campo, se abre de nuevo con el título y el error', async ({
     page,
   }) => {
-    await openBoard(page, { createIgnoresStatus: true });
+    await openBoard(page);
+    let release!: () => void;
+    const answered = new Promise<void>((resolve) => (release = resolve));
+    await page.route(/\/v1\/projects\/p-tk\/issues$/, async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      await answered;
+      await route.fulfill({ status: 500, json: { code: 13, message: 'boom' } });
+    });
 
-    await page.getByRole('button', { name: 'Agregar un issue en En curso' }).click();
+    const open = page.getByRole('button', { name: 'Agregar un issue en En curso' });
+    await open.click();
     const field = page.getByRole('textbox', { name: 'Título del issue nuevo en En curso' });
-    await field.fill('Se queda');
+    await field.fill('Se pierde');
     await field.press('Enter');
+    await field.press('Escape');
+    await expect(field).toHaveCount(0);
 
-    const alert = page.getByRole('alert').filter({ hasText: 'TK-6 creado en Por hacer' });
-    await expect(alert).toBeVisible();
-    await expect(alert).toContainText('Quedó en otra columna, no en la que elegiste');
-    expect(await keysIn(page, 'Por hacer')).toContain('TK-6');
+    release();
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'No se pudo crear «Se pierde»' }),
+    ).toBeVisible();
+    await expect(field).toHaveValue('Se pierde');
     expect(await keysIn(page, 'En curso')).not.toContain('TK-6');
-    await expect(field).toHaveValue('');
   });
 
   test('vacío pide un título; Esc cierra y devuelve el foco al botón', async ({ page }) => {

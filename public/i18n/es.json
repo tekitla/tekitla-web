@@ -118,8 +118,6 @@
       "created": "{{issue}} creado en {{column}}",
       "refreshFailed": "No pudimos actualizar el tablero. Lo que ves puede estar desactualizado.",
       "createdNoColumn": "{{issue}} creado",
-      "createdElsewhere": "{{issue}} creado en {{column}}",
-      "createdElsewhereDetail": "Quedó en otra columna, no en la que elegiste. Muévelo con «Mover».",
       "retry": "Intenta de nuevo.",
       "discarded": "{{issue}} descartado",
       "restored": "{{issue}} restaurado en {{column}}"

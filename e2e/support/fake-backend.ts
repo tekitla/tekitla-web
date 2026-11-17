@@ -74,8 +74,6 @@ export interface FakeBackendOptions {
    * vista vieja).
    */
   moveStatus?: number;
-  /** CreateIssue ignora `statusId`, como el backend de antes del issue 033. */
-  createIgnoresStatus?: boolean;
   /** Tamaño de página de ListIssues (para probar «Cargar más»). */
   pageSize?: number;
   /** BatchUpdateStatuses responde STALE_STATUSES la primera vez. */
@@ -642,7 +640,7 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
       }
       if (rest === 'issues' && method === 'POST') {
         // Sin `statusId`, el primer «Por hacer»; con él, esa columna (no un descarte).
-        const wanted = options.createIgnoresStatus ? undefined : body?.['statusId'];
+        const wanted = body?.['statusId'];
         const first = wanted
           ? statuses.find((s) => s.id === wanted && s.projectId === projectId)
           : sortedStatuses(projectId).find((s) => s.category === 'ISSUE_STATE_TODO');

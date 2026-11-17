@@ -22,7 +22,7 @@ export const QUICK_ADD_MAX = 200;
  * issue con ese título al final de la columna y deja el campo vacío y con el
  * foco, listo para otro; `Esc` lo cierra y devuelve el foco al botón. Se
  * pueden crear varios seguidos sin esperar al servidor. Si un alta falla, el
- * título vuelve al campo (si quedó vacío) con el error. El aviso de creado lo
+ * título vuelve al campo (si quedó vacío, o si se había cerrado) con el error. El aviso de creado lo
  * da el tablero. El resto de los campos sigue en el detalle.
  */
 @Component({
@@ -69,8 +69,11 @@ export class QuickAdd {
     this.title.set('');
     this.error.set(null);
     this.store.quickAdd(this.statusId(), title).subscribe({
+      // Aunque el campo ya se haya cerrado (Esc o salir de él con el pedido en
+      // vuelo): se abre de nuevo con el título, y el error se anuncia.
       error: () => {
-        if (!this.title()) this.title.set(title);
+        if (!this.open() || !this.title()) this.title.set(title);
+        this.open.set(true);
         this.error.set({ kind: 'failed', title });
       },
     });
