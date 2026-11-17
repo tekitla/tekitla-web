@@ -29,6 +29,7 @@ import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { Button } from '@/app/ui/components/button/button';
 import { Icon } from '@/app/ui/components/icon/icon';
 import { IssueCard, type MoveRequest } from '../../components/issue-card/issue-card';
+import { QuickAdd } from '../../components/quick-add/quick-add';
 import { issueKey, statusTone, wipState } from '../../data-access/board.logic';
 import {
   closeAction,
@@ -82,6 +83,7 @@ const INFO_NOTICE_MS = 5000;
     CdkMenuGroup,
     CdkMenuItemRadio,
     IssueCard,
+    QuickAdd,
     IssueDetail,
     Button,
     Icon,

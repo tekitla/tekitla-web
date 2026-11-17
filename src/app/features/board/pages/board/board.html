@@ -219,6 +219,9 @@
                 <li class="vrb-kanban__empty">{{ 'board.emptyColumn' | translate }}</li>
               }
             </ul>
+            @if (status.category !== 'ISSUE_STATE_CANCELED') {
+              <app-quick-add [statusId]="status.id" [column]="status.name" />
+            }
           </section>
         }
       </div>

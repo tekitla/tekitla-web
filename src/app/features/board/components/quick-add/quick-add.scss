@@ -1,0 +1,17 @@
+:host {
+  display: block;
+  margin-top: var(--space-2);
+}
+
+.quick-add {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.quick-add__input {
+  min-height: var(--touch-target);
+}
+
+.quick-add__note {
+  margin: 0;
+}

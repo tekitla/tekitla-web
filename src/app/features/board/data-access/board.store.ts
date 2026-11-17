@@ -425,6 +425,48 @@ export class BoardStore {
   }
 
   /**
+   * Alta rápida desde una columna (CU-033-3): crea el issue con solo el título
+   * en la columna `statusId`, al final (el backend le da el rank al final del
+   * orden). Espera al servidor: el campo ya quedó libre para el siguiente. Si
+   * el issue nace en otra columna (un backend que todavía no recibe
+   * `statusId`), el aviso lo dice. Errores como `DomainError`.
+   */
+  quickAdd(statusId: string, title: string): Observable<Issue> {
+    const projectId = this._projectId();
+    const target = this.config.statuses().find((s) => s.id === statusId);
+    if (!projectId || !target || target.category === 'ISSUE_STATE_CANCELED') {
+      return throwError(() => toDomainError(new Error('BoardStore.quickAdd sin columna')));
+    }
+    const req: CreateIssueRequest = {
+      title,
+      description: '',
+      priority: 'PRIORITY_MEDIUM',
+      statusId,
+    };
+    return this.client.createIssue(projectId, req).pipe(
+      tap((issue) => {
+        if (this._projectId() !== projectId) return;
+        this.writes++;
+        this._issues.update((list) => upsertIssue(list, issue));
+        const key = this.keyOf(issue.number);
+        const column = this.statusOf(issue);
+        if (column?.id === statusId) {
+          this.notify('info', 'board.notice.created', key, column.name);
+        } else {
+          this.notify(
+            'error',
+            'board.notice.createdElsewhere',
+            key,
+            column?.name,
+            'board.notice.createdElsewhereDetail',
+          );
+        }
+      }),
+      catchError((err: unknown) => throwError(() => toDomainError(err))),
+    );
+  }
+
+  /**
    * Edita título, descripción, prioridad o etiquetas (solo lo que viene). Espera
    * al servidor: la página muestra el error junto al campo.
    */

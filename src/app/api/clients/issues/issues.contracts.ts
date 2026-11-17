@@ -216,11 +216,18 @@ export interface ListIssuesRequest {
   page?: PageRequest;
 }
 
-/** POST /v1/projects/{projectId}/issues — se crea en ISSUE_STATE_TODO. */
+/**
+ * POST /v1/projects/{projectId}/issues. Sin `statusId`, se crea en el primer
+ * estado ISSUE_STATE_TODO; con él, en esa columna (alta rápida, CU-033-3).
+ * Siempre al final del orden.
+ *
+ * TODO(issue-33): `statusId` se declara a mano hasta el release de
+ * tekitla-protos que lo agrega a CreateIssueRequest; entonces pasa al `Pick`.
+ */
 export type CreateIssueRequest = Pick<
   Json<pb.CreateIssueRequest, { priority: Priority }>,
   'title' | 'description' | 'priority'
->;
+> & { statusId?: string };
 
 /**
  * POST /v1/projects/{projectId}/issues/{number}:move. `statusId`: estado

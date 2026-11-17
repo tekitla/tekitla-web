@@ -74,6 +74,8 @@ export interface FakeBackendOptions {
    * vista vieja).
    */
   moveStatus?: number;
+  /** CreateIssue ignora `statusId`, como el backend de antes del issue 033. */
+  createIgnoresStatus?: boolean;
   /** Tamaño de página de ListIssues (para probar «Cargar más»). */
   pageSize?: number;
   /** BatchUpdateStatuses responde STALE_STATUSES la primera vez. */
@@ -639,14 +641,21 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
         return reply(status, json);
       }
       if (rest === 'issues' && method === 'POST') {
-        const first = sortedStatuses(projectId).find((s) => s.category === 'ISSUE_STATE_TODO')!;
+        // Sin `statusId`, el primer «Por hacer»; con él, esa columna (no un descarte).
+        const wanted = options.createIgnoresStatus ? undefined : body?.['statusId'];
+        const first = wanted
+          ? statuses.find((s) => s.id === wanted && s.projectId === projectId)
+          : sortedStatuses(projectId).find((s) => s.category === 'ISSUE_STATE_TODO');
+        if (!first || first.category === 'ISSUE_STATE_CANCELED') {
+          return fail(400, 'INVALID_ARGUMENT', 'bad status');
+        }
         const issue: FakeIssue = {
           id: `i${issues.length + 1}`,
           projectId,
           number: Math.max(0, ...own.map((i) => i.number)) + 1,
           title: String(body?.['title'] ?? ''),
           description: String(body?.['description'] ?? ''),
-          state: 'ISSUE_STATE_TODO',
+          state: first.category,
           statusId: first.id,
           priority: String(body?.['priority'] ?? 'PRIORITY_MEDIUM'),
           rank: String(Math.max(0, ...own.map((i) => Number(i.rank ?? 0))) + 100).padStart(6, '0'),
