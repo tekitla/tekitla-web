@@ -25,7 +25,7 @@
     <div class="issue-card__row issue-card__row--title">
       <span class="issue-card__dot" aria-hidden="true"></span>
       <span class="vrb-kanban-card__code" aria-hidden="true">{{ key() }}</span>
-      <ng-container [ngTemplateOutlet]="link" />
+      <ng-container [ngTemplateOutlet]="titleLink" />
     </div>
     <div class="issue-card__row issue-card__row--meta">
       <span class="u-visually-hidden">
@@ -44,7 +44,9 @@
         </ul>
       }
       <span class="issue-card__end">
-        <ng-container [ngTemplateOutlet]="moveButton" />
+        @if (!readOnly()) {
+          <ng-container [ngTemplateOutlet]="moveButton" />
+        }
         @if (who) {
           <span class="issue-card__who" [title]="whoText">
             <span class="u-visually-hidden"
@@ -60,10 +62,12 @@
   } @else {
     <div class="issue-card__top">
       <span class="vrb-kanban-card__code">{{ key() }}</span>
-      <ng-container [ngTemplateOutlet]="moveButton" />
+      @if (!readOnly()) {
+        <ng-container [ngTemplateOutlet]="moveButton" />
+      }
     </div>
 
-    <ng-container [ngTemplateOutlet]="link" />
+    <ng-container [ngTemplateOutlet]="titleLink" />
 
     @if (labels().length) {
       <ul class="vrb-kanban-card__labels" [attr.aria-label]="'issue.labels' | translate">
@@ -101,15 +105,18 @@
   }
 </article>
 
-<ng-template #link>
+<ng-template #titleLink>
+  <!-- Solo lectura (009): sin atajos de mover. -->
   <a
     class="vrb-kanban-card__title issue-card__link"
     [id]="'issue-link-' + issue().number"
     [attr.href]="href()"
     [attr.aria-current]="current() || null"
     (click)="onClick($event)"
-    aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp Shift+ArrowDown"
-    aria-describedby="board-shortcut-hint"
+    [attr.aria-keyshortcuts]="
+      readOnly() ? null : 'Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp Shift+ArrowDown'
+    "
+    [attr.aria-describedby]="readOnly() ? null : 'board-shortcut-hint'"
     (keydown)="onKeydown($event)"
   >
     <span class="u-visually-hidden">{{ key() }}: </span>{{ issue().title }}

@@ -1,0 +1,26 @@
+<section class="plan" aria-labelledby="plan-title">
+  <div class="vrb-page-header">
+    <h1 id="plan-title" class="vrb-page-header__title">
+      {{ 'plan.title' | translate }}
+      @if (store.project(); as project) {
+        <span class="plan__project">· {{ project.name }}</span>
+      }
+    </h1>
+    <p class="vrb-page-header__description">{{ 'plan.description' | translate }}</p>
+  </div>
+
+  <app-plan-view
+    [issues]="store.issues()"
+    [labels]="store.labels()"
+    [labelsById]="store.labelsById()"
+    [prefix]="prefixStore.prefix()"
+    [category]="category()"
+    [projectId]="''"
+    [projectKey]="store.projectKey()"
+    [assigneeOf]="assigneeOf"
+    [noteOf]="noteOf"
+    [cardLink]="cardLink"
+    (categoryChange)="setCategory($event)"
+    (prefixChange)="setPrefix($event)"
+  />
+</section>

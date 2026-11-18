@@ -1,0 +1,38 @@
+<section class="shared-board" aria-labelledby="shared-board-title">
+  <h1 id="shared-board-title" class="vrb-page-header__title">
+    {{ 'shared.nav.board' | translate }}
+  </h1>
+  <div class="vrb-kanban shared-board__kanban">
+    @for (column of store.columns(); track column.status.id) {
+      @let status = column.status;
+      <section
+        [class]="'vrb-kanban__column vrb-kanban__column--' + tone(status)"
+        [attr.aria-labelledby]="'shared-heading-' + status.id"
+      >
+        <header class="vrb-kanban__header">
+          <h2 class="vrb-kanban__title" [id]="'shared-heading-' + status.id">{{ status.name }}</h2>
+          <span class="vrb-kanban__count">{{ column.issues.length }}</span>
+        </header>
+        <ul class="vrb-kanban__list">
+          @for (issue of column.issues; track issue.id) {
+            <li class="vrb-kanban__item">
+              <app-issue-card
+                [issue]="issue"
+                [projectId]="''"
+                [projectKey]="store.projectKey()"
+                [statusId]="status.id"
+                [statuses]="store.statuses()"
+                [labelsById]="store.labelsById()"
+                [assignee]="store.assignee(issue.assigneeActorId)"
+                [readOnly]="true"
+                [link]="linkOf(issue)"
+              />
+            </li>
+          } @empty {
+            <li class="vrb-kanban__empty">{{ 'board.emptyColumn' | translate }}</li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+</section>

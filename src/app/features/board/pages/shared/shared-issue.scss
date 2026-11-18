@@ -1,0 +1,47 @@
+@use 'mixins' as m;
+
+// Detalle de solo lectura (issue 009).
+:host {
+  display: block;
+  max-width: 880px;
+}
+
+.shared-issue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.shared-issue__back {
+  align-self: flex-start;
+}
+
+.shared-issue__facts {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+
+  @include m.from-tablet {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+.shared-issue__term {
+  color: var(--vrb-muted-fg);
+  font-size: 13px;
+}
+
+.shared-issue__value {
+  margin: var(--space-1) 0 0;
+}
+
+.shared-issue__who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.shared-issue__empty {
+  margin: 0;
+  color: var(--vrb-muted-fg);
+}

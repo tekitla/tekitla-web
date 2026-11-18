@@ -34,6 +34,7 @@ export class Settings {
   protected readonly tabs = [
     { path: 'estados', label: 'settings.tabs.statuses' },
     { path: 'etiquetas', label: 'settings.tabs.labels' },
+    { path: 'compartir', label: 'settings.tabs.share' },
   ] as const;
 
   constructor() {

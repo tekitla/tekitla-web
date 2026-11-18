@@ -1,0 +1,10 @@
+// Tablero de solo lectura (issue 009): el `vrb-kanban` del design system, con
+// desplazamiento horizontal en pantallas chicas.
+:host {
+  display: block;
+}
+
+.shared-board__kanban {
+  overflow-x: auto;
+  margin-top: var(--space-4);
+}

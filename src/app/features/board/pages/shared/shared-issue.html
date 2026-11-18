@@ -1,0 +1,77 @@
+@if (issue(); as it) {
+  <article class="shared-issue" aria-labelledby="shared-issue-title">
+    <a
+      class="vrb-button vrb-button--ghost vrb-button--sm shared-issue__back"
+      [routerLink]="link(store.token())"
+    >
+      ← {{ 'shared.issue.back' | translate }}
+    </a>
+    <p class="vrb-kanban-card__code">{{ key() }}</p>
+    <h1 id="shared-issue-title" class="vrb-page-header__title">{{ it.title }}</h1>
+
+    <dl class="shared-issue__facts">
+      <div>
+        <dt class="shared-issue__term">{{ 'shared.issue.status' | translate }}</dt>
+        <dd class="shared-issue__value">
+          @if (status(); as st) {
+            <span [class]="'vrb-badge vrb-badge--sm vrb-badge--' + tone(st)">{{ st.name }}</span>
+          }
+        </dd>
+      </div>
+      <div>
+        <dt class="shared-issue__term">{{ 'issue.priorityLabel' | translate }}</dt>
+        <dd class="shared-issue__value"><app-priority-badge [priority]="it.priority" /></dd>
+      </div>
+      <div>
+        <dt class="shared-issue__term">{{ 'board.assignee.label' | translate }}</dt>
+        <dd class="shared-issue__value shared-issue__who">
+          @if (assignee(); as who) {
+            <app-actor-avatar [actor]="who" size="sm" />
+            {{ who.name || ('board.assignee.noName' | translate) }}
+          } @else {
+            {{ 'board.assignee.none' | translate }}
+          }
+        </dd>
+      </div>
+      @if (labels().length) {
+        <div>
+          <dt class="shared-issue__term">{{ 'issue.labels' | translate }}</dt>
+          <dd class="shared-issue__value">
+            <ul class="vrb-kanban-card__labels">
+              @for (label of labels(); track label.id) {
+                <li
+                  [class]="
+                    'vrb-kanban-card__label vrb-kanban-card__label--' + labelTone[label.color]
+                  "
+                >
+                  {{ label.name }}
+                </li>
+              }
+            </ul>
+          </dd>
+        </div>
+      }
+    </dl>
+
+    <section class="vrb-card" [attr.aria-label]="'shared.issue.description' | translate">
+      <div class="vrb-card__body">
+        @if (it.description) {
+          <ui-markdown [source]="it.description" />
+        } @else {
+          <p class="shared-issue__empty">{{ 'shared.issue.noDescription' | translate }}</p>
+        }
+      </div>
+    </section>
+  </article>
+} @else {
+  <div class="vrb-empty vrb-empty--bordered" role="alert">
+    <p class="vrb-empty__title">
+      {{ (store.isPanel() ? 'shared.issue.notFound' : 'shared.planOnly') | translate }}
+    </p>
+    <div class="vrb-empty__actions">
+      <a class="vrb-button vrb-button--outline" [routerLink]="link(store.token())">
+        {{ (store.isPanel() ? 'shared.issue.back' : 'shared.toPlan') | translate }}
+      </a>
+    </div>
+  </div>
+}

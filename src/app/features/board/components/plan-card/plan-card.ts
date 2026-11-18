@@ -47,6 +47,12 @@ export class PlanCard {
    * con el texto completo en el `title`. Solo lo pasa la caja «Esperan a».
    */
   readonly note = input('');
+  /**
+   * Adónde lleva la tarjeta (issue 009). Sin valor, el panel o la página del
+   * issue en el proyecto; `null`, a ningún lado (el título no es un enlace:
+   * enlace de solo lectura con alcance plan).
+   */
+  readonly link = input<readonly (string | number)[] | null | undefined>(undefined);
 
   readonly opened = output<number>();
 
@@ -55,23 +61,32 @@ export class PlanCard {
   protected readonly key = computed(() => issueKey(this.projectKey(), this.issue().number));
   protected readonly level = computed(() => PRIORITY_LEVEL[this.issue().priority]);
   protected readonly kanbanPriority = computed(() => KANBAN_PRIORITY[this.level()]);
-  private readonly target = computed(() =>
-    this.openInPanel()
+  private readonly target = computed(() => {
+    const link = this.link();
+    if (link === null) return null;
+    if (link) return this.router.createUrlTree([...link]);
+    return this.openInPanel()
       ? this.router.createUrlTree(['/proyectos', this.projectId(), 'plan'], {
           queryParams: { issue: this.key() },
           queryParamsHandling: 'merge',
         })
-      : this.router.createUrlTree(['/proyectos', this.projectId(), 'issues', this.issue().number]),
-  );
-  protected readonly href = computed(() => this.router.serializeUrl(this.target()));
+      : this.router.createUrlTree(['/proyectos', this.projectId(), 'issues', this.issue().number]);
+  });
+  /** `null`: la tarjeta no lleva a ningún lado. */
+  protected readonly href = computed(() => {
+    const target = this.target();
+    return target ? this.router.serializeUrl(target) : null;
+  });
 
   /** Clic común: navega en la app. Con modificador o botón del medio, el navegador. */
   protected onClick(event: MouseEvent): void {
     if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
       return;
     }
+    const target = this.target();
+    if (!target) return;
     event.preventDefault();
-    if (this.openInPanel()) this.opened.emit(this.issue().number);
-    else void this.router.navigateByUrl(this.target());
+    if (this.openInPanel() && this.link() === undefined) this.opened.emit(this.issue().number);
+    else void this.router.navigateByUrl(target);
   }
 }

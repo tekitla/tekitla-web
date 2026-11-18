@@ -72,6 +72,13 @@ export class IssueCard {
   /** Asignado: `null` si no tiene o todavía no se sabe quién es. */
   readonly assignee = input<ActorView | null>(null);
   readonly density = input<ViewDensity>(DEFAULT_VIEW.density);
+  /** Solo lectura (enlace del 009): sin «Mover» ni atajos de teclado. */
+  readonly readOnly = input(false);
+  /**
+   * Adónde lleva la tarjeta (enlace del 009). Sin valor, el panel o la
+   * página del issue en el proyecto.
+   */
+  readonly link = input<readonly (string | number)[] | undefined>(undefined);
 
   readonly move = output<MoveRequest>();
   /** Pedido de abrir el issue en el panel del tablero (`openInPanel`). */
@@ -107,13 +114,15 @@ export class IssueCard {
     this.issue().number,
   ]);
   /** Destino del enlace, con el mismo serializador que el resto del router. */
-  private readonly target = computed(() =>
-    this.openInPanel()
+  private readonly target = computed(() => {
+    const link = this.link();
+    if (link) return this.router.createUrlTree([...link]);
+    return this.openInPanel()
       ? this.router.createUrlTree(['/proyectos', this.projectId()], {
           queryParams: { issue: this.key() },
         })
-      : this.router.createUrlTree(this.page()),
-  );
+      : this.router.createUrlTree(this.page());
+  });
   protected readonly href = computed(() => this.router.serializeUrl(this.target()));
 
   /** Clic común: navega en la app. Con modificador o botón del medio, el navegador. */
@@ -122,7 +131,7 @@ export class IssueCard {
       return;
     }
     event.preventDefault();
-    if (this.openInPanel()) this.opened.emit(this.issue().number);
+    if (this.openInPanel() && !this.link()) this.opened.emit(this.issue().number);
     else void this.router.navigateByUrl(this.target());
   }
 
@@ -135,6 +144,7 @@ export class IssueCard {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
+    if (this.readOnly()) return;
     if (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
     const keys: Record<string, ['column' | 'row', -1 | 1]> = {
       ArrowLeft: ['column', -1],
