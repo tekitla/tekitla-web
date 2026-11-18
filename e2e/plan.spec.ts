@@ -24,6 +24,10 @@ const SHOTS = process.env['SCREENSHOT_DIR'];
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
 
+/** Largo a propósito: la tarjeta lo corta a 2 líneas. */
+const NOTE =
+  'que apruebe el texto del aviso a las familias, con el monto final de la inscripción y la fecha límite de pago para el ciclo que viene';
+
 const LABELS: FakeLabel[] = [
   { id: 'l-esc', projectId: 'p-tk', name: 'perfil/escuela' },
   { id: 'l-fam', projectId: 'p-tk', name: 'perfil/familia' },
@@ -76,6 +80,15 @@ const ISSUES: FakeIssue[] = [
   }),
   base(6, {
     title: 'Pagos de inscripción',
+    description: [
+      '> **Estado:** `in-progress`',
+      '> **Espera:** victor',
+      `> **Qué espera:** ${NOTE}`,
+      '',
+      '## Descripción',
+      '',
+      '> **Qué espera:** esto ya no es la cabecera',
+    ].join('\n'),
     labelIds: ['l-fam', 'l-wait', 'l-front'],
     state: 'ISSUE_STATE_IN_PROGRESS',
     statusId: 's-doing',
@@ -180,6 +193,34 @@ test.describe('desktop', () => {
     await expect(box.getByRole('heading')).toContainText('Esperan a victor');
     await expect(box).toContainText('TK-6');
     await expect(box).not.toContainText('TK-2');
+  });
+
+  test('@CU-039-10 la caja muestra qué espera, en dos líneas y completo en el title', async ({
+    page,
+  }) => {
+    await openPlan(page);
+    const card = page.locator('.plan__waiting app-plan-card').filter({ hasText: 'TK-6' });
+    const note = card.locator('.plan-card__note');
+    await expect(note).toContainText(NOTE);
+    await expect(note).toHaveAttribute('title', NOTE);
+    await expect(card.getByRole('link', { name: /TK-6/ })).toHaveAttribute('title', NOTE);
+    // Dos líneas como máximo: el texto completo no entra.
+    const clipped = await note.evaluate((el) => el.scrollHeight > el.clientHeight + 1);
+    expect(clipped).toBe(true);
+    const lines = await note.evaluate(
+      (el) => el.clientHeight / parseFloat(getComputedStyle(el).lineHeight),
+    );
+    expect(Math.round(lines)).toBe(2);
+
+    // Fuera de la caja, la misma tarjeta no lo muestra.
+    await expect(
+      page
+        .locator('.plan__block app-plan-card')
+        .filter({ hasText: 'TK-6' })
+        .locator('.plan-card__note'),
+    ).toHaveCount(0);
+    if (SHOTS)
+      await page.locator('.plan__waiting').screenshot({ path: `${SHOTS}/plan-que-espera.png` });
   });
 
   test('la tarjeta abre el detalle en el panel lateral y Esc lo cierra', async ({ page }) => {

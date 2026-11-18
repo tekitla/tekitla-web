@@ -10,6 +10,7 @@ import {
   personName,
   prefixesOf,
   responsiblesOf,
+  waitingNote,
 } from './plan.logic';
 
 const label = (id: string, name: string): Label => ({
@@ -170,5 +171,29 @@ describe('plan.logic', () => {
     expect(normalizePrefix('area//')).toBe('area/');
     expect(normalizePrefix('')).toBe(DEFAULT_PREFIX);
     expect(normalizePrefix(null)).toBe(DEFAULT_PREFIX);
+  });
+
+  describe('waitingNote (CU-039-10)', () => {
+    it('la primera línea «Qué espera» antes del primer ##, con o sin >', () => {
+      const quoted = [
+        '> **Estado:** `open`',
+        '> **Espera:** victor',
+        '> **Qué espera:** que apruebe el **texto** del `aviso`',
+        '',
+        '## Descripción',
+        '',
+        '> **Qué espera:** otra cosa',
+      ].join('\n');
+      expect(waitingNote(quoted)).toBe('que apruebe el texto del aviso');
+      expect(waitingNote('**Estado:** open\r\n**Que espera:** el visto bueno\r\n')).toBe(
+        'el visto bueno',
+      );
+    });
+
+    it('vacía si no hay, o si solo está después del primer ##', () => {
+      expect(waitingNote('')).toBe('');
+      expect(waitingNote('> **Espera:** victor\n\n## Notas\n**Qué espera:** tarde')).toBe('');
+      expect(waitingNote('> **Qué esperaba:** no')).toBe('');
+    });
   });
 });

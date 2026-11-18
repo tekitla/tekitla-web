@@ -39,6 +39,17 @@
   }
 }
 
+.plan-card__note {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: var(--vrb-muted-fg);
+  font-size: 12px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
 .plan-card__meta {
   min-width: 0;
   flex-wrap: wrap;
