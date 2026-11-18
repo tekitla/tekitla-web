@@ -1,0 +1,56 @@
+@let who = assignee();
+@let toolName = who && who.kind === 'agent' ? ('board.assignee.tool.' + who.tool | translate) : '';
+@let whoName =
+  !who
+    ? ''
+    : who.kind === 'agent'
+      ? who.name || ('board.assignee.unnamedAgent' | translate)
+      : who.kind === 'unknown'
+        ? ('board.assignee.unknown' | translate)
+        : who.name || ('board.assignee.noName' | translate);
+<article
+  class="vrb-kanban-card plan-card"
+  [class.plan-card--current]="current()"
+  [attr.data-priority]="kanbanPriority()"
+>
+  <span class="vrb-kanban-card__code" aria-hidden="true">{{ key() }}</span>
+  <a
+    class="vrb-kanban-card__title plan-card__link"
+    [attr.data-issue]="issue().number"
+    [attr.href]="href()"
+    [attr.aria-current]="current() || null"
+    (click)="onClick($event)"
+  >
+    <span class="u-visually-hidden">{{ key() }}: </span>{{ issue().title }}
+  </a>
+
+  <div class="vrb-kanban-card__meta plan-card__meta">
+    <span class="vrb-kanban-card__priority">
+      <span class="u-visually-hidden">{{ 'issue.priorityLabel' | translate }}: </span>
+      {{ 'issue.priority.' + level() | translate }}
+    </span>
+
+    @if (who) {
+      <span class="plan-card__who">
+        <span class="u-visually-hidden">{{ 'board.assignee.label' | translate }}: </span>
+        <app-actor-avatar [actor]="who" size="sm" />
+        <span class="plan-card__name">{{ whoName }}</span>
+        @if (who.kind === 'agent') {
+          <span class="plan-card__tool">· {{ toolName }}</span>
+        }
+      </span>
+    } @else if (responsibles().length) {
+      <!-- CU-039-9: un responsable sin cuenta no es un asignado: otro estilo y la aclaración. -->
+      <span class="plan-card__who plan-card__who--no-account">
+        <span class="plan-card__no-account-icon" aria-hidden="true"><ui-icon name="user" /></span>
+        <span class="plan-card__name">
+          {{ 'plan.card.noAccount' | translate: { name: responsibles().join(', ') } }}
+        </span>
+      </span>
+    } @else if (!issue().assigneeActorId) {
+      <span class="plan-card__who plan-card__who--none">
+        {{ 'board.assignee.none' | translate }}
+      </span>
+    }
+  </div>
+</article>

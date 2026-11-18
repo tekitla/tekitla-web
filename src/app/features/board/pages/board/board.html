@@ -18,6 +18,9 @@
             {{ 'board.view.' + view.density() | translate }})
           </span>
         </button>
+        <a class="vrb-button vrb-button--outline vrb-button--sm board__link" routerLink="plan">
+          <ui-icon name="rows" />{{ 'board.plan' | translate }}
+        </a>
         <a class="vrb-button vrb-button--outline vrb-button--sm board__link" routerLink="issues">
           <ui-icon name="list" />{{ 'board.list' | translate }}
         </a>
