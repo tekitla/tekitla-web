@@ -1,0 +1,87 @@
+// La tarjeta es un .vrb-kanban-card; acá solo el enlace que la cubre entera y
+// quién la atiende.
+:host {
+  display: block;
+}
+
+.plan-card {
+  position: relative;
+  // Una sola columna que no crece con lo que no se corta (nombres largos).
+  grid-template-columns: minmax(0, 1fr);
+
+  &:has(.plan-card__link:focus-visible) {
+    outline: 2px solid var(--vrb-brand);
+    outline-offset: 2px;
+  }
+
+  &--current {
+    border-color: var(--vrb-brand);
+    box-shadow:
+      0 0 0 1px var(--vrb-brand),
+      var(--vrb-shadow-raise);
+  }
+}
+
+.plan-card__link {
+  display: block;
+  color: var(--vrb-fg);
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  // Toda la tarjeta es el enlace.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+}
+
+.plan-card__meta {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.plan-card__who {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--vrb-fg);
+
+  &--none {
+    color: var(--vrb-muted-fg);
+  }
+
+  // Sin cuenta: borde punteado y texto atenuado, para no confundirlo con un asignado.
+  &--no-account {
+    padding: 0 var(--space-1);
+    border: 1px dashed var(--vrb-border);
+    border-radius: var(--vrb-radius-check);
+    color: var(--vrb-muted-fg);
+    font-style: italic;
+  }
+}
+
+.plan-card__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-card__tool {
+  color: var(--vrb-muted-fg);
+  white-space: nowrap;
+}
+
+.plan-card__no-account-icon {
+  display: inline-flex;
+  --ui-icon-size: 12px;
+}

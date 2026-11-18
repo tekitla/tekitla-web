@@ -1,0 +1,242 @@
+@use 'mixins' as m;
+
+// Vista Plan (039). Móvil: los carriles uno debajo del otro. Desktop: los tres
+// carriles lado a lado en cada bloque y, con un issue abierto, el panel a la
+// derecha (como el tablero del 033).
+.plan__project {
+  color: var(--vrb-muted-fg);
+  font-weight: 400;
+}
+
+.plan__loading {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.plan__skeleton {
+  height: 120px;
+}
+
+.plan__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+// Con muchas categorías, el control se desplaza en vez de romper la fila.
+.plan__filter {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.plan__prefix {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+}
+
+.plan__prefix-label {
+  color: var(--vrb-muted-fg);
+}
+
+.plan__totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+
+  @include m.from-tablet {
+    max-width: 480px;
+  }
+}
+
+.plan__total {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--vrb-card-border);
+  border-radius: var(--vrb-radius-card);
+  background: var(--vrb-surface);
+
+  dt {
+    color: var(--vrb-muted-fg);
+    font-size: 12px;
+  }
+
+  dd {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.plan__waiting {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--vrb-border);
+  border-left: 3px solid var(--vrb-warning, var(--vrb-border));
+  border-radius: var(--vrb-radius-card);
+  background: var(--vrb-muted);
+}
+
+.plan__waiting-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: 14px;
+}
+
+.plan__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.plan__body--panel {
+  grid-template-columns: minmax(0, 1fr) var(--board-panel-w, 420px);
+}
+
+.plan__blocks {
+  display: grid;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.plan__hint {
+  margin: 0;
+}
+
+.plan__block-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.plan__block-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.plan__block-counts {
+  margin: 0;
+  color: var(--vrb-muted-fg);
+  font-size: 13px;
+}
+
+.plan__lanes {
+  display: grid;
+  gap: var(--space-3);
+
+  @include m.from-tablet {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.plan__lane {
+  min-width: 0;
+  padding: var(--space-2);
+  border-radius: var(--vrb-radius-card);
+  background: var(--vrb-muted);
+}
+
+.plan__lane-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.plan__lane-count {
+  margin-left: auto;
+  color: var(--vrb-muted-fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.plan__lane-dot {
+  &--done {
+    background: var(--vrb-success, currentColor);
+  }
+
+  &--doing {
+    background: var(--vrb-info, currentColor);
+  }
+
+  &--todo {
+    background: var(--vrb-muted-fg);
+  }
+}
+
+.plan__cards {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  // Sin esto, un nombre largo (que no se corta) ensancha el carril.
+  > li {
+    min-width: 0;
+  }
+
+  &--row {
+    @include m.from-tablet {
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+  }
+}
+
+.plan__lane-empty {
+  margin: 0;
+  padding: var(--space-2);
+  color: var(--vrb-muted-fg);
+  font-size: 13px;
+}
+
+.plan__more {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.plan__panel {
+  --board-panel-top: calc(56px + var(--space-6));
+
+  position: sticky;
+  top: var(--board-panel-top);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--board-panel-top) - var(--space-6));
+  min-width: 0;
+  border: 1px solid var(--vrb-card-border);
+  border-radius: var(--vrb-radius-card);
+  background: var(--vrb-surface);
+  box-shadow: var(--vrb-shadow-card);
+}
+
+.plan__panel-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--vrb-border);
+}
+
+.plan__panel-actions {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.plan__panel-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4);
+}

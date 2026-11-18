@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { ActorsStore } from './data-access/actors.store';
 import { BoardStore } from './data-access/board.store';
 import { BoardViewStore } from './data-access/board-view.store';
+import { PlanPrefixStore } from './data-access/plan-prefix.store';
 import { ProjectConfigStore } from './data-access/project-config.store';
 
 /** Montado en `proyectos/:projectId`. */
@@ -11,11 +12,17 @@ export const BOARD_ROUTES: Routes = [
     path: '',
     // Lo comparten tablero, lista, alta, detalle y ajustes: ir y volver no recarga en
     // blanco, y lo que cambia en Ajustes se ve en el tablero.
-    providers: [ProjectConfigStore, BoardStore, ActorsStore, BoardViewStore],
+    providers: [ProjectConfigStore, BoardStore, ActorsStore, BoardViewStore, PlanPrefixStore],
     children: [
       {
         path: '',
         loadComponent: () => import('./pages/board/board').then((m) => m.Board),
+      },
+      {
+        // Vista Plan (039): por categoría y quién atiende.
+        path: 'plan',
+        title: 'titles.plan',
+        loadComponent: () => import('./pages/plan/plan').then((m) => m.Plan),
       },
       {
         path: 'issues',

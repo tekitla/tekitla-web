@@ -6,7 +6,8 @@
     "projects": "Proyectos · Tekitla",
     "board": "Tablero · Tekitla",
     "settings": "Ajustes · Tekitla",
-    "issues": "Issues · Tekitla"
+    "issues": "Issues · Tekitla",
+    "plan": "Plan · Tekitla"
   },
   "common": {
     "loading": "Cargando…",
@@ -29,7 +30,8 @@
       "projects": "Proyectos",
       "board": "Tablero",
       "settings": "Ajustes",
-      "issues": "Issues"
+      "issues": "Issues",
+      "plan": "Plan"
     },
     "logout": "Cerrar sesión"
   },
@@ -165,7 +167,8 @@
       "comoda": "Cómoda",
       "compacta": "Compacta",
       "remembered": "Se recuerda en este proyecto."
-    }
+    },
+    "plan": "Plan"
   },
   "issue": {
     "priorityLabel": "Prioridad",
@@ -460,6 +463,37 @@
         "restore": "Se restauraron {{count}}"
       },
       "failed": "Fallaron {{count}}; siguen seleccionados para reintentar:"
+    }
+  },
+  "plan": {
+    "title": "Plan",
+    "description": "Qué está hecho, qué está en curso y qué falta, por categoría, y quién atiende cada issue.",
+    "board": "Tablero",
+    "loading": "Cargando el plan…",
+    "error": "No se pudo cargar el plan. Recarga la página para intentar de nuevo.",
+    "filter": {
+      "label": "Filtrar por categoría ({{prefix}})",
+      "all": "Todas"
+    },
+    "prefix": {
+      "label": "Agrupar por",
+      "hint": "Prefijo de las etiquetas que son categorías. Se recuerda en este proyecto."
+    },
+    "uncategorized": "Sin categoría",
+    "totals": "Totales",
+    "lane": {
+      "done": "Hecho",
+      "doing": "En curso",
+      "todo": "Por hacer"
+    },
+    "blockCounts": "{{done}} hechos · {{doing}} en curso · {{todo}} por hacer",
+    "laneEmpty": "Nada por acá.",
+    "showAllDone": "Ver todos ({{count}} más de 4 semanas)",
+    "recentOnly": "Solo las últimas 4 semanas",
+    "waiting": "Esperan a {{person}}",
+    "noCategories": "Ningún issue tiene etiquetas {{prefix}}…: todo está en «Sin categoría». Elige otro prefijo o agrega las etiquetas.",
+    "card": {
+      "noAccount": "{{name}} · responsable sin cuenta"
     }
   }
 }
