@@ -42,6 +42,11 @@ export class PlanCard {
   readonly openInPanel = input(false);
   /** Es el issue abierto en el panel. */
   readonly current = input(false);
+  /**
+   * Qué espera (CU-039-10): debajo del título, en dos líneas como máximo y
+   * con el texto completo en el `title`. Solo lo pasa la caja «Esperan a».
+   */
+  readonly note = input('');
 
   readonly opened = output<number>();
 

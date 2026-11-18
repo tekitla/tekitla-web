@@ -31,6 +31,7 @@ import {
   personName,
   prefixesOf,
   responsiblesOf,
+  waitingNote,
 } from '../../data-access/plan.logic';
 import { IssueDetail } from '../issue-detail/issue-detail';
 
@@ -139,6 +140,11 @@ export class Plan {
 
   protected assigneeOf(issue: Issue) {
     return this.actors.view(issue.assigneeActorId);
+  }
+
+  /** Qué espera, de la cabecera de la descripción (CU-039-10). */
+  protected noteOf(issue: Issue): string {
+    return waitingNote(issue.description);
   }
 
   protected responsiblesOf(issue: Issue): string[] {

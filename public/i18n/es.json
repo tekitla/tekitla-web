@@ -493,7 +493,8 @@
     "waiting": "Esperan a {{person}}",
     "noCategories": "Ningún issue tiene etiquetas {{prefix}}…: todo está en «Sin categoría». Elige otro prefijo o agrega las etiquetas.",
     "card": {
-      "noAccount": "{{name}} · responsable sin cuenta"
+      "noAccount": "{{name}} · responsable sin cuenta",
+      "waitingFor": "Qué espera"
     }
   }
 }

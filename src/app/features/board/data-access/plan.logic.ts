@@ -238,6 +238,25 @@ export function buildPlan(input: PlanInput): Plan {
   return { blocks, totals, waiting, categories, hasUncategorized };
 }
 
+/** `**Qué espera:** …`, con o sin `>` (cabecera de los docs de Round). */
+const WAITING_NOTE = /^\s*(?:>\s*)?\*\*\s*qu[eé] espera\s*:\s*\*\*\s*(.*?)\s*$/i;
+
+/**
+ * Qué espera un issue (decisión de Victor, 2026-11-18, opción a): la
+ * primera línea `**Qué espera:** …` de la descripción antes del primer
+ * `## `. La descripción importada trae la cabecera del doc, así que no hace
+ * falta cambiar el contrato ni el importador. Sin negritas ni comillas
+ * invertidas; "" si no hay.
+ */
+export function waitingNote(description: string): string {
+  for (const line of description.split(/\r?\n/)) {
+    if (line.startsWith('## ')) break;
+    const match = WAITING_NOTE.exec(line);
+    if (match) return match[1].replace(/\*\*|`/g, '').trim();
+  }
+  return '';
+}
+
 /** Clave en localStorage del prefijo elegido en un proyecto (como la vista del tablero). */
 export function prefixStorageKey(projectId: string): string {
   return `${environment.appName}.plan.prefijo.${projectId}`;

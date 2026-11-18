@@ -19,10 +19,16 @@
     [attr.data-issue]="issue().number"
     [attr.href]="href()"
     [attr.aria-current]="current() || null"
+    [attr.title]="note() || null"
     (click)="onClick($event)"
   >
     <span class="u-visually-hidden">{{ key() }}: </span>{{ issue().title }}
   </a>
+  @if (note(); as text) {
+    <p class="plan-card__note" [title]="text">
+      <span class="u-visually-hidden">{{ 'plan.card.waitingFor' | translate }}: </span>{{ text }}
+    </p>
+  }
 
   <div class="vrb-kanban-card__meta plan-card__meta">
     <span class="vrb-kanban-card__priority">

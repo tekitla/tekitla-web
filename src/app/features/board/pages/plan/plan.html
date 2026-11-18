@@ -117,6 +117,7 @@
                 [projectKey]="store.projectKey()"
                 [assignee]="assigneeOf(issue)"
                 [responsibles]="responsiblesOf(issue)"
+                [note]="noteOf(issue)"
                 [openInPanel]="cardsOpenPanel()"
                 [current]="panelNumber() === issue.number"
                 (opened)="open($event)"
