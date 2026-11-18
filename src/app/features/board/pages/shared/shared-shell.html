@@ -50,6 +50,15 @@
     } @else if (store.error()) {
       <div class="vrb-empty vrb-empty--bordered vrb-empty--danger" role="alert">
         <p class="vrb-empty__title">{{ 'shared.error' | translate }}</p>
+        <div class="vrb-empty__actions">
+          <button
+            type="button"
+            class="vrb-button vrb-button--outline"
+            (click)="store.load(token())"
+          >
+            {{ 'common.retry' | translate }}
+          </button>
+        </div>
       </div>
     } @else {
       <router-outlet />

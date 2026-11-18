@@ -102,4 +102,21 @@ describe('SharedStore', () => {
     expect(store.token()).toBe('tks_nuevo');
     expect(store.isPanel()).toBe(true);
   });
+
+  it('después de un error se puede reintentar; con un pedido en vuelo, no se repite', () => {
+    getProject.mockReturnValueOnce(throwError(() => toDomainError(new Error('offline'))));
+    listAllIssues.mockReturnValue(of(issues));
+    store.load('tks_d');
+    expect(store.error()).toBe(true);
+
+    const pending = new Subject<SharedProjectView>();
+    getProject.mockReturnValueOnce(pending);
+    store.load('tks_d');
+    store.load('tks_d');
+    expect(getProject).toHaveBeenCalledTimes(2);
+    pending.next(view('SHARE_LINK_SCOPE_PANEL'));
+    pending.complete();
+    expect(store.error()).toBe(false);
+    expect(store.isPanel()).toBe(true);
+  });
 });

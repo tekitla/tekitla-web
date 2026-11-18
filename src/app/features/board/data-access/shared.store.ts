@@ -63,11 +63,17 @@ export class SharedStore {
   private readonly notes = computed(() => sharedWaitingNotes(this._issues()));
 
   private requestId = 0;
+  private loading = false;
 
-  /** Carga todo lo que deja ver el enlace (una vez por token). */
+  /**
+   * Carga todo lo que deja ver el enlace. Una vez por token: no repite si ya
+   * cargó bien o hay un pedido en vuelo; después de un error, sí.
+   */
   load(token: string): void {
-    if (!token || (token === this._token() && (this._loaded() || this.requestId > 0))) return;
+    if (!token) return;
+    if (token === this._token() && (this.loading || (this._loaded() && !this._error()))) return;
     const id = ++this.requestId;
+    this.loading = true;
     this._token.set(token);
     this._view.set(null);
     this._issues.set([]);
@@ -79,12 +85,14 @@ export class SharedStore {
       .subscribe({
         next: ({ view, issues }) => {
           if (id !== this.requestId) return;
+          this.loading = false;
           this._view.set(view);
           this._issues.set(issues);
           this._loaded.set(true);
         },
         error: (err: unknown) => {
           if (id !== this.requestId) return;
+          this.loading = false;
           if (isDomainError(err) && err.isNotFound()) this._notFound.set(true);
           else this._error.set(true);
           this._loaded.set(true);

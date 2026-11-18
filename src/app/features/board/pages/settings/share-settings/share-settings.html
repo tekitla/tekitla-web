@@ -152,7 +152,7 @@
   }
   @if (!store.loaded()) {
     <span class="vrb-skeleton settings__skeleton" role="status"></span>
-  } @else if (rows().length === 0) {
+  } @else if (rows().length === 0 && store.error() !== 'load') {
     <p class="settings-muted">{{ 'share.list.empty' | translate }}</p>
   } @else {
     <div class="vrb-card settings-table-card">

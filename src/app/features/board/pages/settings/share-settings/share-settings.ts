@@ -2,11 +2,13 @@ import { DOCUMENT, DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
   input,
   signal,
+  untracked,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -74,7 +76,15 @@ export class ShareSettings {
   );
 
   constructor() {
-    effect(() => this.store.load(this.projectId()));
+    // untracked: load lee y escribe el proyecto del store; si no, el effect
+    // se dispararía otra vez y pediría la lista dos veces.
+    effect(() => {
+      const id = this.projectId();
+      untracked(() => this.store.load(id));
+    });
+    // «Vencido» con la hora de ahora, renovada cada minuto.
+    const timer = setInterval(() => this.now.set(new Date()), 60_000);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
   protected create(): void {

@@ -4,6 +4,7 @@ import type {
   ActorKind,
   AgentTool,
   IssueState,
+  Json,
   LabelColor,
   PageRequest,
   PageResponse,
@@ -17,14 +18,6 @@ import type {
  * `issues.contracts.ts` (solo tipos), con los `Raw*` de lo que llega por la
  * red y los normalizados que usa la app (`share.mappers.ts`).
  */
-
-/** Campos de un mensaje de protobuf-es, sin los internos. */
-type Fields<M> = Omit<M, '$typeName' | '$unknown'>;
-
-/** Forma JSON normalizada de un mensaje (ver `issues.contracts.ts`). */
-type Json<M, Over extends Partial<Record<keyof Fields<M>, unknown>> = object> = {
-  [K in keyof Fields<M>]-?: K extends keyof Over ? Over[K] : Fields<M>[K];
-};
 
 /** Qué ve quien abre el enlace: solo la vista Plan, o el panel completo. */
 export type ShareLinkScope = `SHARE_LINK_SCOPE_${keyof typeof sharePb.ShareLinkScope}`;

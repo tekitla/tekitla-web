@@ -109,4 +109,34 @@ describe('ShareLinksStore', () => {
     expect(store.loaded()).toBe(true);
     expect(store.error()).toBe('load');
   });
+
+  it('otro FAILED_PRECONDITION (con otro reason) no se muestra como el tope', async () => {
+    client.list.mockReturnValue(of([]));
+    store.load('p1');
+    const other = toDomainError(
+      new HttpErrorResponse({
+        status: 400,
+        error: { error: { code: 'FAILED_PRECONDITION', reason: 'PROJECT_ARCHIVED' } },
+      }),
+    );
+    client.create.mockReturnValue(throwError(() => other));
+    await expect(
+      firstValueFrom(
+        store.create({
+          scope: 'SHARE_LINK_SCOPE_PLAN',
+          duration: 'SHARE_LINK_DURATION_SEVEN_DAYS',
+          note: 'x',
+          ownerDisplayName: '',
+        }),
+      ),
+    ).rejects.toBe(other);
+    expect(store.error()).toBe('create');
+  });
+
+  it('cargar el mismo proyecto dos veces seguidas descarta la respuesta vieja', () => {
+    client.list.mockReturnValueOnce(of([link('viejo')])).mockReturnValueOnce(of([link('s1')]));
+    store.load('p1');
+    store.load('p1');
+    expect(store.links().map((l) => l.id)).toEqual(['s1']);
+  });
 });

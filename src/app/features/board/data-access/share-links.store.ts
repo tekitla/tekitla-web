@@ -66,8 +66,7 @@ export class ShareLinksStore {
         next: ({ shareLink }) => {
           if (projectId === this._projectId()) this._links.update((l) => [shareLink, ...l]);
         },
-        error: (err: unknown) =>
-          this._error.set(isDomainError(err) && err.isFailedPrecondition() ? 'limit' : 'create'),
+        error: (err: unknown) => this._error.set(isShareLinkLimit(err) ? 'limit' : 'create'),
       }),
       map(({ token }) => token),
     );
@@ -87,4 +86,14 @@ export class ShareLinksStore {
       }),
     );
   }
+}
+
+/**
+ * El servicio rechazó el alta por el tope de enlaces vigentes (reason
+ * `SHARE_LINK_LIMIT`). Si el gateway no manda el reason, un
+ * FAILED_PRECONDITION de CreateShareLink solo puede ser el tope.
+ */
+function isShareLinkLimit(err: unknown): boolean {
+  if (!isDomainError(err)) return false;
+  return err.api.reason ? err.api.reason === 'SHARE_LINK_LIMIT' : err.isFailedPrecondition();
 }
