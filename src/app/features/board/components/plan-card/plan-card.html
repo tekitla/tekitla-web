@@ -14,16 +14,22 @@
   [attr.data-priority]="kanbanPriority()"
 >
   <span class="vrb-kanban-card__code" aria-hidden="true">{{ key() }}</span>
-  <a
-    class="vrb-kanban-card__title plan-card__link"
-    [attr.data-issue]="issue().number"
-    [attr.href]="href()"
-    [attr.aria-current]="current() || null"
-    [attr.title]="note() || null"
-    (click)="onClick($event)"
-  >
-    <span class="u-visually-hidden">{{ key() }}: </span>{{ issue().title }}
-  </a>
+  @if (href(); as url) {
+    <a
+      class="vrb-kanban-card__title plan-card__link"
+      [attr.data-issue]="issue().number"
+      [attr.href]="url"
+      [attr.aria-current]="current() || null"
+      [attr.title]="note() || null"
+      (click)="onClick($event)"
+    >
+      <span class="u-visually-hidden">{{ key() }}: </span>{{ issue().title }}
+    </a>
+  } @else {
+    <span class="vrb-kanban-card__title" [attr.title]="note() || null">
+      <span class="u-visually-hidden">{{ key() }}: </span>{{ issue().title }}
+    </span>
+  }
   @if (note(); as text) {
     <p class="plan-card__note" [title]="text">
       <span class="u-visually-hidden">{{ 'plan.card.waitingFor' | translate }}: </span>{{ text }}

@@ -43,3 +43,25 @@ export type {
   UpdateLabelRequest,
   UpdateStatusRequest,
 } from './clients/issues/issues.contracts';
+
+// Enlaces de solo lectura (issue 009): gestión con sesión y lectura pública.
+export { ShareLinksClient, SharedClient } from './clients/issues/share.client';
+export {
+  SHARE_DURATIONS,
+  SHARE_NOTE_MAX,
+  SHARE_OWNER_NAME_MAX,
+  SHARE_SCOPES,
+} from './clients/issues/share.contracts';
+export type {
+  CreateShareLinkRequest,
+  CreatedShareLink,
+  ShareLink,
+  ShareLinkDuration,
+  ShareLinkScope,
+  SharedActor,
+  SharedIssue,
+  SharedLabel,
+  SharedProject,
+  SharedProjectView,
+  SharedStatus,
+} from './clients/issues/share.contracts';

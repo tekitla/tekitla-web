@@ -21,6 +21,14 @@ export const routes: Routes = [
       import('./features/auth/pages/no-access/no-access').then((m) => m.NoAccess),
   },
 
+  {
+    // Enlace de solo lectura (issue 009): sin sesión ni el layout principal.
+    // El token va en el path; la página no se indexa ni manda Referer.
+    path: 'compartido/:token',
+    title: 'titles.shared',
+    loadChildren: () => import('./features/board/shared.routes').then((m) => m.SHARED_ROUTES),
+  },
+
   // Privadas: todo lo que va dentro del layout principal.
   {
     path: '',

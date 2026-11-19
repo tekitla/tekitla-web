@@ -1,0 +1,46 @@
+@use 'mixins' as m;
+
+// Ajustes › Compartir (issue 009). Lo de la tabla y el formulario está en
+// settings-table.scss; acá solo lo propio.
+// Sin el borde ni el relleno del fieldset del navegador (como los colores
+// de Etiquetas).
+.share-settings__scope {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.share-settings__options {
+  display: grid;
+  gap: var(--space-2);
+
+  @include m.from-tablet {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.share-settings__hint {
+  display: block;
+  color: var(--vrb-muted-fg);
+  font-size: 13px;
+}
+
+.share-settings__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.share-settings__url {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+
+  .vrb-input {
+    flex: 1 1 280px;
+    min-width: 0;
+    font-family: var(--font-mono);
+  }
+}

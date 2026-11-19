@@ -1,0 +1,69 @@
+<div class="shared">
+  <header class="shared__header">
+    <div class="shared__brand">
+      <span class="shared__app">{{ 'titles.app' | translate }}</span>
+      @if (store.project(); as project) {
+        <span class="vrb-kanban-card__code shared__key">{{ project.key }}</span>
+        <span class="shared__name">{{ project.name }}</span>
+      }
+      <span class="vrb-badge vrb-badge--neutral vrb-badge--sm">{{
+        'shared.readOnly' | translate
+      }}</span>
+    </div>
+    @if (store.loaded() && store.isPanel()) {
+      <!-- Pestañas como navegación (cada una es una ruta), como en Ajustes. -->
+      <div class="vrb-tabs">
+        <nav class="vrb-tabs__list" [attr.aria-label]="'shared.nav.label' | translate">
+          <a
+            class="vrb-tabs__tab"
+            [routerLink]="link(token())"
+            routerLinkActive
+            [routerLinkActiveOptions]="{ exact: true }"
+            ariaCurrentWhenActive="page"
+          >
+            {{ 'shared.nav.board' | translate }}
+          </a>
+          <a
+            class="vrb-tabs__tab"
+            [routerLink]="link(token(), 'plan')"
+            routerLinkActive
+            ariaCurrentWhenActive="page"
+          >
+            {{ 'shared.nav.plan' | translate }}
+          </a>
+        </nav>
+      </div>
+    }
+  </header>
+
+  <main class="shared__main">
+    @if (!store.loaded()) {
+      <div class="vrb-stack" role="status" [attr.aria-label]="'common.loading' | translate">
+        <span class="vrb-skeleton vrb-skeleton--title"></span>
+        <span class="vrb-skeleton shared__skeleton"></span>
+      </div>
+    } @else if (store.notFound()) {
+      <div class="vrb-empty vrb-empty--bordered" role="alert">
+        <p class="vrb-empty__title">{{ 'shared.notFound.title' | translate }}</p>
+        <p class="vrb-empty__description">{{ 'shared.notFound.text' | translate }}</p>
+      </div>
+    } @else if (store.error()) {
+      <div class="vrb-empty vrb-empty--bordered vrb-empty--danger" role="alert">
+        <p class="vrb-empty__title">{{ 'shared.error' | translate }}</p>
+        <div class="vrb-empty__actions">
+          <button
+            type="button"
+            class="vrb-button vrb-button--outline"
+            (click)="store.load(token())"
+          >
+            {{ 'common.retry' | translate }}
+          </button>
+        </div>
+      </div>
+    } @else {
+      <router-outlet />
+    }
+  </main>
+
+  <footer class="shared__footer">{{ 'shared.footer' | translate }}</footer>
+</div>

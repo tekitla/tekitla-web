@@ -1,0 +1,247 @@
+<div class="vrb-stack">
+  <p class="settings-muted" id="share-lead">{{ 'share.lead' | translate }}</p>
+
+  <form
+    class="vrb-card"
+    aria-labelledby="share-new-title"
+    (submit)="$event.preventDefault(); create()"
+    novalidate
+  >
+    <div class="vrb-card__body vrb-stack">
+      <h2 id="share-new-title" class="vrb-card__title">{{ 'share.new' | translate }}</h2>
+
+      <fieldset class="vrb-field share-settings__scope">
+        <legend class="vrb-field__label">{{ 'share.scope.label' | translate }}</legend>
+        <div class="share-settings__options">
+          @for (option of scopes; track option) {
+            <label class="vrb-check vrb-check--radio">
+              <input
+                type="radio"
+                name="share-scope"
+                class="vrb-check__input"
+                [checked]="scope() === option"
+                (change)="scope.set(option)"
+              />
+              <span class="vrb-check__box" aria-hidden="true"></span>
+              <span class="vrb-check__label">
+                {{ 'share.scope.' + option | translate }}
+                <span class="share-settings__hint">{{
+                  'share.scopeHint.' + option | translate
+                }}</span>
+              </span>
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      <div class="settings-form__row">
+        <div class="vrb-field">
+          <label class="vrb-field__label" for="share-note">{{
+            'share.note.label' | translate
+          }}</label>
+          <input
+            id="share-note"
+            class="vrb-input"
+            autocomplete="off"
+            required
+            [maxLength]="noteMax"
+            [value]="note()"
+            [attr.aria-invalid]="noteMissing() || null"
+            aria-describedby="share-note-error"
+            [placeholder]="'share.note.placeholder' | translate"
+            (input)="note.set($any($event.target).value); noteMissing.set(false)"
+          />
+          <p id="share-note-error" class="vrb-field__error" aria-live="polite">
+            @if (noteMissing()) {
+              {{ 'share.note.required' | translate }}
+            }
+          </p>
+        </div>
+
+        <div class="vrb-field">
+          <label class="vrb-field__label" for="share-duration">
+            {{ 'share.duration.label' | translate }}
+          </label>
+          <span class="vrb-select">
+            <select
+              id="share-duration"
+              class="vrb-input"
+              (change)="duration.set($any($event.target).value)"
+            >
+              @for (option of durations; track option) {
+                <option [value]="option" [selected]="duration() === option">
+                  {{ 'share.duration.' + option | translate }}
+                </option>
+              }
+            </select>
+          </span>
+        </div>
+      </div>
+
+      <div class="vrb-field">
+        <label class="vrb-field__label" for="share-owner">
+          {{ 'share.owner.label' | translate }}
+          <span class="settings-muted">{{ 'common.optional' | translate }}</span>
+        </label>
+        <input
+          id="share-owner"
+          class="vrb-input"
+          autocomplete="off"
+          [maxLength]="ownerMax"
+          [value]="ownerName()"
+          aria-describedby="share-owner-hint"
+          (input)="ownerName.set($any($event.target).value)"
+        />
+        <p id="share-owner-hint" class="vrb-field__hint">{{ 'share.owner.hint' | translate }}</p>
+      </div>
+
+      <p class="vrb-alert vrb-alert--warning share-settings__warning">
+        <ui-icon name="alert" />
+        {{ 'share.warning.' + scope() | translate }}
+      </p>
+
+      @if (store.error() === 'create' || store.error() === 'limit') {
+        <p class="vrb-field__error" role="alert">
+          {{ 'share.error.' + store.error() | translate }}
+        </p>
+      }
+
+      <div class="vrb-cluster vrb-cluster--sm">
+        <ui-button type="submit" [loading]="creating()">{{ 'share.create' | translate }}</ui-button>
+      </div>
+    </div>
+  </form>
+
+  @if (createdUrl(); as url) {
+    <section
+      class="vrb-card share-settings__created"
+      role="status"
+      aria-labelledby="share-created-title"
+    >
+      <div class="vrb-card__body vrb-stack vrb-stack--sm">
+        <h2 id="share-created-title" class="vrb-card__title">
+          {{ 'share.created.title' | translate }}
+        </h2>
+        <p class="settings-muted">{{ 'share.created.text' | translate }}</p>
+        <div class="share-settings__url">
+          <input
+            class="vrb-input"
+            readonly
+            [value]="url"
+            [attr.aria-label]="'share.created.urlLabel' | translate"
+            (focus)="$any($event.target).select()"
+          />
+          <ui-button variant="outline" (pressed)="copy()">
+            {{ (copied() ? 'share.created.copied' : 'share.created.copy') | translate }}
+          </ui-button>
+        </div>
+        <div class="vrb-cluster vrb-cluster--sm">
+          <ui-button variant="ghost" size="sm" (pressed)="dismissCreated()">
+            {{ 'common.ok' | translate }}
+          </ui-button>
+        </div>
+      </div>
+    </section>
+  }
+
+  <h2 class="vrb-card__title" id="share-list-title">{{ 'share.list.title' | translate }}</h2>
+  @if (store.error() === 'load') {
+    <p class="vrb-field__error" role="alert">{{ 'share.error.load' | translate }}</p>
+  } @else if (store.error() === 'revoke') {
+    <p class="vrb-field__error" role="alert">{{ 'share.error.revoke' | translate }}</p>
+  }
+  @if (!store.loaded()) {
+    <span class="vrb-skeleton settings__skeleton" role="status"></span>
+  } @else if (rows().length === 0 && store.error() !== 'load') {
+    <p class="settings-muted">{{ 'share.list.empty' | translate }}</p>
+  } @else {
+    <div class="vrb-card settings-table-card">
+      <table class="tk-table" aria-labelledby="share-list-title">
+        <thead>
+          <tr>
+            <th scope="col">{{ 'share.list.note' | translate }}</th>
+            <th scope="col">{{ 'share.list.scope' | translate }}</th>
+            <th scope="col">{{ 'share.list.expires' | translate }}</th>
+            <th scope="col">{{ 'share.list.lastUsed' | translate }}</th>
+            <th scope="col">{{ 'share.list.state' | translate }}</th>
+            <th scope="col">
+              <span class="u-visually-hidden">{{ 'settings.columns.actions' | translate }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.link.id) {
+            @let link = row.link;
+            <tr [attr.aria-busy]="revoking() === link.id || null">
+              <th scope="row">{{ link.note }}</th>
+              <td>{{ 'share.scope.' + link.scope | translate }}</td>
+              <td>
+                {{
+                  link.expiresAt
+                    ? (link.expiresAt | date: 'mediumDate')
+                    : ('share.list.never' | translate)
+                }}
+              </td>
+              <td>
+                {{
+                  link.lastUsedAt
+                    ? (link.lastUsedAt | date: 'medium')
+                    : ('share.list.notUsed' | translate)
+                }}
+              </td>
+              <td>
+                <span
+                  [class]="
+                    'vrb-badge vrb-badge--sm vrb-badge--' +
+                    (row.state === 'active' ? 'success' : 'neutral')
+                  "
+                >
+                  {{ 'share.state.' + row.state | translate }}
+                </span>
+              </td>
+              <td class="tk-table__actions">
+                @if (row.state !== 'revoked') {
+                  <button
+                    type="button"
+                    class="vrb-button vrb-button--ghost vrb-button--sm"
+                    [disabled]="!!revoking()"
+                    [attr.aria-label]="'share.revokeLabel' | translate: { note: link.note }"
+                    (click)="confirming.set(link.id)"
+                  >
+                    {{ 'share.revoke' | translate }}
+                  </button>
+                }
+              </td>
+            </tr>
+            @if (confirming() === link.id) {
+              <tr class="tk-table__panel">
+                <td colspan="6">
+                  <div
+                    class="vrb-stack vrb-stack--sm"
+                    role="group"
+                    [attr.aria-label]="'share.revokeLabel' | translate: { note: link.note }"
+                  >
+                    <p>{{ 'share.revokeConfirm' | translate: { note: link.note } }}</p>
+                    <div class="vrb-cluster vrb-cluster--sm">
+                      <ui-button
+                        variant="danger"
+                        size="sm"
+                        [loading]="revoking() === link.id"
+                        (pressed)="revoke(link)"
+                      >
+                        {{ 'share.revoke' | translate }}
+                      </ui-button>
+                      <ui-button variant="ghost" size="sm" (pressed)="confirming.set(null)">
+                        {{ 'common.cancel' | translate }}
+                      </ui-button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

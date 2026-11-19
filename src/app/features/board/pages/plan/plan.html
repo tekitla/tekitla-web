@@ -17,6 +17,9 @@
       <a class="vrb-button vrb-button--outline vrb-button--sm" routerLink="../issues">
         <ui-icon name="list" />{{ 'board.list' | translate }}
       </a>
+      <a class="vrb-button vrb-button--outline vrb-button--sm" routerLink="../ajustes/compartir">
+        <ui-icon name="user" />{{ 'board.share' | translate }}
+      </a>
     </div>
   </div>
 
@@ -29,181 +32,22 @@
       <div class="vrb-skeleton plan__skeleton"></div>
     </div>
   } @else {
-    @let p = plan();
-    <div class="plan__toolbar">
-      <!-- CU-039-2: el filtro va en la URL. -->
-      <div
-        class="plan__filter"
-        role="group"
-        [attr.aria-label]="'plan.filter.label' | translate: { prefix: prefixStore.prefix() }"
-      >
-        <div class="vrb-segmented vrb-segmented--sm">
-          <button
-            type="button"
-            class="vrb-segmented__option"
-            [attr.aria-pressed]="activeCategory() === ''"
-            (click)="setCategory('')"
-          >
-            {{ 'plan.filter.all' | translate }}
-          </button>
-          @for (category of p.categories; track category) {
-            <button
-              type="button"
-              class="vrb-segmented__option"
-              [attr.aria-pressed]="activeCategory() === category"
-              (click)="setCategory(category)"
-            >
-              {{ displayName(category) }}
-            </button>
-          }
-          @if (p.hasUncategorized && !noCategories()) {
-            <button
-              type="button"
-              class="vrb-segmented__option"
-              [attr.aria-pressed]="activeCategory() === uncategorized"
-              (click)="setCategory(uncategorized)"
-            >
-              {{ 'plan.uncategorized' | translate }}
-            </button>
-          }
-        </div>
-      </div>
-
-      <!-- CU-039-7: el prefijo se recuerda por proyecto. -->
-      <label class="plan__prefix">
-        <span class="plan__prefix-label">{{ 'plan.prefix.label' | translate }}</span>
-        <span class="vrb-select">
-          <select
-            class="vrb-input"
-            [title]="'plan.prefix.hint' | translate"
-            (change)="setPrefix($any($event.target).value)"
-          >
-            @for (prefix of prefixes(); track prefix) {
-              <option [value]="prefix" [selected]="prefix === prefixStore.prefix()">
-                {{ prefix }}
-              </option>
-            }
-          </select>
-        </span>
-      </label>
-    </div>
-
-    <!-- Totales: cada issue una vez aunque esté en varios bloques (CU-039-3). -->
-    <dl class="plan__totals" [attr.aria-label]="'plan.totals' | translate">
-      @for (lane of lanes; track lane) {
-        <div [class]="'plan__total plan__total--' + lane">
-          <dt>{{ 'plan.lane.' + lane | translate }}</dt>
-          <dd>{{ p.totals[lane] }}</dd>
-        </div>
-      }
-    </dl>
-
-    <!-- CU-039-8: lo que espera a una persona, arriba de los bloques. -->
-    @for (group of p.waiting; track group.person) {
-      <section
-        class="plan__waiting"
-        [attr.aria-label]="'plan.waiting' | translate: { person: group.person }"
-      >
-        <h2 class="plan__waiting-title">
-          <ui-icon name="user" />{{ 'plan.waiting' | translate: { person: group.person } }}
-          <span class="vrb-badge vrb-badge--warning vrb-badge--sm">{{ group.issues.length }}</span>
-        </h2>
-        <ul class="plan__cards plan__cards--row">
-          @for (issue of group.issues; track issue.id) {
-            <li>
-              <app-plan-card
-                [issue]="issue"
-                [projectId]="projectId()"
-                [projectKey]="store.projectKey()"
-                [assignee]="assigneeOf(issue)"
-                [responsibles]="responsiblesOf(issue)"
-                [note]="noteOf(issue)"
-                [openInPanel]="cardsOpenPanel()"
-                [current]="panelNumber() === issue.number"
-                (opened)="open($event)"
-              />
-            </li>
-          }
-        </ul>
-      </section>
-    }
-
-    <div class="plan__body" [class.plan__body--panel]="panelNumber() !== null">
-      <div class="plan__blocks">
-        @if (noCategories()) {
-          <p class="vrb-alert vrb-alert--neutral plan__hint">
-            {{ 'plan.noCategories' | translate: { prefix: prefixStore.prefix() } }}
-          </p>
-        }
-        @for (block of p.blocks; track block.key) {
-          @let name =
-            block.key === uncategorized ? ('plan.uncategorized' | translate) : blockName(block.key);
-          <section class="plan__block" [attr.aria-labelledby]="'plan-block-' + block.key">
-            <header class="plan__block-header">
-              <h2 class="plan__block-title" [id]="'plan-block-' + block.key">{{ name }}</h2>
-              <p class="plan__block-counts">
-                {{
-                  'plan.blockCounts'
-                    | translate
-                      : {
-                          done: block.counts.done,
-                          doing: block.counts.doing,
-                          todo: block.counts.todo,
-                        }
-                }}
-              </p>
-            </header>
-            <div class="plan__lanes">
-              @for (lane of lanes; track lane) {
-                <section [class]="'plan__lane plan__lane--' + lane">
-                  <h3 class="plan__lane-title">
-                    <span
-                      [class]="'vrb-segmented__dot plan__lane-dot plan__lane-dot--' + lane"
-                    ></span>
-                    {{ 'plan.lane.' + lane | translate }}
-                    <span class="plan__lane-count">{{ block.counts[lane] }}</span>
-                  </h3>
-                  @if (block.lanes[lane].length) {
-                    <ul class="plan__cards">
-                      @for (issue of block.lanes[lane]; track issue.id) {
-                        <li>
-                          <app-plan-card
-                            [issue]="issue"
-                            [projectId]="projectId()"
-                            [projectKey]="store.projectKey()"
-                            [assignee]="assigneeOf(issue)"
-                            [responsibles]="responsiblesOf(issue)"
-                            [openInPanel]="cardsOpenPanel()"
-                            [current]="panelNumber() === issue.number"
-                            (opened)="open($event)"
-                          />
-                        </li>
-                      }
-                    </ul>
-                  } @else {
-                    <p class="plan__lane-empty">{{ 'plan.laneEmpty' | translate }}</p>
-                  }
-                  @if (lane === 'done' && (block.olderDone || showsAllDone(block.key))) {
-                    <button
-                      type="button"
-                      class="vrb-button vrb-button--ghost vrb-button--sm plan__more"
-                      [attr.aria-expanded]="showsAllDone(block.key)"
-                      (click)="toggleAllDone(block.key)"
-                    >
-                      {{
-                        showsAllDone(block.key)
-                          ? ('plan.recentOnly' | translate)
-                          : ('plan.showAllDone' | translate: { count: block.olderDone })
-                      }}
-                    </button>
-                  }
-                </section>
-              }
-            </div>
-          </section>
-        }
-      </div>
-
+    <app-plan-view
+      [issues]="store.issues()"
+      [labels]="store.labels()"
+      [labelsById]="store.labelsById()"
+      [prefix]="prefixStore.prefix()"
+      [category]="category()"
+      [projectId]="projectId()"
+      [projectKey]="store.projectKey()"
+      [assigneeOf]="assigneeOf"
+      [noteOf]="noteOf"
+      [cardsOpenPanel]="cardsOpenPanel()"
+      [panelNumber]="panelNumber()"
+      (categoryChange)="setCategory($event)"
+      (prefixChange)="setPrefix($event)"
+      (opened)="open($event)"
+    >
       @if (panelNumber(); as number) {
         <aside
           class="plan__panel"
@@ -236,6 +80,6 @@
           </div>
         </aside>
       }
-    </div>
+    </app-plan-view>
   }
 </section>

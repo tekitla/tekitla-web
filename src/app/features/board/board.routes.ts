@@ -5,6 +5,7 @@ import { BoardStore } from './data-access/board.store';
 import { BoardViewStore } from './data-access/board-view.store';
 import { PlanPrefixStore } from './data-access/plan-prefix.store';
 import { ProjectConfigStore } from './data-access/project-config.store';
+import { ShareLinksStore } from './data-access/share-links.store';
 
 /** Montado en `proyectos/:projectId`. */
 export const BOARD_ROUTES: Routes = [
@@ -12,7 +13,14 @@ export const BOARD_ROUTES: Routes = [
     path: '',
     // Lo comparten tablero, lista, alta, detalle y ajustes: ir y volver no recarga en
     // blanco, y lo que cambia en Ajustes se ve en el tablero.
-    providers: [ProjectConfigStore, BoardStore, ActorsStore, BoardViewStore, PlanPrefixStore],
+    providers: [
+      ProjectConfigStore,
+      BoardStore,
+      ActorsStore,
+      BoardViewStore,
+      PlanPrefixStore,
+      ShareLinksStore,
+    ],
     children: [
       {
         path: '',
@@ -50,6 +58,12 @@ export const BOARD_ROUTES: Routes = [
             path: 'etiquetas',
             loadComponent: () =>
               import('./pages/settings/label-settings/label-settings').then((m) => m.LabelSettings),
+          },
+          {
+            // Enlaces de solo lectura (009): solo el dueño (lo verifica el servicio).
+            path: 'compartir',
+            loadComponent: () =>
+              import('./pages/settings/share-settings/share-settings').then((m) => m.ShareSettings),
           },
         ],
       },

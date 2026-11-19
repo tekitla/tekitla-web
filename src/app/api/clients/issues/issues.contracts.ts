@@ -19,14 +19,14 @@ import type * as pb from '@tekitla/tekitla-protos/issues/v1/issues_pb';
  */
 
 /** Campos de un mensaje de protobuf-es, sin los internos (`$typeName`, `$unknown`). */
-type Fields<M> = Omit<M, '$typeName' | '$unknown'>;
+export type Fields<M> = Omit<M, '$typeName' | '$unknown'>;
 
 /**
  * Forma JSON normalizada de un mensaje: todos sus campos presentes, con los que
  * cambian de tipo en JSON (enums, timestamps) reemplazados por `Over`. `Over`
  * solo acepta campos que existen en el mensaje.
  */
-type Json<M, Over extends Partial<Record<keyof Fields<M>, unknown>> = object> = {
+export type Json<M, Over extends Partial<Record<keyof Fields<M>, unknown>> = object> = {
   [K in keyof Fields<M>]-?: K extends keyof Over ? Over[K] : Fields<M>[K];
 };
 

@@ -1,12 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   computed,
   effect,
   inject,
   input,
-  signal,
   untracked,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -17,22 +15,13 @@ import { Viewport } from '@/app/core/layout/viewport';
 import { ShellNav } from '@/app/layout/shell/shell-nav';
 import { Icon } from '@/app/ui/components/icon/icon';
 import { boardNav } from '../../board-nav';
-import { PlanCard } from '../../components/plan-card/plan-card';
+import { PlanView } from '../../components/plan-view/plan-view';
 import { ActorsStore } from '../../data-access/actors.store';
 import { BoardStore } from '../../data-access/board.store';
 import { issueKey } from '../../data-access/board.logic';
 import { parseIssueParam } from '../../data-access/issue-panel.logic';
 import { PlanPrefixStore } from '../../data-access/plan-prefix.store';
-import {
-  LANES,
-  UNCATEGORIZED,
-  buildPlan,
-  displayName,
-  personName,
-  prefixesOf,
-  responsiblesOf,
-  waitingNote,
-} from '../../data-access/plan.logic';
+import { waitingNote } from '../../data-access/plan.logic';
 import { IssueDetail } from '../issue-detail/issue-detail';
 
 /**
@@ -51,11 +40,12 @@ import { IssueDetail } from '../issue-detail/issue-detail';
  *   como el tablero del 033); `Esc` lo cierra. Móvil: la página del detalle.
  *
  * Usa lo que ya cargó el tablero (`BoardStore`: issues, etiquetas, estados) y
- * los actores: sin pedidos ni contrato nuevos.
+ * los actores: sin pedidos ni contrato nuevos. El cuerpo (filtro, totales,
+ * bloques) es `PlanView`, el mismo que ve un enlace de solo lectura (009).
  */
 @Component({
   selector: 'app-plan',
-  imports: [RouterLink, PlanCard, IssueDetail, Icon, TranslatePipe],
+  imports: [RouterLink, PlanView, IssueDetail, Icon, TranslatePipe],
   templateUrl: './plan.html',
   styleUrl: './plan.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -75,37 +65,7 @@ export class Plan {
   /** `?issue=RND-231`: el issue del panel lateral. */
   readonly issue = input<string>();
 
-  protected readonly lanes = LANES;
-  protected readonly uncategorized = UNCATEGORIZED;
-  protected readonly displayName = displayName;
-
-  /** Bloques con «ver todos» abierto en el carril hecho. */
-  private readonly allDone = signal<ReadonlySet<string>>(new Set());
-  private readonly now = signal(new Date());
-
   protected readonly category = computed(() => (this.categoria() ?? '').trim().toLowerCase());
-  protected readonly plan = computed(() =>
-    buildPlan({
-      issues: this.store.issues(),
-      labelsById: this.store.labelsById(),
-      prefix: this.prefixStore.prefix(),
-      category: this.category(),
-      allDone: this.allDone(),
-      now: this.now(),
-    }),
-  );
-  /** El filtro elegido existe (si no, se muestra todo y «Todas» queda marcada). */
-  protected readonly activeCategory = computed(() => {
-    const c = this.category();
-    const plan = this.plan();
-    if (c === UNCATEGORIZED) return plan.hasUncategorized ? c : '';
-    return plan.categories.includes(c) ? c : '';
-  });
-  protected readonly prefixes = computed(() =>
-    prefixesOf(this.store.labels(), this.prefixStore.prefix()),
-  );
-  /** Ningún issue tiene una categoría con el prefijo elegido. */
-  protected readonly noCategories = computed(() => this.plan().categories.length === 0);
 
   protected readonly cardsOpenPanel = computed(() => !this.isMobile() && !!this.store.projectKey());
   protected readonly panelNumber = computed(() =>
@@ -132,28 +92,12 @@ export class Plan {
       });
       nav.set(crumbs, project);
     });
-
-    // «Últimas 4 semanas» con la hora de ahora, renovada cada hora.
-    const timer = setInterval(() => this.now.set(new Date()), 60 * 60 * 1000);
-    inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
-  protected assigneeOf(issue: Issue) {
-    return this.actors.view(issue.assigneeActorId);
-  }
+  protected readonly assigneeOf = (issue: Issue) => this.actors.view(issue.assigneeActorId);
 
   /** Qué espera, de la cabecera de la descripción (CU-039-10). */
-  protected noteOf(issue: Issue): string {
-    return waitingNote(issue.description);
-  }
-
-  protected responsiblesOf(issue: Issue): string[] {
-    return responsiblesOf(issue, this.store.labelsById()).map(personName);
-  }
-
-  protected blockName(key: string): string {
-    return key === UNCATEGORIZED ? '' : displayName(key);
-  }
+  protected readonly noteOf = (issue: Issue): string => waitingNote(issue.description);
 
   protected setCategory(value: string): void {
     void this.router.navigate([], {
@@ -167,17 +111,6 @@ export class Plan {
     this.prefixStore.set(value);
     // El filtro era de otro prefijo.
     if (this.categoria()) this.setCategory('');
-  }
-
-  protected toggleAllDone(key: string): void {
-    const next = new Set(this.allDone());
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    this.allDone.set(next);
-  }
-
-  protected showsAllDone(key: string): boolean {
-    return this.allDone().has(key);
   }
 
   protected open(number: number): void {

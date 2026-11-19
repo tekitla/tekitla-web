@@ -1,0 +1,78 @@
+@use 'mixins' as m;
+
+// Marco de la vista de un enlace de solo lectura (issue 009): sin el shell de
+// la app, mobile first.
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.shared {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.shared__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-canvas);
+}
+
+.shared__brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.shared__app {
+  font-weight: 600;
+}
+
+.shared__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shared__main {
+  flex: 1;
+  padding: var(--space-4);
+
+  @include m.from-tablet {
+    padding: var(--space-6);
+  }
+}
+
+.shared__skeleton {
+  height: 240px;
+}
+
+.shared__footer {
+  padding: var(--space-3) var(--space-4);
+  color: var(--vrb-muted-fg);
+  font-size: 13px;
+  text-align: center;
+}
+
+// Pestañas como enlaces: el mismo arreglo que settings.scss mientras vrb 0.2.0
+// dé por hecho un <button> (028). Sale cuando vrb lo corrija en `_tabs.scss`.
+.vrb-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+
+  &[aria-current='page'] {
+    background: var(--vrb-bg);
+    color: var(--vrb-fg);
+    box-shadow: var(--vrb-shadow-raise);
+  }
+}

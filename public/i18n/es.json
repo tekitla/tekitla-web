@@ -7,7 +7,8 @@
     "board": "Tablero · Tekitla",
     "settings": "Ajustes · Tekitla",
     "issues": "Issues · Tekitla",
-    "plan": "Plan · Tekitla"
+    "plan": "Plan · Tekitla",
+    "shared": "Solo lectura · Tekitla"
   },
   "common": {
     "loading": "Cargando…",
@@ -168,7 +169,8 @@
       "compacta": "Compacta",
       "remembered": "Se recuerda en este proyecto."
     },
-    "plan": "Plan"
+    "plan": "Plan",
+    "share": "Compartir"
   },
   "issue": {
     "priorityLabel": "Prioridad",
@@ -286,7 +288,8 @@
     "tabsLabel": "Secciones de ajustes",
     "tabs": {
       "statuses": "Estados",
-      "labels": "Etiquetas"
+      "labels": "Etiquetas",
+      "share": "Compartir"
     },
     "fields": {
       "name": "Nombre",
@@ -496,5 +499,95 @@
       "noAccount": "{{name}} · responsable sin cuenta",
       "waitingFor": "Qué espera"
     }
+  },
+  "share": {
+    "lead": "Enlaces para que alguien sin cuenta vea el proyecto en solo lectura. Solo tú los creas y los revocas.",
+    "new": "Nuevo enlace",
+    "scope": {
+      "label": "Qué ve",
+      "SHARE_LINK_SCOPE_PLAN": "Solo la vista Plan",
+      "SHARE_LINK_SCOPE_PANEL": "Panel completo",
+      "SHARE_LINK_SCOPE_UNSPECIFIED": "—"
+    },
+    "scopeHint": {
+      "SHARE_LINK_SCOPE_PLAN": "Pendientes por categoría y quién los atiende.",
+      "SHARE_LINK_SCOPE_PANEL": "Tablero, detalle de issues y Plan."
+    },
+    "note": {
+      "label": "Para quién es",
+      "placeholder": "p. ej. jefe",
+      "required": "Escribe para quién es: te ayuda a reconocerlo en la lista."
+    },
+    "duration": {
+      "label": "Vence",
+      "SHARE_LINK_DURATION_SEVEN_DAYS": "En 7 días",
+      "SHARE_LINK_DURATION_THIRTY_DAYS": "En 30 días",
+      "SHARE_LINK_DURATION_NINETY_DAYS": "En 90 días",
+      "SHARE_LINK_DURATION_NEVER": "Sin vencimiento"
+    },
+    "owner": {
+      "label": "Cómo te ven",
+      "hint": "Tu nombre en las tarjetas que tienes asignadas. Nunca se muestra tu correo."
+    },
+    "warning": {
+      "SHARE_LINK_SCOPE_PLAN": "Quien tenga el enlace ve, sin iniciar sesión, los títulos y las etiquetas (también las de responsable y espera) y la línea «Qué espera». No ve las descripciones.",
+      "SHARE_LINK_SCOPE_PANEL": "Quien tenga el enlace ve, sin iniciar sesión, los títulos, las etiquetas y las descripciones tal como las escribiste. No ve comentarios, historial ni correos."
+    },
+    "create": "Crear enlace",
+    "created": {
+      "title": "Enlace creado",
+      "text": "Cópialo ahora: por seguridad no se vuelve a mostrar. Si lo pierdes, revócalo y crea otro.",
+      "urlLabel": "Enlace de solo lectura",
+      "copy": "Copiar",
+      "copied": "Copiado"
+    },
+    "list": {
+      "title": "Enlaces del proyecto",
+      "empty": "Todavía no compartiste este proyecto.",
+      "note": "Para quién",
+      "scope": "Qué ve",
+      "expires": "Vence",
+      "lastUsed": "Último uso",
+      "state": "Estado",
+      "never": "Sin vencimiento",
+      "notUsed": "Nunca"
+    },
+    "state": {
+      "active": "Vigente",
+      "expired": "Vencido",
+      "revoked": "Revocado"
+    },
+    "revoke": "Revocar",
+    "revokeLabel": "Revocar el enlace «{{note}}»",
+    "revokeConfirm": "¿Revocar el enlace «{{note}}»? Quien lo tenga deja de ver el proyecto en su siguiente acceso. No se puede deshacer.",
+    "error": {
+      "load": "No se pudieron cargar los enlaces.",
+      "create": "No se pudo crear el enlace. Reintenta en unos segundos.",
+      "limit": "El proyecto ya tiene 20 enlaces vigentes: revoca alguno antes de crear otro.",
+      "revoke": "No se pudo revocar el enlace. Reintenta en unos segundos."
+    }
+  },
+  "shared": {
+    "readOnly": "Solo lectura",
+    "nav": {
+      "label": "Vistas del proyecto",
+      "board": "Tablero",
+      "plan": "Plan"
+    },
+    "notFound": {
+      "title": "Este enlace no existe o ya no es válido",
+      "text": "Pídele a quien te lo compartió un enlace nuevo."
+    },
+    "error": "No se pudo cargar el proyecto. Reintenta en unos minutos.",
+    "planOnly": "Este enlace solo muestra la vista Plan.",
+    "toPlan": "Ir al Plan",
+    "issue": {
+      "back": "Volver al tablero",
+      "notFound": "Ese issue no está en este enlace.",
+      "status": "Estado",
+      "description": "Descripción",
+      "noDescription": "Sin descripción."
+    },
+    "footer": "Compartido desde Tekitla en solo lectura: nada de lo que hagas acá cambia el proyecto."
   }
 }
