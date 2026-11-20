@@ -43,6 +43,7 @@
           }
         </ul>
       }
+      <ng-container [ngTemplateOutlet]="linksChip" />
       <span class="issue-card__end">
         @if (!readOnly()) {
           <ng-container [ngTemplateOutlet]="moveButton" />
@@ -80,6 +81,7 @@
     }
 
     <div class="vrb-kanban-card__meta">
+      <ng-container [ngTemplateOutlet]="linksChip" />
       <span class="vrb-kanban-card__priority">
         <span class="u-visually-hidden">{{ 'issue.priorityLabel' | translate }}: </span>
         {{ 'issue.priority.' + level() | translate }}
@@ -163,4 +165,36 @@
       <ui-icon name="trash" />{{ 'board.card.discard' | translate }}
     </button>
   </div>
+</ng-template>
+
+<ng-template #linksChip>
+  @if (linkSummary(); as s) {
+    <!-- Ramas ligadas (016): el PR más relevante y el peor CI. -->
+    <span
+      class="issue-card__links"
+      [class.issue-card__links--failed]="s.ci === 'CI_STATUS_FAILED'"
+      [class.issue-card__links--merged]="s.pr === 'PR_STATE_MERGED'"
+      [title]="
+        'links.card'
+          | translate
+            : {
+                count: s.branches,
+                pr: 'links.pr.' + s.pr | translate,
+                ci: 'links.ci.' + s.ci | translate,
+              }
+      "
+    >
+      <ui-icon name="branch" />
+      <span aria-hidden="true">{{ s.branches }}</span>
+      <span class="u-visually-hidden">{{
+        'links.card'
+          | translate
+            : {
+                count: s.branches,
+                pr: 'links.pr.' + s.pr | translate,
+                ci: 'links.ci.' + s.ci | translate,
+              }
+      }}</span>
+    </span>
+  }
 </ng-template>

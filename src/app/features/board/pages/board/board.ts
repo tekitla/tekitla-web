@@ -44,6 +44,7 @@ import {
 import { IssueDetail } from '../issue-detail/issue-detail';
 import { boardNav } from '../../board-nav';
 import { ActorsStore } from '../../data-access/actors.store';
+import { ReposStore } from '../../data-access/repos.store';
 import { BoardStore } from '../../data-access/board.store';
 import { DENSITIES } from '../../data-access/board-view';
 import { BoardViewStore } from '../../data-access/board-view.store';
@@ -97,6 +98,8 @@ const INFO_NOTICE_MS = 5000;
 export class Board {
   protected readonly store = inject(BoardStore);
   protected readonly actors = inject(ActorsStore);
+  /** Ramas ligadas (016): el resumen de cada tarjeta. */
+  protected readonly repos = inject(ReposStore);
   protected readonly view = inject(BoardViewStore);
   protected readonly densities = DENSITIES;
   protected readonly isMobile = inject(Viewport).isMobile;
@@ -138,7 +141,10 @@ export class Board {
   constructor() {
     effect(() => {
       const id = this.projectId();
-      untracked(() => this.store.load(id));
+      untracked(() => {
+        this.store.load(id);
+        this.repos.loadLinks(id);
+      });
     });
     // Pide los actores al abrir el tablero y otra vez si cambia la sesión
     // (`load` lee el uid: es la dependencia de este effect).

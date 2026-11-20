@@ -1,0 +1,57 @@
+// Ramas vinculadas del detalle (issue 016).
+
+.issue-links__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.issue-links__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.issue-links__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--border-subtle);
+
+  &:last-child {
+    padding-block-end: 0;
+    border-block-end: 0;
+  }
+}
+
+.issue-links__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.issue-links__repo,
+.issue-links__meta,
+.issue-links__commit,
+.issue-links__empty {
+  color: var(--text-muted);
+  font-size: var(--text-small);
+}
+
+.issue-links__branch {
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+}
+
+.issue-links__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}

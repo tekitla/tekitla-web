@@ -32,6 +32,7 @@ import { MarkdownEditor } from '@/app/ui/components/markdown-editor/markdown-edi
 import { DiscardDialog } from '../../components/discard-dialog/discard-dialog';
 import { DiscardNote } from '../../components/discard-note/discard-note';
 import { IssueActivity } from '../../components/issue-activity/issue-activity';
+import { IssueLinks } from '../../components/issue-links/issue-links';
 import {
   PRIORITY_LEVEL,
   PRIORITY_TONE,
@@ -72,6 +73,7 @@ type Field = 'title' | 'description' | 'priority' | 'labels';
     MarkdownEditor,
     PriorityBadge,
     IssueActivity,
+    IssueLinks,
     DiscardDialog,
     DiscardNote,
     TranslatePipe,

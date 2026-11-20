@@ -1,0 +1,239 @@
+<div class="vrb-stack">
+  <p class="settings-muted">{{ 'repos.lead' | translate }}</p>
+
+  @if (pendingInstall()) {
+    <form
+      class="vrb-card"
+      aria-labelledby="repos-connect-title"
+      (submit)="$event.preventDefault(); connect()"
+      novalidate
+    >
+      <div class="vrb-card__body vrb-stack">
+        <h2 id="repos-connect-title" class="vrb-card__title">
+          {{ 'repos.connect.title' | translate }}
+        </h2>
+        <p class="settings-muted">{{ 'repos.connect.text' | translate }}</p>
+
+        <fieldset class="vrb-field">
+          <legend class="vrb-field__label">{{ 'repos.scope.label' | translate }}</legend>
+          <div class="repo-settings__options">
+            @for (option of scopes; track option) {
+              <label class="vrb-check vrb-check--radio">
+                <input
+                  type="radio"
+                  name="repos-scope"
+                  class="vrb-check__input"
+                  [checked]="scope() === option"
+                  (change)="scope.set(option)"
+                />
+                <span class="vrb-check__box" aria-hidden="true"></span>
+                <span class="vrb-check__label">{{ 'repos.scope.' + option | translate }}</span>
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        @if (scope() === 'CONNECTION_SCOPE_TOPIC') {
+          <div class="vrb-field">
+            <label class="vrb-field__label" for="repos-topic">{{
+              'repos.topic.label' | translate
+            }}</label>
+            <input
+              id="repos-topic"
+              class="vrb-input"
+              autocomplete="off"
+              maxlength="50"
+              [value]="topic()"
+              aria-describedby="repos-topic-hint"
+              (input)="topic.set($any($event.target).value)"
+            />
+            <p id="repos-topic-hint" class="vrb-field__hint">
+              {{ 'repos.topic.hint' | translate }}
+            </p>
+          </div>
+        } @else if (scope() === 'CONNECTION_SCOPE_SELECTED') {
+          <div class="vrb-field">
+            <label class="vrb-field__label" for="repos-selected">{{
+              'repos.selected.label' | translate
+            }}</label>
+            <textarea
+              id="repos-selected"
+              class="vrb-input"
+              rows="3"
+              [value]="selected()"
+              aria-describedby="repos-selected-hint"
+              (input)="selected.set($any($event.target).value)"
+            ></textarea>
+            <p id="repos-selected-hint" class="vrb-field__hint">
+              {{ 'repos.selected.hint' | translate }}
+            </p>
+          </div>
+        }
+
+        @if (
+          store.error() === 'connect' ||
+          store.error() === 'installation' ||
+          store.error() === 'exists' ||
+          store.error() === 'disabled' ||
+          store.error() === 'scope'
+        ) {
+          <p class="vrb-field__error" role="alert">
+            {{ 'repos.error.' + store.error() | translate }}
+          </p>
+        }
+
+        @if (scopeInvalid()) {
+          <p class="vrb-field__error" role="alert">{{ 'repos.error.scope' | translate }}</p>
+        }
+
+        <div class="vrb-cluster vrb-cluster--sm">
+          <ui-button type="submit" [loading]="connecting()">
+            {{ 'repos.connect.submit' | translate }}
+          </ui-button>
+          <ui-button variant="ghost" (pressed)="dropInstallation()">
+            {{ 'common.cancel' | translate }}
+          </ui-button>
+        </div>
+      </div>
+    </form>
+  } @else {
+    <section class="vrb-card" aria-labelledby="repos-providers-title">
+      <div class="vrb-card__body vrb-stack vrb-stack--sm">
+        <h2 id="repos-providers-title" class="vrb-card__title">
+          {{ 'repos.providers.title' | translate }}
+        </h2>
+        @if (installHref(); as href) {
+          <div class="vrb-cluster vrb-cluster--sm">
+            <a class="vrb-button vrb-button--primary" [attr.href]="href" rel="noopener">
+              {{ 'repos.providers.github' | translate }}
+            </a>
+          </div>
+          <p class="settings-muted">{{ 'repos.providers.githubHint' | translate }}</p>
+        } @else if (store.loaded()) {
+          <p class="settings-muted">{{ 'repos.providers.githubDisabled' | translate }}</p>
+        }
+        <p class="settings-muted">{{ 'repos.providers.gitlab' | translate }}</p>
+      </div>
+    </section>
+  }
+
+  <h2 class="vrb-card__title" id="repos-list-title">{{ 'repos.list.title' | translate }}</h2>
+  @if (
+    store.error() === 'load' ||
+    store.error() === 'sync' ||
+    store.error() === 'disconnect' ||
+    store.error() === 'update'
+  ) {
+    <p class="vrb-field__error" role="alert">{{ 'repos.error.' + store.error() | translate }}</p>
+  }
+  @if (!store.loaded()) {
+    <span class="vrb-skeleton settings__skeleton" role="status"></span>
+  } @else if (store.connections().length === 0 && store.error() !== 'load') {
+    <p class="settings-muted">{{ 'repos.list.empty' | translate }}</p>
+  } @else {
+    <div class="vrb-card settings-table-card">
+      <table class="tk-table" aria-labelledby="repos-list-title">
+        <thead>
+          <tr>
+            <th scope="col">{{ 'repos.list.owner' | translate }}</th>
+            <th scope="col">{{ 'repos.list.scope' | translate }}</th>
+            <th scope="col">{{ 'repos.list.repos' | translate }}</th>
+            <th scope="col">{{ 'repos.list.lastDelivery' | translate }}</th>
+            <th scope="col">
+              <span class="u-visually-hidden">{{ 'settings.columns.actions' | translate }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of store.connections(); track c.id) {
+            <tr [attr.aria-busy]="busy() === c.id || null">
+              <th scope="row">
+                {{ c.owner }}
+                <span class="settings-muted">{{ c.host }}</span>
+              </th>
+              <td>
+                {{ 'repos.scope.' + c.scope | translate }}
+                @if (c.topic) {
+                  <code>{{ c.topic }}</code>
+                }
+              </td>
+              <td>{{ c.repositoryCount }}</td>
+              <td>
+                {{
+                  c.lastDeliveryAt
+                    ? (c.lastDeliveryAt | date: 'medium')
+                    : ('repos.list.noDelivery' | translate)
+                }}
+              </td>
+              <td class="tk-table__actions">
+                <button
+                  type="button"
+                  class="vrb-button vrb-button--ghost vrb-button--sm"
+                  [disabled]="!!busy()"
+                  [attr.aria-label]="'repos.syncLabel' | translate: { owner: c.owner }"
+                  (click)="sync(c)"
+                >
+                  {{ 'repos.sync' | translate }}
+                </button>
+                <button
+                  type="button"
+                  class="vrb-button vrb-button--ghost vrb-button--sm"
+                  [disabled]="!!busy()"
+                  [attr.aria-label]="'repos.disconnectLabel' | translate: { owner: c.owner }"
+                  (click)="confirming.set(c.id)"
+                >
+                  {{ 'repos.disconnect' | translate }}
+                </button>
+              </td>
+            </tr>
+            @if (confirming() === c.id) {
+              <tr class="tk-table__panel">
+                <td colspan="5">
+                  <div
+                    class="vrb-stack vrb-stack--sm"
+                    role="group"
+                    [attr.aria-label]="'repos.disconnectLabel' | translate: { owner: c.owner }"
+                  >
+                    <p>{{ 'repos.disconnectConfirm' | translate: { owner: c.owner } }}</p>
+                    <div class="vrb-cluster vrb-cluster--sm">
+                      <ui-button
+                        variant="danger"
+                        size="sm"
+                        [loading]="busy() === c.id"
+                        (pressed)="disconnect(c)"
+                      >
+                        {{ 'repos.disconnect' | translate }}
+                      </ui-button>
+                      <ui-button variant="ghost" size="sm" (pressed)="confirming.set(null)">
+                        {{ 'common.cancel' | translate }}
+                      </ui-button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (store.repositories().length) {
+      <h2 class="vrb-card__title" id="repos-repos-title">
+        {{ 'repos.repositories' | translate }}
+      </h2>
+      <ul class="repo-settings__repos" aria-labelledby="repos-repos-title">
+        @for (r of store.repositories(); track r.id) {
+          <li>
+            @if (r.webUrl) {
+              <a [attr.href]="r.webUrl" target="_blank" rel="noopener noreferrer"
+                >{{ r.owner }}/{{ r.name }}</a
+              >
+            } @else {
+              {{ r.owner }}/{{ r.name }}
+            }
+          </li>
+        }
+      </ul>
+    }
+  }
+</div>

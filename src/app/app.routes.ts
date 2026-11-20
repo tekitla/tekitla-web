@@ -43,6 +43,13 @@ export const routes: Routes = [
           import('./features/projects/projects.routes').then((m) => m.PROJECTS_ROUTES),
       },
       {
+        // Setup URL de la GitHub App (issue 016): lleva a Ajustes › Repositorios.
+        path: 'repositorios/github',
+        title: 'titles.settings',
+        loadComponent: () =>
+          import('./features/board/pages/github-setup/github-setup').then((m) => m.GithubSetup),
+      },
+      {
         path: 'proyectos/:projectId',
         title: 'titles.board',
         loadChildren: () => import('./features/board/board.routes').then((m) => m.BOARD_ROUTES),
