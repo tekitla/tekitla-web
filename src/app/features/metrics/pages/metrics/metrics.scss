@@ -1,0 +1,252 @@
+@use 'mixins' as m;
+
+// Página «Métricas» (issue 036). Móvil: todo en una columna y las tarjetas en
+// 2 × 2. Desktop: 4 tarjetas en fila y los gráficos de cerrados y en curso
+// lado a lado. Mismo sistema visual que «Plan» (033 y 039).
+.metrics__project {
+  color: var(--vrb-muted-fg);
+  font-weight: 400;
+}
+
+.metrics__muted {
+  color: var(--vrb-muted-fg);
+}
+
+.metrics__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-4);
+
+  .vrb-segmented {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+.metrics__label-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+}
+
+.metrics__zone {
+  font-size: 12px;
+
+  @include m.from-tablet {
+    margin-left: auto;
+  }
+}
+
+.metrics__loading {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.metrics__skeleton {
+  height: 96px;
+
+  &--tall {
+    height: 240px;
+  }
+}
+
+.metrics__body {
+  display: grid;
+  gap: var(--space-4);
+  transition: opacity var(--duration-sm);
+
+  // Recargar conserva el marco: se atenúa en vez de vaciarse.
+  &[aria-busy='true'] {
+    opacity: 0.6;
+  }
+}
+
+.metrics__kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+
+  @include m.from-tablet {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+}
+
+.metrics__kpi {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  padding: var(--space-3);
+  border: 1px solid var(--vrb-card-border);
+  border-radius: var(--vrb-radius-card);
+  background: var(--vrb-surface);
+}
+
+.metrics__kpi-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--vrb-muted-fg);
+}
+
+.metrics__kpi-value {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.metrics__kpi-sub {
+  margin: 0 0 var(--space-1);
+  font-size: 12px;
+  color: var(--vrb-muted-fg);
+}
+
+.metrics__source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: calc(var(--space-2) * -1) 0 0;
+  font-size: 12px;
+  color: var(--vrb-muted-fg);
+}
+
+.metrics__pair {
+  display: grid;
+  gap: var(--space-4);
+
+  @include m.from-tablet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.metrics__card {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--vrb-card-border);
+  border-radius: var(--vrb-radius-card);
+  background: var(--vrb-surface);
+
+  @include m.from-tablet {
+    padding: var(--space-4);
+  }
+}
+
+.metrics__card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.metrics__card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.metrics__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.metrics__card-hint {
+  margin: 0 0 var(--space-3);
+  font-size: 12px;
+  color: var(--vrb-muted-fg);
+}
+
+.metrics__subtitle {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.metrics__empty {
+  margin: 0 0 var(--space-2);
+  font-size: 14px;
+}
+
+.metrics__note {
+  margin: calc(var(--space-2) * -1) 0 0;
+  font-size: 12px;
+  color: var(--vrb-muted-fg);
+}
+
+.metrics__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+
+  th,
+  td {
+    padding: var(--space-1) var(--space-2);
+    border-bottom: 1px solid var(--vrb-border);
+    text-align: right;
+  }
+
+  th:first-child,
+  td:first-child {
+    text-align: left;
+  }
+
+  th {
+    font-weight: 500;
+    color: var(--vrb-muted-fg);
+  }
+}
+
+.metrics__stale {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.metrics__stale-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--vrb-border);
+  font-size: 13px;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.metrics__stale-key {
+  min-height: auto;
+}
+
+.metrics__stale-title {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.metrics__stale-idle {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.metrics__footer {
+  display: grid;
+  gap: var(--space-1);
+  font-size: 12px;
+  color: var(--vrb-muted-fg);
+
+  p {
+    margin: 0;
+  }
+}

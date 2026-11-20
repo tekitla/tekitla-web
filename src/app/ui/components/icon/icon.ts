@@ -28,6 +28,7 @@ const PATHS = {
   code: 'm16 18 6-6-6-6M8 6l-6 6 6 6',
   cloud: 'M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.6 12.3 3.5 3.5 0 0 0 6.5 19z',
   rows: 'M3 5h18M3 10h18M3 15h18M3 20h18',
+  chart: 'M3 3v18h18M7 16v-4M12 16V8M17 16v-7',
 } as const;
 
 export type IconName = keyof typeof PATHS;

@@ -1,0 +1,149 @@
+// Gráfico por semana (issue 036, skill dataviz). Los colores de las series
+// llegan por input (tokens --chart-*); la tinta del texto es siempre la de
+// vrb, nunca el color de la serie.
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.week-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--vrb-muted-fg);
+}
+
+.week-chart__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.week-chart__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+
+  &--line {
+    height: 2px;
+    width: 14px;
+    border-radius: 1px;
+  }
+
+  &--band {
+    background: var(--chart-band);
+  }
+}
+
+.week-chart__plot {
+  position: relative;
+  width: 100%;
+}
+
+.week-chart__svg {
+  display: block;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.week-chart__grid {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+
+  &--base {
+    stroke: var(--chart-axis);
+  }
+}
+
+.week-chart__tick,
+.week-chart__label {
+  fill: var(--vrb-muted-fg);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.week-chart__tick {
+  text-anchor: end;
+}
+
+.week-chart__label {
+  text-anchor: middle;
+}
+
+.week-chart__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.week-chart__band {
+  fill: var(--chart-band);
+  opacity: 0.7;
+}
+
+// Anillo de superficie de 2px alrededor de los marcadores.
+.week-chart__dot {
+  stroke: var(--vrb-surface);
+  stroke-width: 2;
+}
+
+.week-chart__crosshair {
+  stroke: var(--chart-axis);
+  stroke-width: 1;
+}
+
+.week-chart__tip {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  gap: 2px;
+  min-width: 120px;
+  padding: var(--space-2);
+  border: 1px solid var(--vrb-overlay-border);
+  border-radius: var(--radius-md);
+  background: var(--vrb-surface);
+  box-shadow: var(--shadow-card);
+  font-size: 12px;
+  color: var(--vrb-fg);
+  pointer-events: none;
+  transform: translateX(12px);
+
+  &--left {
+    transform: translateX(calc(-100% - 12px));
+  }
+}
+
+.week-chart__tip-title {
+  font-weight: 600;
+}
+
+.week-chart__tip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--vrb-muted-fg);
+
+  strong {
+    color: var(--vrb-fg);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// Las claves del tooltip son trazos cortos, no cajas.
+.week-chart__tip-key {
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+
+  &--band {
+    height: 6px;
+    background: var(--chart-band);
+  }
+}

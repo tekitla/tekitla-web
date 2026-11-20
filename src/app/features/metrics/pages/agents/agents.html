@@ -1,0 +1,114 @@
+<section class="agents" aria-labelledby="agents-title">
+  <div class="vrb-page-header">
+    @if (board.project(); as project) {
+      <p class="vrb-page-header__eyebrow">// {{ project.key.toLowerCase() }}</p>
+    }
+    <h1 id="agents-title" class="vrb-page-header__title">
+      {{ 'agents.title' | translate }}
+      @if (board.project(); as project) {
+        <span class="agents__project">· {{ project.name }}</span>
+      }
+    </h1>
+    <p class="vrb-page-header__description">{{ 'agents.description' | translate }}</p>
+    <div class="vrb-page-header__actions">
+      <a class="vrb-button vrb-button--outline vrb-button--sm" routerLink="..">
+        <ui-icon name="board" />{{ 'plan.board' | translate }}
+      </a>
+      <a class="vrb-button vrb-button--outline vrb-button--sm" routerLink="../plan">
+        <ui-icon name="rows" />{{ 'plan.title' | translate }}
+      </a>
+      <a class="vrb-button vrb-button--outline vrb-button--sm" routerLink="../metricas">
+        <ui-icon name="chart" />{{ 'metrics.title' | translate }}
+      </a>
+    </div>
+  </div>
+
+  <p class="agents__status" aria-live="polite">
+    @if (updated(); as u) {
+      @if (u.key === 'metrics.unit.minutes' && u.value === '0') {
+        {{ 'agents.updatedNow' | translate }}
+      } @else {
+        {{ 'agents.updated' | translate: { ago: (u.key | translate: { n: u.value }) } }}
+      }
+    }
+    @if (store.error()) {
+      <span class="agents__error">{{ 'agents.refreshError' | translate }}</span>
+    }
+    <button type="button" class="vrb-button vrb-button--ghost vrb-button--sm" (click)="refresh()">
+      {{ 'agents.refresh' | translate }}
+    </button>
+  </p>
+
+  @if (!store.loaded()) {
+    <div class="agents__loading" aria-busy="true">
+      <span class="u-visually-hidden">{{ 'agents.loading' | translate }}</span>
+      <div class="vrb-skeleton agents__skeleton"></div>
+    </div>
+  } @else if (store.error() && !total()) {
+    <div class="vrb-alert vrb-alert--danger" role="alert">{{ 'agents.error' | translate }}</div>
+  } @else if (!total()) {
+    <p class="agents__empty">{{ 'agents.empty' | translate }}</p>
+  } @else {
+    @for (g of groups(); track g.group) {
+      @if (g.sessions.length || g.group === 'person' || g.group === 'stalled') {
+        <section
+          [class]="'agents__group agents__group--' + g.group"
+          [attr.aria-labelledby]="'ag-' + g.group"
+        >
+          <h2 [id]="'ag-' + g.group" class="agents__group-title">
+            <ui-icon [name]="icon[g.group]" />
+            {{ 'agents.group.' + g.group | translate }}
+            <span class="agents__count">{{ g.sessions.length }}</span>
+            @if (g.group === 'idle' && g.sessions.length) {
+              <button
+                type="button"
+                class="vrb-button vrb-button--ghost vrb-button--sm agents__toggle"
+                [attr.aria-expanded]="showIdle()"
+                (click)="showIdle.set(!showIdle())"
+              >
+                {{ (showIdle() ? 'agents.hide' : 'agents.show') | translate }}
+              </button>
+            }
+          </h2>
+          <p class="agents__group-hint">{{ 'agents.groupHint.' + g.group | translate }}</p>
+          @if (g.group !== 'idle' || showIdle()) {
+            <ul class="agents__list">
+              @for (s of g.sessions; track s.id) {
+                <li class="agents__row">
+                  <a
+                    class="vrb-kanban-card__code agents__key"
+                    [routerLink]="['..', 'issues', s.issueNumber]"
+                    >{{ key(s) }}</a
+                  >
+                  <span class="agents__title">{{ title(s) }}</span>
+                  <span class="agents__who">
+                    @if (s.sessionName) {
+                      <code>{{ s.sessionName }}</code> ·
+                    }
+                    {{ s.agentDisplayName }}
+                  </span>
+                  <span class="agents__since">
+                    @if (since(g.group === 'stalled' ? s.lastSeenAt : s.statusChangedAt); as d) {
+                      {{
+                        'agents.since.' + g.group
+                          | translate: { ago: (d.key | translate: { n: d.value }) }
+                      }}
+                    }
+                    @if (s.waitingTarget) {
+                      · {{ 'agents.waitingFor' | translate: { target: s.waitingTarget } }}
+                    }
+                  </span>
+                  @if (s.waitingText) {
+                    <span class="agents__text">«{{ s.waitingText }}»</span>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+    }
+  }
+
+  <p class="agents__footer">{{ 'agents.footer' | translate }}</p>
+</section>

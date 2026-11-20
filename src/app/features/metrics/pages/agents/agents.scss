@@ -1,0 +1,123 @@
+@use 'mixins' as m;
+
+// Vista «Agentes» (issues 026 y 036): grupos uno debajo del otro. El estado
+// lleva ícono y texto; el color de vrb solo acompaña.
+.agents__project {
+  color: var(--vrb-muted-fg);
+  font-weight: 400;
+}
+
+.agents__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  font-size: 12px;
+  color: var(--vrb-muted-fg);
+}
+
+.agents__error {
+  color: var(--vrb-danger);
+}
+
+.agents__loading {
+  display: grid;
+}
+
+.agents__skeleton {
+  height: 160px;
+}
+
+.agents__empty {
+  margin: 0 0 var(--space-4);
+}
+
+.agents__group {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--vrb-card-border);
+  border-left-width: 3px;
+  border-radius: var(--vrb-radius-card);
+  background: var(--vrb-surface);
+
+  &--person {
+    border-left-color: var(--vrb-warning);
+  }
+
+  &--stalled {
+    border-left-color: var(--vrb-danger);
+  }
+
+  &--working {
+    border-left-color: var(--vrb-success);
+  }
+
+  &--other {
+    border-left-color: var(--vrb-info);
+  }
+}
+
+.agents__group-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.agents__count {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--vrb-fill);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.agents__toggle {
+  margin-left: auto;
+}
+
+.agents__group-hint {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: 12px;
+  color: var(--vrb-muted-fg);
+}
+
+.agents__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agents__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--vrb-border);
+  font-size: 13px;
+}
+
+.agents__title {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.agents__who,
+.agents__since,
+.agents__text {
+  color: var(--vrb-muted-fg);
+}
+
+.agents__text {
+  flex-basis: 100%;
+  font-style: italic;
+}
+
+.agents__footer {
+  font-size: 12px;
+  color: var(--vrb-muted-fg);
+}
