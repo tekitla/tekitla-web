@@ -1,0 +1,416 @@
+<section class="metrics" aria-labelledby="metrics-title">
+  <div class="vrb-page-header">
+    @if (board.project(); as project) {
+      <p class="vrb-page-header__eyebrow">// {{ project.key.toLowerCase() }}</p>
+    }
+    <h1 id="metrics-title" class="vrb-page-header__title">
+      {{ 'metrics.title' | translate }}
+      @if (board.project(); as project) {
+        <span class="metrics__project">· {{ project.name }}</span>
+      }
+    </h1>
+    <p class="vrb-page-header__description">{{ 'metrics.description' | translate }}</p>
+    <div class="vrb-page-header__actions">
+      <a class="vrb-button vrb-button--outline vrb-button--sm" routerLink="..">
+        <ui-icon name="board" />{{ 'plan.board' | translate }}
+      </a>
+      <a class="vrb-button vrb-button--outline vrb-button--sm" routerLink="../plan">
+        <ui-icon name="rows" />{{ 'plan.title' | translate }}
+      </a>
+      <a class="vrb-button vrb-button--outline vrb-button--sm" routerLink="../agentes">
+        <ui-icon name="bot" />{{ 'agents.title' | translate }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros: una fila arriba; filtran todo lo de abajo. -->
+  <div class="metrics__filters">
+    <div
+      class="vrb-segmented vrb-segmented--sm"
+      role="group"
+      [attr.aria-label]="'metrics.period.label' | translate"
+    >
+      @for (w of presets; track w) {
+        <button
+          type="button"
+          class="vrb-segmented__option"
+          [attr.aria-pressed]="weeks() === w"
+          (click)="setWeeks(w)"
+        >
+          {{ 'metrics.period.weeks' | translate: { n: w } }}
+        </button>
+      }
+    </div>
+    @if (board.labels().length) {
+      <label class="metrics__label-filter">
+        <span class="metrics__muted">{{ 'metrics.labels.label' | translate }}</span>
+        <select
+          class="vrb-select"
+          [value]="labelId()"
+          (change)="setLabel($any($event.target).value)"
+        >
+          <option value="">{{ 'metrics.labels.all' | translate }}</option>
+          @for (l of board.labels(); track l.id) {
+            <option [value]="l.id">{{ l.name }}</option>
+          }
+        </select>
+      </label>
+    }
+    @if (store.metrics(); as m) {
+      <span class="metrics__muted metrics__zone">
+        {{ 'metrics.period.zone' | translate: { zone: m.timeZone } }}
+      </span>
+    }
+  </div>
+
+  @if (store.error() && !view()) {
+    <div class="vrb-alert vrb-alert--danger" role="alert">{{ 'metrics.error' | translate }}</div>
+  } @else if (!view()) {
+    <div class="metrics__loading" aria-busy="true">
+      <span class="u-visually-hidden">{{ 'metrics.loading' | translate }}</span>
+      <div class="vrb-skeleton metrics__skeleton"></div>
+      <div class="vrb-skeleton metrics__skeleton metrics__skeleton--tall"></div>
+    </div>
+  } @else {
+    @if (view(); as v) {
+      @if (store.error()) {
+        <div class="vrb-alert vrb-alert--warning" role="alert">
+          {{ 'metrics.errorRefresh' | translate }}
+        </div>
+      } @else if (store.loading()) {
+        <p class="metrics__note" role="status">{{ 'metrics.refreshing' | translate }}</p>
+      }
+      <div class="metrics__body" [attr.aria-busy]="store.loading()">
+        <!-- Tarjetas del período -->
+        <div class="metrics__kpis">
+          <article class="metrics__kpi">
+            <h2 class="metrics__kpi-label">{{ 'metrics.lead.title' | translate }}</h2>
+            <p class="metrics__kpi-value">
+              @if (v.lead.value; as d) {
+                {{ d.key | translate: { n: d.value } }}
+              } @else {
+                —
+              }
+            </p>
+            <p class="metrics__kpi-sub">
+              @if (v.lead.p85; as d) {
+                {{ 'metrics.kpi.p85' | translate: { value: (d.key | translate: { n: d.value }) } }}
+                ·
+              }
+              {{ 'metrics.kpi.count' | translate: { n: v.lead.count } }}
+            </p>
+            <ui-sparkline [values]="v.lead.spark" />
+          </article>
+          <article class="metrics__kpi">
+            <h2 class="metrics__kpi-label">{{ 'metrics.cycle.title' | translate }}</h2>
+            <p class="metrics__kpi-value">
+              @if (v.cycle.value; as d) {
+                {{ d.key | translate: { n: d.value } }}
+              } @else {
+                —
+              }
+            </p>
+            <p class="metrics__kpi-sub">
+              @if (v.cycle.p85; as d) {
+                {{ 'metrics.kpi.p85' | translate: { value: (d.key | translate: { n: d.value }) } }}
+                ·
+              }
+              {{ 'metrics.kpi.count' | translate: { n: v.cycle.count } }}
+            </p>
+            <ui-sparkline [values]="v.cycle.spark" />
+          </article>
+          <article class="metrics__kpi">
+            <h2 class="metrics__kpi-label">{{ 'metrics.closed.title' | translate }}</h2>
+            <p class="metrics__kpi-value">{{ v.closedValue }}</p>
+            <p class="metrics__kpi-sub">
+              @if (v.hasValueLabels) {
+                {{ 'metrics.closed.sub' | translate: { other: v.closedOther } }}
+              } @else {
+                {{ 'metrics.closed.noValueLabels' | translate }}
+              }
+            </p>
+            <ui-sparkline [values]="v.closedSpark" />
+          </article>
+          <article class="metrics__kpi">
+            <h2 class="metrics__kpi-label">{{ 'metrics.wip.title' | translate }}</h2>
+            <p class="metrics__kpi-value">{{ v.wip }}</p>
+            <p class="metrics__kpi-sub">{{ 'metrics.wip.sub' | translate }}</p>
+            <ui-sparkline [values]="v.wipSpark" />
+          </article>
+        </div>
+        <p class="metrics__source">
+          <span
+            class="vrb-badge vrb-badge--sm"
+            [class.vrb-badge--info]="v.confidence === 'recorded'"
+            [class.vrb-badge--neutral]="v.confidence !== 'recorded'"
+          >
+            {{ 'metrics.source.' + v.confidence | translate }}
+          </span>
+          {{ 'metrics.source.' + v.confidence + 'Hint' | translate }}
+        </p>
+
+        <!-- Tiempo de entrega -->
+        <section class="metrics__card" aria-labelledby="m-time">
+          <header class="metrics__card-head">
+            <h2 id="m-time" class="metrics__card-title">{{ 'metrics.time.title' | translate }}</h2>
+            <div class="metrics__card-actions">
+              <div
+                class="vrb-segmented vrb-segmented--sm"
+                role="group"
+                [attr.aria-label]="'metrics.time.title' | translate"
+              >
+                <button
+                  type="button"
+                  class="vrb-segmented__option"
+                  [attr.aria-pressed]="timeMetric() === 'lead'"
+                  (click)="timeMetric.set('lead')"
+                >
+                  {{ 'metrics.lead.short' | translate }}
+                </button>
+                <button
+                  type="button"
+                  class="vrb-segmented__option"
+                  [attr.aria-pressed]="timeMetric() === 'cycle'"
+                  (click)="timeMetric.set('cycle')"
+                >
+                  {{ 'metrics.cycle.short' | translate }}
+                </button>
+              </div>
+              <button
+                type="button"
+                class="vrb-button vrb-button--ghost vrb-button--sm"
+                (click)="toggleTable('time')"
+              >
+                {{
+                  (tables().has('time') ? 'metrics.chart.asChart' : 'metrics.chart.asTable')
+                    | translate
+                }}
+              </button>
+            </div>
+          </header>
+          <p class="metrics__card-hint">{{ 'metrics.time.hint.' + timeMetric() | translate }}</p>
+          @let points = timeMetric() === 'lead' ? v.leadSeries : v.cycleSeries;
+          @if (tables().has('time')) {
+            <table class="metrics__table">
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'metrics.chart.week' | translate }}</th>
+                  <th scope="col">{{ 'metrics.chart.median' | translate }}</th>
+                  <th scope="col">{{ 'metrics.chart.p85' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of points; track $index) {
+                  <tr>
+                    <td>{{ p.label }}</td>
+                    <td>{{ days(p.median) }}</td>
+                    <td>{{ days(p.p85) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <ui-week-chart
+              kind="line"
+              [labels]="labelsOf(points)"
+              [series]="timeSeries()"
+              [unit]="unitDays()"
+              [emptyText]="'metrics.chart.noneClosed' | translate"
+              [ariaLabel]="'metrics.time.aria.' + timeMetric() | translate"
+            />
+          }
+        </section>
+
+        <div class="metrics__pair">
+          <!-- Cerrados por semana -->
+          <section class="metrics__card" aria-labelledby="m-closed">
+            <header class="metrics__card-head">
+              <h2 id="m-closed" class="metrics__card-title">
+                {{ 'metrics.closed.perWeek' | translate }}
+              </h2>
+              <button
+                type="button"
+                class="vrb-button vrb-button--ghost vrb-button--sm"
+                (click)="toggleTable('closed')"
+              >
+                {{
+                  (tables().has('closed') ? 'metrics.chart.asChart' : 'metrics.chart.asTable')
+                    | translate
+                }}
+              </button>
+            </header>
+            @if (tables().has('closed')) {
+              <table class="metrics__table">
+                <thead>
+                  <tr>
+                    <th scope="col">{{ 'metrics.chart.week' | translate }}</th>
+                    @for (s of closedSeries(); track s.name) {
+                      <th scope="col">{{ s.name }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (p of v.closedSeries; track $index) {
+                    <tr>
+                      <td>{{ p.label }}</td>
+                      @for (val of p.values; track $index) {
+                        <td>{{ val }}</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            } @else {
+              <ui-week-chart
+                kind="columns"
+                [integer]="true"
+                [labels]="labelsOf(v.closedSeries)"
+                [series]="closedSeries()"
+                [ariaLabel]="'metrics.closed.aria' | translate"
+              />
+            }
+          </section>
+
+          <!-- Trabajo en curso -->
+          <section class="metrics__card" aria-labelledby="m-wip">
+            <header class="metrics__card-head">
+              <h2 id="m-wip" class="metrics__card-title">
+                {{ 'metrics.wip.perWeek' | translate }}
+              </h2>
+              <button
+                type="button"
+                class="vrb-button vrb-button--ghost vrb-button--sm"
+                (click)="toggleTable('wip')"
+              >
+                {{
+                  (tables().has('wip') ? 'metrics.chart.asChart' : 'metrics.chart.asTable')
+                    | translate
+                }}
+              </button>
+            </header>
+            @if (tables().has('wip')) {
+              <table class="metrics__table">
+                <thead>
+                  <tr>
+                    <th scope="col">{{ 'metrics.chart.week' | translate }}</th>
+                    <th scope="col">{{ 'metrics.wip.series' | translate }}</th>
+                    <th scope="col">{{ 'metrics.started.series' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (p of v.wipSeries; track $index) {
+                    <tr>
+                      <td>{{ p.label }}</td>
+                      <td>{{ p.median }}</td>
+                      <td>{{ v.startedSeries[$index].values[0] }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            } @else {
+              <ui-week-chart
+                kind="line"
+                [labels]="labelsOf(v.wipSeries)"
+                [series]="wipSeries()"
+                [integer]="true"
+                [ariaLabel]="'metrics.wip.aria' | translate"
+              />
+              <h3 class="metrics__subtitle">{{ 'metrics.started.title' | translate }}</h3>
+              <ui-week-chart
+                kind="columns"
+                [integer]="true"
+                [labels]="labelsOf(v.startedSeries)"
+                [series]="startedSeries()"
+                [ariaLabel]="'metrics.started.aria' | translate"
+              />
+            }
+          </section>
+        </div>
+
+        @if (v.partialFirst || v.partialLast) {
+          <p class="metrics__note">{{ 'metrics.chart.partial' | translate }}</p>
+        }
+
+        <!-- Dónde se va el tiempo (parte 3, en vivo) -->
+        <section class="metrics__card metrics__card--live" aria-labelledby="m-flow">
+          <header class="metrics__card-head">
+            <h2 id="m-flow" class="metrics__card-title">{{ 'metrics.flow.title' | translate }}</h2>
+            <span class="vrb-badge vrb-badge--sm vrb-badge--info">{{
+              'metrics.source.recorded' | translate
+            }}</span>
+          </header>
+          <p class="metrics__empty">{{ 'metrics.flow.pending' | translate }}</p>
+          <p class="metrics__card-hint">{{ 'metrics.flow.what' | translate }}</p>
+        </section>
+
+        <!-- Señal de contratación -->
+        <section class="metrics__card" aria-labelledby="m-signal">
+          <header class="metrics__card-head">
+            <h2 id="m-signal" class="metrics__card-title">
+              {{ 'metrics.signal.title' | translate }}
+            </h2>
+            <span class="vrb-badge vrb-badge--sm vrb-badge--neutral">{{
+              'metrics.signal.insufficient' | translate
+            }}</span>
+          </header>
+          <p class="metrics__empty">{{ 'metrics.signal.pending' | translate }}</p>
+          <p class="metrics__card-hint">{{ 'metrics.signal.notDecision' | translate }}</p>
+        </section>
+
+        <!-- Estancados -->
+        <section class="metrics__card" aria-labelledby="m-stale">
+          <header class="metrics__card-head">
+            <h2 id="m-stale" class="metrics__card-title">
+              {{ 'metrics.stale.title' | translate: { n: store.metrics()?.staleTotal ?? 0 } }}
+            </h2>
+          </header>
+          <p class="metrics__card-hint">{{ 'metrics.stale.hint' | translate }}</p>
+          @if (stale().length) {
+            <ul class="metrics__stale">
+              @for (s of stale(); track s.number) {
+                <li class="metrics__stale-row">
+                  <a
+                    class="metrics__stale-key vrb-kanban-card__code"
+                    [routerLink]="['..', 'issues', s.number]"
+                    >{{ s.key }}</a
+                  >
+                  <span class="metrics__stale-title">{{ s.title }}</span>
+                  <span class="metrics__muted">{{ s.status }}</span>
+                  <span class="metrics__muted">{{
+                    'metrics.stale.since' | translate: { date: s.since }
+                  }}</span>
+                  <span class="metrics__stale-idle">{{
+                    'metrics.stale.idle' | translate: { n: s.idleDays }
+                  }}</span>
+                  @if (s.confidence === 'METRIC_CONFIDENCE_APPROXIMATE') {
+                    <span class="metrics__muted" [title]="'metrics.source.approximate' | translate"
+                      >≈</span
+                    >
+                  }
+                </li>
+              }
+            </ul>
+            @if ((store.metrics()?.staleTotal ?? 0) > stale().length) {
+              <p class="metrics__note">
+                {{
+                  'metrics.stale.more'
+                    | translate: { n: (store.metrics()?.staleTotal ?? 0) - stale().length }
+                }}
+              </p>
+            }
+          } @else {
+            <p class="metrics__empty">{{ 'metrics.stale.none' | translate }}</p>
+          }
+        </section>
+
+        <footer class="metrics__footer">
+          <p>{{ 'metrics.footer.system' | translate }}</p>
+          <p>{{ 'metrics.footer.notMeasured' | translate }}</p>
+          @if (v.doneWithoutDates) {
+            <p>{{ 'metrics.footer.doneWithoutDates' | translate: { n: v.doneWithoutDates } }}</p>
+          }
+        </footer>
+      </div>
+    }
+  }
+</section>

@@ -8,7 +8,9 @@
     "settings": "Ajustes · Tekitla",
     "issues": "Issues · Tekitla",
     "plan": "Plan · Tekitla",
-    "shared": "Solo lectura · Tekitla"
+    "shared": "Solo lectura · Tekitla",
+    "metrics": "Métricas · Tekitla",
+    "agents": "Agentes · Tekitla"
   },
   "common": {
     "loading": "Cargando…",
@@ -32,7 +34,9 @@
       "board": "Tablero",
       "settings": "Ajustes",
       "issues": "Issues",
-      "plan": "Plan"
+      "plan": "Plan",
+      "metrics": "Métricas",
+      "agents": "Agentes"
     },
     "logout": "Cerrar sesión"
   },
@@ -589,5 +593,153 @@
       "noDescription": "Sin descripción."
     },
     "footer": "Compartido desde Tekitla en solo lectura: nada de lo que hagas acá cambia el proyecto."
+  },
+  "metrics": {
+    "title": "Métricas",
+    "description": "Cuánto tarda el trabajo en llegar y dónde espera. Mide el sistema, no a las personas.",
+    "loading": "Cargando las métricas…",
+    "error": "No se pudieron cargar las métricas. Recarga la página para intentar de nuevo.",
+    "errorRefresh": "No se pudieron cargar las métricas de este período: se muestran las anteriores. Prueba de nuevo o recarga la página.",
+    "refreshing": "Actualizando…",
+    "period": {
+      "label": "Período",
+      "weeks": "{{n}} sem",
+      "zone": "Semanas de lunes a lunes · {{zone}}"
+    },
+    "labels": {
+      "label": "Etiqueta",
+      "all": "Todas"
+    },
+    "unit": {
+      "days": "{{n}} d",
+      "hours": "{{n}} h",
+      "minutes": "{{n}} min",
+      "daysShort": "d"
+    },
+    "kpi": {
+      "p85": "p85 {{value}}",
+      "count": "de {{n}} terminados"
+    },
+    "lead": {
+      "title": "Lead time (mediana)",
+      "short": "Lead time"
+    },
+    "cycle": {
+      "title": "Cycle time (mediana)",
+      "short": "Cycle time"
+    },
+    "closed": {
+      "title": "Cerrados de valor",
+      "sub": "y {{other}} más sin etiqueta de valor",
+      "noValueLabels": "Sin etiquetas de valor: todo cuenta",
+      "perWeek": "Cerrados por semana",
+      "value": "De valor",
+      "other": "Otros",
+      "all": "Cerrados",
+      "aria": "Columnas de issues cerrados por semana"
+    },
+    "wip": {
+      "title": "En curso hoy",
+      "sub": "Trabajo empezado sin terminar",
+      "perWeek": "Trabajo en curso",
+      "series": "En curso al cierre",
+      "aria": "Línea del trabajo en curso al cierre de cada semana"
+    },
+    "started": {
+      "title": "Empezados por semana",
+      "series": "Empezados",
+      "aria": "Columnas de issues empezados por semana"
+    },
+    "time": {
+      "title": "Tiempo de entrega por semana",
+      "hint": {
+        "lead": "De creado a hecho. Línea: mediana de los que terminaron esa semana; banda: hasta el percentil 85. Una semana sin cerrados queda en blanco.",
+        "cycle": "De la primera vez en curso a hecho. Línea: mediana; banda: hasta el percentil 85. Una semana sin cerrados queda en blanco."
+      },
+      "aria": {
+        "lead": "Línea del lead time por semana, con su banda hasta el percentil 85",
+        "cycle": "Línea del cycle time por semana, con su banda hasta el percentil 85"
+      }
+    },
+    "chart": {
+      "median": "Mediana",
+      "p85": "Percentil 85",
+      "week": "Semana",
+      "asTable": "Ver como tabla",
+      "asChart": "Ver gráfico",
+      "noneClosed": "sin cerrados",
+      "partial": "La primera y la última semana pueden estar incompletas: se recortan al período."
+    },
+    "source": {
+      "recorded": "● Registrado en vivo",
+      "recordedHint": "Todo sale de cambios hechos en Tekitla.",
+      "approximate": "≈ Histórico aproximado",
+      "approximateHint": "Hay fechas reconstruidas de un importador (commits o fechas del archivo); los estados se cambiaban a mano y a veces tarde.",
+      "none": "Sin datos",
+      "noneHint": "No hay cambios de estado en el período."
+    },
+    "flow": {
+      "title": "Dónde se va el tiempo",
+      "pending": "Se mide en vivo con las sesiones de agentes desde que se despliegue la parte 3 del issue 036. Las sesiones de antes no guardaban historia, así que no se pueden reconstruir.",
+      "what": "Muestra el tiempo trabajando contra el tiempo esperando a una persona, bloqueado o en revisión, y cuánto tardan en responderse las esperas."
+    },
+    "signal": {
+      "title": "Señal de contratación",
+      "insufficient": "Datos insuficientes",
+      "pending": "La señal compara el último mes con el anterior y necesita 8 semanas de datos en vivo de las sesiones de agentes (con 4 da una lectura preliminar). Empieza a contar cuando se despliegue la parte 3.",
+      "notDecision": "Es una señal, no una decisión: siempre muestra los números que la sostienen."
+    },
+    "stale": {
+      "title": "Estancados ({{n}})",
+      "hint": "En curso y sin actividad hace 30 días o más, del más antiguo al más nuevo.",
+      "since": "en curso desde {{date}}",
+      "idle": "{{n}} días sin actividad",
+      "none": "Nada estancado.",
+      "more": "Y {{n}} más."
+    },
+    "footer": {
+      "system": "Métricas del sistema, no de personas: sirven para ver dónde se atora el trabajo. No hay rankings por persona.",
+      "notMeasured": "No miden horas, diseño, pruebas locales ni el trabajo que no se sube.",
+      "doneWithoutDates": "{{n}} issues hechos sin fecha de cierre conocida no entran al cálculo."
+    }
+  },
+  "agents": {
+    "title": "Agentes",
+    "description": "Tus sesiones de agentes en este proyecto: quién trabaja en qué y qué espera a una persona.",
+    "loading": "Cargando las sesiones…",
+    "error": "No se pudieron cargar las sesiones. Recarga la página para intentar de nuevo.",
+    "refreshError": "No se pudo actualizar; se muestra lo último que llegó.",
+    "refresh": "Actualizar",
+    "updated": "Actualizado hace {{ago}}.",
+    "updatedNow": "Actualizado recién.",
+    "empty": "No hay sesiones activas ligadas a este proyecto. Las reporta el recolector de herdr de tu máquina.",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "waitingFor": "espera a «{{target}}»",
+    "group": {
+      "person": "Esperan a una persona",
+      "stalled": "Colgadas",
+      "working": "Trabajando",
+      "other": "Esperan otra cosa",
+      "idle": "En reposo"
+    },
+    "groupHint": {
+      "person": "Una pregunta, una decisión o un permiso pendiente. Las que esperan hace más van arriba.",
+      "stalled": "Trabajando, pero sin reportar hace más de 10 minutos.",
+      "working": "El agente está trabajando.",
+      "other": "Esperan a otra sesión o a otra cosa (un CI, un merge).",
+      "idle": "Terminaron su turno y no esperan nada."
+    },
+    "since": {
+      "person": "esperando hace {{ago}}",
+      "stalled": "sin reportar desde hace {{ago}}",
+      "working": "trabajando hace {{ago}}",
+      "other": "esperando hace {{ago}}",
+      "idle": "en reposo hace {{ago}}"
+    },
+    "footer": "Solo ves tus sesiones. Las sesiones sin issue no aparecen acá.",
+    "issueMissing": "Issue que todavía no existe en el proyecto",
+    "noIssue": "Sin issue",
+    "hasMore": "Hay más de 500 sesiones activas: se muestran las 500 más recientes."
   }
 }

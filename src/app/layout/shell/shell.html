@@ -59,6 +59,28 @@
             <li>
               <a
                 class="vrb-sidebar__link"
+                [routerLink]="['/proyectos', project.id, 'metricas']"
+                routerLinkActive
+                ariaCurrentWhenActive="page"
+              >
+                <ui-icon name="chart" />
+                <span class="vrb-sidebar__text">{{ 'shell.nav.metrics' | translate }}</span>
+              </a>
+            </li>
+            <li>
+              <a
+                class="vrb-sidebar__link"
+                [routerLink]="['/proyectos', project.id, 'agentes']"
+                routerLinkActive
+                ariaCurrentWhenActive="page"
+              >
+                <ui-icon name="bot" />
+                <span class="vrb-sidebar__text">{{ 'shell.nav.agents' | translate }}</span>
+              </a>
+            </li>
+            <li>
+              <a
+                class="vrb-sidebar__link"
                 [routerLink]="['/proyectos', project.id, 'issues']"
                 routerLinkActive
                 [routerLinkActiveOptions]="{ exact: true }"

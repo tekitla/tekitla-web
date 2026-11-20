@@ -19,10 +19,13 @@ import type {
   RawDiscardInfo,
   RawIssue,
   RawIssueEvent,
+  RawIssueSessions,
   RawLabel,
   RawPageResponse,
   RawProject,
   RawStatus,
+  IssueSessions,
+  SessionBrief,
   Status,
 } from './issues.contracts';
 
@@ -111,6 +114,34 @@ export function toIssue(raw: RawIssue = {}): Issue {
     discard: raw.discard ? toDiscardInfo(raw.discard) : null,
     assigneeActorId: raw.assigneeActorId ?? '',
     sourceKey: raw.sourceKey ?? '',
+    sessions: raw.sessions ? toIssueSessions(raw.sessions) : null,
+  };
+}
+
+/** Resumen de sesiones de un issue (026); los contadores ausentes son 0. */
+export function toIssueSessions(raw: RawIssueSessions): IssueSessions {
+  return {
+    active: raw.active ?? 0,
+    working: raw.working ?? 0,
+    waiting: raw.waiting ?? 0,
+    stalled: raw.stalled ?? 0,
+    idle: raw.idle ?? 0,
+    needsPerson: raw.needsPerson ?? false,
+    items: (raw.items ?? []).map(toSessionBrief),
+  };
+}
+
+function toSessionBrief(raw: Partial<SessionBrief>): SessionBrief {
+  return {
+    sessionId: raw.sessionId ?? '',
+    agentActorId: raw.agentActorId ?? '',
+    agentDisplayName: raw.agentDisplayName ?? '',
+    sessionName: raw.sessionName ?? '',
+    machine: raw.machine ?? '',
+    status: raw.status ?? 'SESSION_STATUS_UNSPECIFIED',
+    waitingOn: raw.waitingOn ?? 'WAITING_ON_UNSPECIFIED',
+    waitingTarget: raw.waitingTarget ?? '',
+    statusChangedAt: raw.statusChangedAt ?? '',
   };
 }
 

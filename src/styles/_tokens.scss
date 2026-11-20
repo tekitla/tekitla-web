@@ -56,3 +56,35 @@
   --duration-sm: var(--vrb-duration);
   --shadow-drag: var(--vrb-shadow-overlay);
 }
+
+// Gráficos (issue 036). vrb no trae paleta de datos: es la paleta de
+// referencia del skill dataviz, validada con su script contra las superficies
+// de vrb (#ffffff y oklch(20.5% 0 0) ≈ #171717) el 2026-11-19: los 4 primeros
+// colores pasan todas las pruebas en los dos modos; en claro, el 3 y el 4
+// quedan debajo de 3:1 y por eso cada gráfico lleva etiquetas visibles y
+// «Ver como tabla». El orden es parte de la seguridad para daltónicos: no se
+// reordena ni se agregan colores generados. Los colores de estado de vrb no se
+// usan para series.
+:root {
+  --chart-1: #2a78d6; // azul
+  --chart-2: #eb6834; // naranja
+  --chart-3: #1baf7a; // aqua
+  --chart-4: #eda100; // amarillo
+  --chart-band: #cde2fb; // banda del azul (p85)
+  --chart-muted: #898781; // serie de contexto («otros»)
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+}
+
+:root[data-theme='dark'],
+[data-theme='dark'],
+.dark {
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-band: #184f95;
+  --chart-muted: #898781;
+  --chart-grid: #2c2c2a;
+  --chart-axis: #383835;
+}

@@ -65,3 +65,19 @@ export type {
   SharedProjectView,
   SharedStatus,
 } from './clients/issues/share.contracts';
+
+// Métricas de flujo (issue 036) y sesiones de agentes (issue 026).
+export { MetricsClient } from './clients/issues/metrics.client';
+export type {
+  AgentSession,
+  DurationStats,
+  FlowMetrics,
+  FlowMetricsRequest,
+  FlowSummary,
+  FlowWeek,
+  ListAgentSessionsRequest,
+  MetricConfidence,
+  SessionStatus,
+  StaleIssue,
+  WaitingOn,
+} from './clients/issues/metrics.contracts';

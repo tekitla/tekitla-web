@@ -76,6 +76,7 @@ export function toBoardIssues(shared: readonly SharedIssue[]): Issue[] {
     discard: null,
     assigneeActorId: it.assignee ? sharedActorKey(it.assignee) : '',
     sourceKey: '',
+    sessions: null,
   }));
 }
 
