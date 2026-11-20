@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { AgentsStore, MetricsStore } from '../metrics/data-access/metrics.store';
 import { ActorsStore } from './data-access/actors.store';
 import { BoardStore } from './data-access/board.store';
 import { BoardViewStore } from './data-access/board-view.store';
@@ -33,6 +34,20 @@ export const BOARD_ROUTES: Routes = [
         path: 'plan',
         title: 'titles.plan',
         loadComponent: () => import('./pages/plan/plan').then((m) => m.Plan),
+      },
+      {
+        // Métricas de flujo (036): tendencias del proyecto, sin rankings por persona.
+        path: 'metricas',
+        title: 'titles.metrics',
+        providers: [MetricsStore],
+        loadComponent: () => import('../metrics/pages/metrics/metrics').then((m) => m.Metrics),
+      },
+      {
+        // Sesiones de agentes (026 y 036): quién trabaja en qué y qué espera.
+        path: 'agentes',
+        title: 'titles.agents',
+        providers: [AgentsStore],
+        loadComponent: () => import('../metrics/pages/agents/agents').then((m) => m.Agents),
       },
       {
         path: 'issues',

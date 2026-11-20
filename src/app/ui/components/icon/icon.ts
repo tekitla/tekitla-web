@@ -31,6 +31,7 @@ const PATHS = {
   // Rama de git (issue 016).
   branch:
     'M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9a9 9 0 0 1-9 9',
+  chart: 'M3 3v18h18M7 16v-4M12 16V8M17 16v-7',
 } as const;
 
 export type IconName = keyof typeof PATHS;

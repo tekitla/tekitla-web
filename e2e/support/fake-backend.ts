@@ -87,6 +87,10 @@ export interface FakeBackendOptions {
   oldComments?: number;
   /** Repos de GitHub (issue 016): conexiones, repos y ramas ligadas. */
   repos?: FakeRepos;
+  /** Respuesta de GetFlowMetrics (issue 036), tal cual la manda el gateway. */
+  flowMetrics?: unknown;
+  /** Sesiones de ListAgentSessions (issue 026), tal cual las manda el gateway. */
+  agentSessions?: unknown[];
 }
 
 /** Estado inicial del fake de `RepositoryService` (issue 016). Datos inventados. */
@@ -532,6 +536,12 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
       }
 
       const path = url.pathname;
+      if (path.endsWith('/flowMetrics') && method === 'GET') {
+        return reply(200, options.flowMetrics ?? {});
+      }
+      if (path === '/v1/agentSessions' && method === 'GET') {
+        return reply(200, { sessions: options.agentSessions ?? [], page: {} });
+      }
       if (path === '/v1/actors' && method === 'GET') {
         if (options.actorsFail) return fail(500, 'INTERNAL', 'boom');
         const all = options.actors ?? ACTORS;

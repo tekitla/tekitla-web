@@ -1,4 +1,5 @@
 import type * as actorsPb from '@tekitla/tekitla-protos/issues/v1/actors_pb';
+import type * as sessionsPb from '@tekitla/tekitla-protos/issues/v1/agent_sessions_pb';
 import type * as pb from '@tekitla/tekitla-protos/issues/v1/issues_pb';
 
 /**
@@ -113,8 +114,32 @@ export type DiscardInfo = Json<pb.DiscardInfo, { discardedAt: string }>;
  */
 export type Issue = Json<
   pb.Issue,
-  Timestamps & { state: IssueState; priority: Priority; discard: DiscardInfo | null }
+  Timestamps & {
+    state: IssueState;
+    priority: Priority;
+    discard: DiscardInfo | null;
+    sessions: IssueSessions | null;
+  }
 >;
+
+/**
+ * Una sesión de agente dentro del resumen de un issue (issue 026). `status`
+ * es el efectivo (`STALLED` = colgada).
+ */
+export type SessionBrief = Json<
+  sessionsPb.SessionBrief,
+  {
+    status: `SESSION_STATUS_${keyof typeof sessionsPb.SessionStatus}`;
+    waitingOn: `WAITING_ON_${keyof typeof sessionsPb.WaitingOn}`;
+    statusChangedAt: string;
+  }
+>;
+
+/**
+ * Resumen de las sesiones activas de un issue (`Issue.sessions`); `null` si
+ * no tiene. `items` (hasta 5) solo viene en `GetIssue`.
+ */
+export type IssueSessions = Json<sessionsPb.IssueSessions, { items: SessionBrief[] }>;
 
 /**
  * Estado concreto del proyecto: una columna del tablero. `name`: único en el
@@ -338,9 +363,14 @@ type RawChange<K extends IssueChange['kind']> = Partial<
 
 export type RawProject = Partial<Project>;
 export type RawDiscardInfo = Partial<DiscardInfo>;
-export type RawIssue = Partial<Omit<Issue, 'number' | 'discard'>> & {
+export type RawIssue = Partial<Omit<Issue, 'number' | 'discard' | 'sessions'>> & {
   number?: number | string;
   discard?: RawDiscardInfo | null;
+  sessions?: RawIssueSessions | null;
+};
+
+export type RawIssueSessions = Partial<Omit<IssueSessions, 'items'>> & {
+  items?: Partial<SessionBrief>[];
 };
 export type RawPageResponse = Partial<PageResponse>;
 export type RawStatus = Partial<Status>;
