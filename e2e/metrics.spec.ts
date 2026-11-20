@@ -162,11 +162,14 @@ test.describe('Métricas (036)', () => {
     const call = api.calls.find((c) => c.path.endsWith('/flowMetrics'));
     expect(call).toBeTruthy();
 
-    // Hover: tooltip con la semana.
+    // Hover: tooltip con la semana. El gráfico mide su ancho después del
+    // primer render: se reintenta hasta que el tooltip aparece.
     const chart = page.getByRole('img', { name: /lead time por semana/ });
-    const box = (await chart.boundingBox())!;
-    await page.mouse.move(box.x + box.width - 30, box.y + box.height / 2);
-    await expect(page.locator('.week-chart__tip').first()).toBeVisible();
+    await expect(async () => {
+      const box = (await chart.boundingBox())!;
+      await page.mouse.move(box.x + box.width - 30, box.y + box.height / 2);
+      await expect(page.locator('.week-chart__tip').first()).toBeVisible({ timeout: 1000 });
+    }).toPass();
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/metricas-desktop.png`, fullPage: true });
 
     // «Ver como tabla».

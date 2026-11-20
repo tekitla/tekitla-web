@@ -93,6 +93,9 @@ describe('durationText', () => {
     expect(durationText(1.25 * DAY)).toEqual({ key: 'metrics.unit.days', value: '1.3' });
     expect(durationText(5.5 * 3600)).toEqual({ key: 'metrics.unit.hours', value: '5.5' });
     expect(durationText(600)).toEqual({ key: 'metrics.unit.minutes', value: '10' });
+    // Redondea antes de elegir la unidad.
+    expect(durationText(3590)).toEqual({ key: 'metrics.unit.hours', value: '1' });
+    expect(durationText(86_000)).toEqual({ key: 'metrics.unit.days', value: '1' });
     expect(toDays(null)).toBeNull();
     expect(toDays(36 * 3600)).toBe(1.5);
   });

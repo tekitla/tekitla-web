@@ -75,12 +75,23 @@
             <ul class="agents__list">
               @for (s of g.sessions; track s.id) {
                 <li class="agents__row">
-                  <a
-                    class="vrb-kanban-card__code agents__key"
-                    [routerLink]="['..', 'issues', s.issueNumber]"
-                    >{{ key(s) }}</a
-                  >
-                  <span class="agents__title">{{ title(s) }}</span>
+                  @if (title(s); as t) {
+                    <a
+                      class="vrb-kanban-card__code agents__key"
+                      [routerLink]="['..', 'issues', s.issueNumber]"
+                      >{{ key(s) }}</a
+                    >
+                    <span class="agents__title">{{ t }}</span>
+                  } @else {
+                    @if (s.issueNumber > 0) {
+                      <span class="vrb-kanban-card__code agents__key">{{ key(s) }}</span>
+                    }
+                    <span class="agents__title agents__title--missing">
+                      {{
+                        (s.issueNumber > 0 ? 'agents.issueMissing' : 'agents.noIssue') | translate
+                      }}
+                    </span>
+                  }
                   <span class="agents__who">
                     @if (s.sessionName) {
                       <code>{{ s.sessionName }}</code> ·
@@ -110,5 +121,8 @@
     }
   }
 
+  @if (store.hasMore()) {
+    <p class="agents__footer">{{ 'agents.hasMore' | translate }}</p>
+  }
   <p class="agents__footer">{{ 'agents.footer' | translate }}</p>
 </section>

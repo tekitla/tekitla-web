@@ -94,36 +94,50 @@ export class AgentsStore {
   private readonly _loaded = signal(false);
   private readonly _error = signal(false);
   private readonly _updatedAt = signal<Date | null>(null);
+  private readonly _hasMore = signal(false);
 
   readonly sessions = this._sessions.asReadonly();
+  /** Hay más sesiones que las que se trajeron (más de 500). */
+  readonly hasMore = this._hasMore.asReadonly();
   readonly loaded = this._loaded.asReadonly();
   readonly error = this._error.asReadonly();
   readonly updatedAt = this._updatedAt.asReadonly();
 
   private requestId = 0;
+  /** Proyecto del pedido en vuelo (vacío: ninguno). */
+  private inFlight = '';
 
-  /** Pide las sesiones activas del proyecto (refresco sin vaciar la lista). */
+  /**
+   * Pide las sesiones activas del proyecto (refresco sin vaciar la lista).
+   * Si ya hay un pedido en vuelo del mismo proyecto, no pide otro: un
+   * gateway lento no deja la lista sin actualizar para siempre.
+   */
   load(projectId: string, now: () => Date = () => new Date()): void {
     if (!projectId) return;
+    if (this.inFlight === projectId) return;
     const id = ++this.requestId;
+    this.inFlight = projectId;
     if (projectId !== this._projectId()) {
       this._projectId.set(projectId);
       this._sessions.set([]);
       this._loaded.set(false);
     }
     this.client
-      .listAgentSessions({ projectId, limit: 100 })
+      .listAllAgentSessions(projectId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
           if (id !== this.requestId) return;
+          this.inFlight = '';
           this._sessions.set(res.sessions);
+          this._hasMore.set(res.hasMore);
           this._error.set(false);
           this._loaded.set(true);
           this._updatedAt.set(now());
         },
         error: () => {
           if (id !== this.requestId) return;
+          this.inFlight = '';
           // Un refresco que falla deja la lista anterior a la vista.
           this._error.set(true);
           this._loaded.set(true);

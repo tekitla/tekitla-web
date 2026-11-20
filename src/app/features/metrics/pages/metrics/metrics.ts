@@ -8,6 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
@@ -74,14 +75,35 @@ export class Metrics {
     const w = Number(this.semanas());
     return isPeriodWeeks(w) ? w : DEFAULT_PERIOD;
   });
-  protected readonly labelId = computed(() => {
-    const id = this.etiqueta() ?? '';
-    return this.board.labels().some((l) => l.id === id) ? id : '';
-  });
+  /**
+   * La etiqueta de la URL va tal cual: la valida el servicio (una de otro
+   * proyecto es UNKNOWN_LABEL y se ve el error). Así un enlace con etiqueta
+   * no pide primero sin filtro mientras cargan las etiquetas.
+   */
+  protected readonly labelId = computed(() => (this.etiqueta() ?? '').trim());
 
   protected readonly view = this.store.view;
   protected readonly tables = signal<ReadonlySet<TableKey>>(new Set());
   protected readonly timeMetric = signal<'lead' | 'cycle'>('lead');
+
+  /**
+   * Textos que van dentro de los gráficos (leyenda, tooltip, eje). Con
+   * `stream`, se actualizan cuando llega el es.json aunque las métricas hayan
+   * llegado antes.
+   */
+  private readonly texts = toSignal(
+    this.i18n.stream([
+      'metrics.chart.median',
+      'metrics.chart.p85',
+      'metrics.closed.all',
+      'metrics.closed.value',
+      'metrics.closed.other',
+      'metrics.wip.series',
+      'metrics.started.series',
+      'metrics.unit.daysShort',
+    ]),
+    { initialValue: {} },
+  );
 
   protected readonly unitDays = computed(() => ` ${this.t('metrics.unit.daysShort')}`);
 
@@ -221,7 +243,7 @@ export class Metrics {
   }
 
   private t(key: string): string {
-    return this.i18n.instant(key) as string;
+    return ((this.texts() as Record<string, string>)[key] ?? key) as string;
   }
 }
 

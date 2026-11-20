@@ -13,11 +13,12 @@ describe('MetricsStore', () => {
   let client: {
     getFlowMetrics: ReturnType<typeof vi.fn>;
     listAgentSessions: ReturnType<typeof vi.fn>;
+    listAllAgentSessions: ReturnType<typeof vi.fn>;
   };
   let store: MetricsStore;
 
   beforeEach(() => {
-    client = { getFlowMetrics: vi.fn(), listAgentSessions: vi.fn() };
+    client = { getFlowMetrics: vi.fn(), listAgentSessions: vi.fn(), listAllAgentSessions: vi.fn() };
     TestBed.configureTestingModule({
       providers: [MetricsStore, AgentsStore, { provide: MetricsClient, useValue: client }],
     });
@@ -60,11 +61,12 @@ describe('AgentsStore', () => {
   let client: {
     getFlowMetrics: ReturnType<typeof vi.fn>;
     listAgentSessions: ReturnType<typeof vi.fn>;
+    listAllAgentSessions: ReturnType<typeof vi.fn>;
   };
   let store: AgentsStore;
 
   beforeEach(() => {
-    client = { getFlowMetrics: vi.fn(), listAgentSessions: vi.fn() };
+    client = { getFlowMetrics: vi.fn(), listAgentSessions: vi.fn(), listAllAgentSessions: vi.fn() };
     TestBed.configureTestingModule({
       providers: [AgentsStore, { provide: MetricsClient, useValue: client }],
     });
@@ -73,17 +75,29 @@ describe('AgentsStore', () => {
 
   it('pide las del proyecto y un refresco que falla conserva la lista', () => {
     const at = new Date('2026-11-19T10:00:00Z');
-    client.listAgentSessions.mockReturnValueOnce(
-      of({ sessions: [{ id: 's1' }], page: { nextCursor: '', hasNext: false } }),
+    client.listAllAgentSessions.mockReturnValueOnce(
+      of({ sessions: [{ id: 's1' }], hasMore: true }),
     );
     store.load('p1', () => at);
-    expect(client.listAgentSessions).toHaveBeenCalledWith({ projectId: 'p1', limit: 100 });
+    expect(client.listAllAgentSessions).toHaveBeenCalledWith('p1');
     expect(store.sessions().length).toBe(1);
+    expect(store.hasMore()).toBe(true);
     expect(store.updatedAt()).toBe(at);
 
-    client.listAgentSessions.mockReturnValueOnce(throwError(() => new Error('x')));
+    client.listAllAgentSessions.mockReturnValueOnce(throwError(() => new Error('x')));
     store.load('p1');
     expect(store.error()).toBe(true);
     expect(store.sessions().length).toBe(1);
+  });
+
+  it('no encima pedidos: un refresco con otro en vuelo no pide de nuevo', () => {
+    const slow = new Subject<{ sessions: never[]; hasMore: boolean }>();
+    client.listAllAgentSessions.mockReturnValue(slow);
+    store.load('p1');
+    store.load('p1');
+    expect(client.listAllAgentSessions).toHaveBeenCalledTimes(1);
+    slow.next({ sessions: [], hasMore: false });
+    slow.complete();
+    expect(store.loaded()).toBe(true);
   });
 });

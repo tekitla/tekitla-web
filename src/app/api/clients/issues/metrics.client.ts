@@ -2,7 +2,9 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import { RestClient } from '../rest/rest.client';
+import { fetchPages } from './issues.client';
 import type {
+  AgentSession,
   FlowMetrics,
   FlowMetricsRequest,
   ListAgentSessionsRequest,
@@ -50,5 +52,23 @@ export class MetricsClient {
         },
       })
       .pipe(map(toListAgentSessions));
+  }
+
+  /**
+   * Todas las sesiones activas de un proyecto, siguiendo el cursor (hasta
+   * `maxPages` páginas de 100). `hasMore`: quedaron sin traer.
+   */
+  listAllAgentSessions(
+    projectId: string,
+    maxPages = 5,
+  ): Observable<{ sessions: AgentSession[]; hasMore: boolean }> {
+    return fetchPages(
+      (cursor) =>
+        this.listAgentSessions({ projectId, cursor, limit: 100 }).pipe(
+          map((res) => ({ items: res.sessions, page: res.page })),
+        ),
+      '',
+      maxPages,
+    ).pipe(map((all) => ({ sessions: all.items, hasMore: all.hasNext })));
   }
 }

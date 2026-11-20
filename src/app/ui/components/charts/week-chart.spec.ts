@@ -11,6 +11,8 @@ describe('week-chart', () => {
     expect(t[0]).toBe(0);
     expect(t[t.length - 1]).toBeGreaterThanOrEqual(143.5);
     expect(t.length).toBeLessThanOrEqual(5);
+    expect(niceTicks(1, true)).toEqual([0, 1]);
+    expect(niceTicks(2, true)).toEqual([0, 1, 2]);
   });
 
   it('segments: un null corta la línea (hueco, no cero)', () => {

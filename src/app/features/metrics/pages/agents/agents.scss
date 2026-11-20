@@ -104,6 +104,11 @@
 .agents__title {
   flex: 1 1 200px;
   min-width: 0;
+
+  &--missing {
+    color: var(--vrb-muted-fg);
+    font-style: italic;
+  }
 }
 
 .agents__who,

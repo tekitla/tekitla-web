@@ -73,6 +73,13 @@
     </div>
   } @else {
     @if (view(); as v) {
+      @if (store.error()) {
+        <div class="vrb-alert vrb-alert--warning" role="alert">
+          {{ 'metrics.errorRefresh' | translate }}
+        </div>
+      } @else if (store.loading()) {
+        <p class="metrics__note" role="status">{{ 'metrics.refreshing' | translate }}</p>
+      }
       <div class="metrics__body" [attr.aria-busy]="store.loading()">
         <!-- Tarjetas del período -->
         <div class="metrics__kpis">
@@ -256,6 +263,7 @@
             } @else {
               <ui-week-chart
                 kind="columns"
+                [integer]="true"
                 [labels]="labelsOf(v.closedSeries)"
                 [series]="closedSeries()"
                 [ariaLabel]="'metrics.closed.aria' | translate"
@@ -304,11 +312,13 @@
                 kind="line"
                 [labels]="labelsOf(v.wipSeries)"
                 [series]="wipSeries()"
+                [integer]="true"
                 [ariaLabel]="'metrics.wip.aria' | translate"
               />
               <h3 class="metrics__subtitle">{{ 'metrics.started.title' | translate }}</h3>
               <ui-week-chart
                 kind="columns"
+                [integer]="true"
                 [labels]="labelsOf(v.startedSeries)"
                 [series]="startedSeries()"
                 [ariaLabel]="'metrics.started.aria' | translate"
@@ -380,6 +390,14 @@
                 </li>
               }
             </ul>
+            @if ((store.metrics()?.staleTotal ?? 0) > stale().length) {
+              <p class="metrics__note">
+                {{
+                  'metrics.stale.more'
+                    | translate: { n: (store.metrics()?.staleTotal ?? 0) - stale().length }
+                }}
+              </p>
+            }
           } @else {
             <p class="metrics__empty">{{ 'metrics.stale.none' | translate }}</p>
           }

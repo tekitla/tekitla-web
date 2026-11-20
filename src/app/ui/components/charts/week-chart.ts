@@ -31,11 +31,13 @@ const RADIUS = 4;
 const LABEL_MIN = 52;
 
 /** Escala «linda» del eje y: 0 a un máximo redondo, con 3 o 4 marcas. */
-export function niceTicks(max: number): number[] {
+export function niceTicks(max: number, integer = false): number[] {
   if (!(max > 0)) return [0, 1];
   const raw = max / 3;
   const pow = 10 ** Math.floor(Math.log10(raw));
-  const step = [1, 2, 2.5, 5, 10].map((m) => m * pow).find((s) => s >= raw) ?? raw;
+  let step = [1, 2, 2.5, 5, 10].map((m) => m * pow).find((s) => s >= raw) ?? raw;
+  // Conteos: nunca «0.5 issues».
+  if (integer) step = Math.max(1, Math.ceil(step));
   const ticks: number[] = [];
   for (let v = 0; v < max + step * 0.999; v += step) ticks.push(Math.round(v * 1000) / 1000);
   return ticks;
@@ -193,6 +195,8 @@ export class WeekChart {
   readonly series = input.required<readonly ChartSeries[]>();
   /** Sufijo de los valores en el eje y el tooltip (p. ej. « d»). */
   readonly unit = input('');
+  /** Valores enteros (conteos): marcas del eje enteras. */
+  readonly integer = input(false);
   /** Texto del tooltip para «sin dato». */
   readonly emptyText = input('—');
   readonly ariaLabel = input.required<string>();
@@ -222,7 +226,7 @@ export class WeekChart {
     return max;
   });
 
-  protected readonly ticks = computed(() => niceTicks(this.maxValue()));
+  protected readonly ticks = computed(() => niceTicks(this.maxValue(), this.integer()));
   private readonly top = computed(() => this.ticks()[this.ticks().length - 1] || 1);
 
   private readonly slot = computed(

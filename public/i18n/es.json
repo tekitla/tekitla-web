@@ -599,6 +599,8 @@
     "description": "Cuánto tarda el trabajo en llegar y dónde espera. Mide el sistema, no a las personas.",
     "loading": "Cargando las métricas…",
     "error": "No se pudieron cargar las métricas. Recarga la página para intentar de nuevo.",
+    "errorRefresh": "No se pudieron cargar las métricas de este período: se muestran las anteriores. Prueba de nuevo o recarga la página.",
+    "refreshing": "Actualizando…",
     "period": {
       "label": "Período",
       "weeks": "{{n}} sem",
@@ -692,7 +694,8 @@
       "hint": "En curso y sin actividad hace 30 días o más, del más antiguo al más nuevo.",
       "since": "en curso desde {{date}}",
       "idle": "{{n}} días sin actividad",
-      "none": "Nada estancado."
+      "none": "Nada estancado.",
+      "more": "Y {{n}} más."
     },
     "footer": {
       "system": "Métricas del sistema, no de personas: sirven para ver dónde se atora el trabajo. No hay rankings por persona.",
@@ -734,6 +737,9 @@
       "other": "esperando hace {{ago}}",
       "idle": "en reposo hace {{ago}}"
     },
-    "footer": "Solo ves tus sesiones. Las sesiones sin issue no aparecen acá."
+    "footer": "Solo ves tus sesiones. Las sesiones sin issue no aparecen acá.",
+    "issueMissing": "Issue que todavía no existe en el proyecto",
+    "noIssue": "Sin issue",
+    "hasMore": "Hay más de 500 sesiones activas: se muestran las 500 más recientes."
   }
 }

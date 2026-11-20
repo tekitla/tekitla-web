@@ -55,11 +55,20 @@ export interface DurationText {
   value: string;
 }
 
-/** Días desde 1 día; si no, horas; debajo de una hora, minutos. */
+/**
+ * Días desde 1 día; si no, horas; debajo de una hora, minutos. Redondea antes
+ * de elegir la unidad: 23 h 58 min es «1 d», no «24 h».
+ */
 export function durationText(seconds: number): DurationText {
-  if (seconds >= DAY) return { key: 'metrics.unit.days', value: oneDecimal(seconds / DAY) };
-  if (seconds >= HOUR) return { key: 'metrics.unit.hours', value: oneDecimal(seconds / HOUR) };
+  if (round1(seconds / DAY) >= 1)
+    return { key: 'metrics.unit.days', value: oneDecimal(seconds / DAY) };
+  if (round1(seconds / HOUR) >= 1)
+    return { key: 'metrics.unit.hours', value: oneDecimal(seconds / HOUR) };
   return { key: 'metrics.unit.minutes', value: String(Math.round(seconds / 60)) };
+}
+
+function round1(n: number): number {
+  return Math.round(n * 10) / 10;
 }
 
 function oneDecimal(n: number): string {
@@ -237,6 +246,8 @@ export const AGENT_GROUPS: readonly AgentGroup[] = [
  * A qué grupo va una sesión: primero lo que necesita a una persona (como
  * `IssueSessions.items`), después las colgadas.
  *  - `person`: espera a su persona, o esperando-ok sin token (pide permiso).
+ *    «Sin token» llega como `WAITING_ON_NONE`: el servicio guarda NONE
+ *    cuando el panel no trae espera (issue 026).
  *  - `other`: espera a otra sesión o a otra cosa (CI, merge).
  */
 export function agentGroup(s: Pick<AgentSession, 'status' | 'waitingOn'>): AgentGroup {
