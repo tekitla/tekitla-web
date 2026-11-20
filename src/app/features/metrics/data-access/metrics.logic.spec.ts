@@ -35,6 +35,8 @@ function week(start: string, end: string, patch: Partial<FlowWeek> = {}): FlowWe
       importFile: 0,
       importSync: 0,
     },
+    efficiency: null,
+    humanQueue: null,
     ...patch,
   };
 }
@@ -60,11 +62,15 @@ function metrics(weeks: FlowWeek[], valueLabelIds: string[] = []): FlowMetrics {
         importFile: 0,
         importSync: 0,
       },
+      efficiency: null,
+      humanQueue: null,
     },
     stale: [],
     staleTotal: 0,
     valueLabelIds,
     coverage: { issues: 12, doneWithoutDates: 2 },
+    sessionsRecordedSince: '',
+    hiringSignal: null,
   };
 }
 
@@ -189,6 +195,7 @@ function session(patch: Partial<AgentSession>): AgentSession {
     waitingOn: 'WAITING_ON_NONE',
     waitingTarget: '',
     waitingText: '',
+    waitingReason: 'WAITING_REASON_UNSPECIFIED',
     ...patch,
   };
 }

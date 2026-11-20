@@ -132,6 +132,7 @@ export type SessionBrief = Json<
     status: `SESSION_STATUS_${keyof typeof sessionsPb.SessionStatus}`;
     waitingOn: `WAITING_ON_${keyof typeof sessionsPb.WaitingOn}`;
     statusChangedAt: string;
+    waitingReason: `WAITING_REASON_${keyof typeof sessionsPb.WaitingReason}`;
   }
 >;
 

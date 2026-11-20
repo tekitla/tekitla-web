@@ -680,14 +680,57 @@
     },
     "flow": {
       "title": "Dónde se va el tiempo",
-      "pending": "Se mide en vivo con las sesiones de agentes desde que se despliegue la parte 3 del issue 036. Las sesiones de antes no guardaban historia, así que no se pueden reconstruir.",
-      "what": "Muestra el tiempo trabajando contra el tiempo esperando a una persona, bloqueado o en revisión, y cuánto tardan en responderse las esperas."
+      "pending": "Todavía no hay historia de sesiones de agentes en este proyecto. Se mide desde que el recolector de herdr reporta con la versión nueva del servicio; lo anterior no se puede reconstruir.",
+      "noneInPeriod": "No hay tiempo medido en este período: las sesiones de agentes empezaron a guardar historia después.",
+      "what": "Tiempo de reloj de los issues según sus sesiones de agentes, con prioridad trabajando > espera a una persona > bloqueado > en revisión. Las noches y los fines de semana cuentan. «En revisión» se llena cuando lleguen las revisiones de MR (issue 016).",
+      "since": "Registrado en vivo desde {{date}}.",
+      "efficiency": "Eficiencia del flujo: trabajando sobre el tiempo medido",
+      "aria": "Barra del tiempo medido repartido entre trabajando, espera a una persona, bloqueado y en revisión",
+      "idle": "Además, {{h}} h en reposo sin esperar nada (no cuentan) · {{n}} issues con tiempo medido.",
+      "byReason": "Espera a una persona, por motivo",
+      "perWeek": "Horas por semana",
+      "weeklyAria": "Columnas de horas por semana: trabajando, espera a una persona, bloqueado y en revisión",
+      "part": {
+        "working": "Trabajando",
+        "waitingHuman": "Espera a una persona",
+        "blocked": "Bloqueado",
+        "inReview": "En revisión"
+      },
+      "queue": {
+        "pending": "Esperan ahora",
+        "oldest": "La más vieja",
+        "response": "Respuesta (mediana)"
+      }
     },
     "signal": {
       "title": "Señal de contratación",
-      "insufficient": "Datos insuficientes",
-      "pending": "La señal compara el último mes con el anterior y necesita 8 semanas de datos en vivo de las sesiones de agentes (con 4 da una lectura preliminar). Empieza a contar cuando se despliegue la parte 3.",
-      "notDecision": "Es una señal, no una decisión: siempre muestra los números que la sostienen."
+      "notDecision": "Es una señal, no una decisión: siempre muestra los números que la sostienen.",
+      "badge": {
+        "insufficient": "Datos insuficientes",
+        "none": "Sin señal",
+        "needsPeople": "Falta gente",
+        "reduceWip": "Bajar el WIP"
+      },
+      "verdict": {
+        "insufficient": "Todavía no hay semanas suficientes de datos en vivo para leer la señal.",
+        "none": "El flujo no pide contratar ni bajar el trabajo empezado.",
+        "needsPeople": "Falta gente: el trabajo espera a personas mientras los agentes no son el cuello de botella.",
+        "reduceWip": "No falta gente, sobra trabajo empezado: conviene bajar el WIP antes de contratar."
+      },
+      "profile": "Perfil: {{profile}} ({{pct}} % de la espera).",
+      "noProfile": "Perfil sin dato: las esperas no traen motivo (espera.ps1 -Motivo).",
+      "alsoWip": "Además, hay mucho trabajo empezado.",
+      "missing": "Hay {{live}} de las {{needed}} semanas de datos en vivo que necesita la señal ({{prelim}} para una lectura preliminar): faltan {{missing}}.",
+      "weeks": "{{live}} de {{needed}} semanas en vivo",
+      "preliminary": "Lectura preliminar: todavía no compara con el mes anterior.",
+      "current": "Últimas 4 semanas",
+      "previous": "4 anteriores",
+      "row": {
+        "waiting": "Espera a personas",
+        "response": "Respuesta a una espera (mediana)",
+        "wip": "Trabajo en curso (mediana)",
+        "closed": "Cerrados"
+      }
     },
     "stale": {
       "title": "Estancados ({{n}})",
@@ -701,6 +744,20 @@
       "system": "Métricas del sistema, no de personas: sirven para ver dónde se atora el trabajo. No hay rankings por persona.",
       "notMeasured": "No miden horas, diseño, pruebas locales ni el trabajo que no se sube.",
       "doneWithoutDates": "{{n}} issues hechos sin fecha de cierre conocida no entran al cálculo."
+    },
+    "reason": {
+      "review": "Revisión de código",
+      "testing": "Pruebas",
+      "decision": "Decisión de producto",
+      "deploy": "Deploy e infraestructura",
+      "none": "Sin motivo"
+    },
+    "profile": {
+      "review": "alguien senior que revise",
+      "testing": "QA",
+      "decision": "producto",
+      "deploy": "DevOps",
+      "none": "sin dato"
     }
   },
   "agents": {
@@ -740,6 +797,7 @@
     "footer": "Solo ves tus sesiones. Las sesiones sin issue no aparecen acá.",
     "issueMissing": "Issue que todavía no existe en el proyecto",
     "noIssue": "Sin issue",
-    "hasMore": "Hay más de 500 sesiones activas: se muestran las 500 más recientes."
+    "hasMore": "Hay más de 500 sesiones activas: se muestran las 500 más recientes.",
+    "reason": "motivo: {{reason}}"
   }
 }

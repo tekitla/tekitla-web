@@ -18,7 +18,12 @@ import { Icon, type IconName } from '@/app/ui/components/icon/icon';
 import { boardNav } from '@/app/features/board/board-nav';
 import { BoardStore } from '@/app/features/board/data-access/board.store';
 import { issueKey } from '@/app/features/board/data-access/board.logic';
-import { groupSessions, sinceText, type AgentGroup } from '../../data-access/metrics.logic';
+import {
+  groupSessions,
+  reasonKey,
+  sinceText,
+  type AgentGroup,
+} from '../../data-access/metrics.logic';
 import { AgentsStore } from '../../data-access/metrics.store';
 
 /** Cada cuánto se refresca mientras la pestaña está visible. */
@@ -112,6 +117,11 @@ export class Agents {
 
   protected title(s: AgentSession): string {
     return this.titles().get(s.issueNumber) ?? '';
+  }
+
+  /** Sufijo de i18n del motivo de la espera (`metrics.reason.*`). */
+  protected reasonOf(s: AgentSession): string {
+    return reasonKey(s.waitingReason);
   }
 
   protected since(iso: string) {

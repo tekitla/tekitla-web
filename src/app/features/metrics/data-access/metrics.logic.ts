@@ -1,9 +1,13 @@
 import type {
   AgentSession,
   DurationStats,
+  FlowEfficiency,
   FlowMetrics,
   FlowWeek,
+  HiringVerdict,
   MetricConfidence,
+  SignalWindow,
+  WaitingReason,
 } from '@/app/api';
 
 /**
@@ -286,4 +290,192 @@ export function sinceText(iso: string, now: Date): DurationText | null {
   const t = new Date(iso).getTime();
   if (Number.isNaN(t)) return null;
   return durationText(Math.max(0, (now.getTime() - t) / 1000));
+}
+
+// ── Dónde se va el tiempo (parte 3) ─────────────────────────────────────────
+
+/** Las partes del tiempo medido, en el orden de la prioridad del contrato. */
+export const TIME_PARTS = ['working', 'waitingHuman', 'blocked', 'inReview'] as const;
+export type TimePart = (typeof TIME_PARTS)[number];
+
+/** Color de cada parte: los 4 primeros de la paleta validada, en orden. */
+export const TIME_PART_COLOR: Record<TimePart, string> = {
+  working: 'var(--chart-1)',
+  waitingHuman: 'var(--chart-2)',
+  blocked: 'var(--chart-3)',
+  inReview: 'var(--chart-4)',
+};
+
+export interface TimeShare {
+  part: TimePart;
+  hours: number;
+  /** Parte del tiempo medido, en % con un decimal. */
+  pct: number;
+}
+
+export interface ReasonShare {
+  /** Sufijo de la clave de i18n del motivo (`metrics.reason.*`). */
+  reason: string;
+  hours: number;
+  /** Parte de toda la espera a personas, 0 a 100. */
+  pct: number;
+}
+
+export interface TimeView {
+  since: string;
+  efficiencyPct: number | null;
+  parts: TimeShare[];
+  idleHours: number;
+  issues: number;
+  pending: number;
+  oldest: DurationText | null;
+  response: { count: number; median: DurationText | null; p85: DurationText | null };
+  reasons: ReasonShare[];
+  /** Horas por semana, una serie por parte; solo las semanas con historia. */
+  weekly: StackPoint[];
+}
+
+const hoursOf = (s: number) => Math.round((s / HOUR) * 10) / 10;
+
+const REASON_KEY: Record<WaitingReason, string> = {
+  WAITING_REASON_UNSPECIFIED: 'none',
+  WAITING_REASON_REVIEW: 'review',
+  WAITING_REASON_TESTING: 'testing',
+  WAITING_REASON_DECISION: 'decision',
+  WAITING_REASON_DEPLOY: 'deploy',
+};
+
+/** Sufijo de i18n de un motivo; uno nuevo del contrato, «sin motivo». */
+export function reasonKey(r: WaitingReason): string {
+  return REASON_KEY[r] ?? 'none';
+}
+
+function measuredOf(e: FlowEfficiency): number {
+  return TIME_PARTS.reduce((sum, p) => sum + e[p], 0);
+}
+
+/**
+ * Vista de «Dónde se va el tiempo». `null` si el proyecto no tiene historia
+ * de sesiones o ninguna semana del período tiene datos.
+ */
+export function timeView(m: FlowMetrics, locale = 'es-MX'): TimeView | null {
+  const e = m.summary.efficiency;
+  if (!m.sessionsRecordedSince || !e) return null;
+  const measured = measuredOf(e);
+  const q = m.summary.humanQueue;
+  const median = q?.responseTime.median ?? null;
+  const p85 = q?.responseTime.p85 ?? null;
+  return {
+    since: dayLabel(m.sessionsRecordedSince, locale),
+    efficiencyPct: e.efficiencyBp === null ? null : e.efficiencyBp / 100,
+    parts: TIME_PARTS.map((part) => ({
+      part,
+      hours: hoursOf(e[part]),
+      pct: measured ? Math.round((e[part] / measured) * 1000) / 10 : 0,
+    })),
+    idleHours: hoursOf(e.idle),
+    issues: e.issues,
+    pending: q?.pending ?? 0,
+    oldest: q?.oldestPending ? durationText(q.oldestPending) : null,
+    response: {
+      count: q?.responseTime.count ?? 0,
+      median: median === null ? null : durationText(median),
+      p85: p85 === null ? null : durationText(p85),
+    },
+    reasons: e.waitingHumanByReason.map((r) => ({
+      reason: reasonKey(r.reason),
+      hours: hoursOf(r.duration),
+      pct: e.waitingHuman ? Math.round((r.duration / e.waitingHuman) * 100) : 0,
+    })),
+    // Solo las semanas con historia: antes no hubo cero horas, no hubo medición.
+    weekly: m.weeks.flatMap((w) =>
+      w.efficiency
+        ? [
+            {
+              label: weekLabel(w.start, locale),
+              values: TIME_PARTS.map((p) => hoursOf(w.efficiency![p])),
+            },
+          ]
+        : [],
+    ),
+  };
+}
+
+// ── Señal de contratación ───────────────────────────────────────────────────
+
+export type SignalKind = 'insufficient' | 'none' | 'needsPeople' | 'reduceWip';
+
+export interface SignalRow {
+  /** Sufijo de la clave de i18n de la fila (`metrics.signal.row.*`). */
+  key: 'waiting' | 'response' | 'wip' | 'closed';
+  current: string;
+  previous: string;
+}
+
+export interface SignalView {
+  kind: SignalKind;
+  liveWeeks: number;
+  weeksNeeded: number;
+  weeksNeededPreliminary: number;
+  /** Semanas que faltan para la próxima lectura (preliminar o completa). */
+  missing: number;
+  preliminary: boolean;
+  wipHigh: boolean;
+  /** Dónde se junta la espera (sufijo del motivo y parte de 0 a 100). */
+  profiles: { reason: string; pct: number }[];
+  /** Los números de este mes contra el anterior; vacío sin datos. */
+  rows: SignalRow[];
+}
+
+/** Duración corta para la tabla de la señal («5.2 h», «1.5 d»). */
+function shortDuration(seconds: number): string {
+  const d = durationText(seconds);
+  const unit = d.key === 'metrics.unit.days' ? 'd' : d.key === 'metrics.unit.hours' ? 'h' : 'min';
+  return `${d.value} ${unit}`;
+}
+
+function windowNumbers(w: SignalWindow | null): Record<SignalRow['key'], string> {
+  if (!w) return { waiting: '—', response: '—', wip: '—', closed: '—' };
+  const measured = measuredOf(w.efficiency);
+  const pct = measured ? Math.round((w.efficiency.waitingHuman / measured) * 100) : 0;
+  const median = w.humanResponse.median;
+  return {
+    waiting: `${pct} % · ${hoursOf(w.efficiency.waitingHuman)} h`,
+    response: median === null ? '—' : shortDuration(median),
+    wip: String(w.wipMedian),
+    closed: String(w.closed),
+  };
+}
+
+const VERDICT_KIND: Record<HiringVerdict, SignalKind> = {
+  HIRING_VERDICT_UNSPECIFIED: 'insufficient',
+  HIRING_VERDICT_INSUFFICIENT_DATA: 'insufficient',
+  HIRING_VERDICT_NO_SIGNAL: 'none',
+  HIRING_VERDICT_NEEDS_PEOPLE: 'needsPeople',
+  HIRING_VERDICT_REDUCE_WIP: 'reduceWip',
+};
+
+/** Vista de la señal. Sin señal en la respuesta: datos insuficientes. */
+export function signalView(m: FlowMetrics): SignalView {
+  const s = m.hiringSignal;
+  const live = s?.liveWeeks ?? 0;
+  const needed = s?.weeksNeeded || 8;
+  const prelim = s?.weeksNeededPreliminary || 4;
+  const cur = windowNumbers(s?.current ?? null);
+  const prev = windowNumbers(s?.previous ?? null);
+  const keys = ['waiting', 'response', 'wip', 'closed'] as const;
+  return {
+    kind: s ? (VERDICT_KIND[s.verdict] ?? 'insufficient') : 'insufficient',
+    liveWeeks: live,
+    weeksNeeded: needed,
+    weeksNeededPreliminary: prelim,
+    missing: Math.max(0, (live < prelim ? prelim : needed) - live),
+    preliminary: s?.preliminary ?? false,
+    wipHigh: s?.wipHigh ?? false,
+    profiles: (s?.profiles ?? []).map((p) => ({
+      reason: reasonKey(p.reason),
+      pct: Math.round(p.shareBp / 100),
+    })),
+    rows: s?.current ? keys.map((key) => ({ key, current: cur[key], previous: prev[key] })) : [],
+  };
 }

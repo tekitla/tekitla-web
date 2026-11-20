@@ -3,6 +3,14 @@ import { toPage } from './issues.mappers';
 import type {
   AgentSession,
   DurationStats,
+  FlowEfficiency,
+  HiringSignal,
+  HumanQueue,
+  RawFlowEfficiency,
+  RawHiringSignal,
+  RawHumanQueue,
+  RawSignalWindow,
+  SignalWindow,
   FlowMetrics,
   FlowSummary,
   FlowWeek,
@@ -60,6 +68,8 @@ function toFlowWeek(raw: RawFlowWeek): FlowWeek {
     started: raw.started ?? 0,
     wip: raw.wip ?? 0,
     source: toMetricSource(raw.source),
+    efficiency: raw.efficiency ? toFlowEfficiency(raw.efficiency) : null,
+    humanQueue: raw.humanQueue ? toHumanQueue(raw.humanQueue) : null,
   };
 }
 
@@ -73,6 +83,61 @@ function toFlowSummary(raw: RawFlowSummary = {}): FlowSummary {
     started: raw.started ?? 0,
     wip: raw.wip ?? 0,
     source: toMetricSource(raw.source),
+    efficiency: raw.efficiency ? toFlowEfficiency(raw.efficiency) : null,
+    humanQueue: raw.humanQueue ? toHumanQueue(raw.humanQueue) : null,
+  };
+}
+
+/** Eficiencia (036 parte 3): duraciones ausentes son 0; sin tiempo medido, sin puntos base. */
+export function toFlowEfficiency(raw: RawFlowEfficiency = {}): FlowEfficiency {
+  return {
+    working: toSeconds(raw.working) ?? 0,
+    waitingHuman: toSeconds(raw.waitingHuman) ?? 0,
+    blocked: toSeconds(raw.blocked) ?? 0,
+    inReview: toSeconds(raw.inReview) ?? 0,
+    idle: toSeconds(raw.idle) ?? 0,
+    efficiencyBp: raw.efficiencyBp ?? null,
+    issues: raw.issues ?? 0,
+    waitingHumanByReason: (raw.waitingHumanByReason ?? []).map((r) => ({
+      reason: r.reason ?? 'WAITING_REASON_UNSPECIFIED',
+      duration: toSeconds(r.duration) ?? 0,
+    })),
+  };
+}
+
+export function toHumanQueue(raw: RawHumanQueue = {}): HumanQueue {
+  return {
+    pending: raw.pending ?? 0,
+    responseTime: toDurationStats(raw.responseTime),
+    oldestPending: toSeconds(raw.oldestPending),
+  };
+}
+
+function toSignalWindow(raw: RawSignalWindow): SignalWindow {
+  return {
+    start: raw.start ?? '',
+    end: raw.end ?? '',
+    efficiency: toFlowEfficiency(raw.efficiency),
+    humanResponse: toDurationStats(raw.humanResponse),
+    wipMedian: raw.wipMedian ?? 0,
+    closed: raw.closed ?? 0,
+  };
+}
+
+export function toHiringSignal(raw: RawHiringSignal): HiringSignal {
+  return {
+    verdict: raw.verdict ?? 'HIRING_VERDICT_UNSPECIFIED',
+    liveWeeks: raw.liveWeeks ?? 0,
+    weeksNeeded: raw.weeksNeeded ?? 8,
+    weeksNeededPreliminary: raw.weeksNeededPreliminary ?? 4,
+    preliminary: raw.preliminary ?? false,
+    wipHigh: raw.wipHigh ?? false,
+    profiles: (raw.profiles ?? []).map((p) => ({
+      reason: p.reason ?? 'WAITING_REASON_UNSPECIFIED',
+      shareBp: p.shareBp ?? 0,
+    })),
+    current: raw.current ? toSignalWindow(raw.current) : null,
+    previous: raw.previous ? toSignalWindow(raw.previous) : null,
   };
 }
 
@@ -102,6 +167,8 @@ export function toFlowMetrics(raw: RawFlowMetrics = {}): FlowMetrics {
       issues: raw.coverage?.issues ?? 0,
       doneWithoutDates: raw.coverage?.doneWithoutDates ?? 0,
     },
+    sessionsRecordedSince: raw.sessionsRecordedSince ?? '',
+    hiringSignal: raw.hiringSignal ? toHiringSignal(raw.hiringSignal) : null,
   };
 }
 
@@ -129,6 +196,7 @@ export function toAgentSession(raw: RawAgentSession = {}): AgentSession {
     waitingOn: raw.waitingOn ?? 'WAITING_ON_UNSPECIFIED',
     waitingTarget: raw.waitingTarget ?? '',
     waitingText: raw.waitingText ?? '',
+    waitingReason: raw.waitingReason ?? 'WAITING_REASON_UNSPECIFIED',
   };
 }
 

@@ -250,3 +250,108 @@
     margin: 0;
   }
 }
+
+// Parte 3: dónde se va el tiempo y la señal.
+.metrics__flow-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.metrics__flow-figure {
+  display: grid;
+  margin: 0;
+}
+
+.metrics__queue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  font-size: 13px;
+
+  dt {
+    color: var(--vrb-muted-fg);
+    font-size: 12px;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.metrics__flow-idle {
+  margin-top: var(--space-2);
+}
+
+// Lista de medidores: nombre, barra y cifra por fila, barras alineadas.
+.metrics__meters {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.metrics__meter-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 160px) 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.metrics__meter {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--chart-band);
+
+  &--wide {
+    flex: 1 1 160px;
+    max-width: 320px;
+  }
+}
+
+.metrics__meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--chart-1);
+}
+
+.metrics__meter-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--vrb-muted-fg);
+}
+
+.metrics__signal-verdict {
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.metrics__progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-size: 12px;
+}
+
+.metrics__signal-table {
+  margin-bottom: var(--space-3);
+
+  tbody th {
+    font-weight: 500;
+    text-align: left;
+    color: var(--vrb-fg);
+  }
+}
