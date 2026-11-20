@@ -14,6 +14,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 
 import { ShellNav } from '@/app/layout/shell/shell-nav';
 import type { ChartSeries } from '@/app/ui/components/charts/week-chart';
+import { SegmentedBar, type BarPart } from '@/app/ui/components/charts/segmented-bar';
 import { Sparkline } from '@/app/ui/components/charts/sparkline';
 import { WeekChart } from '@/app/ui/components/charts/week-chart';
 import { Icon } from '@/app/ui/components/icon/icon';
@@ -23,6 +24,11 @@ import { issueKey } from '@/app/features/board/data-access/board.logic';
 import {
   DEFAULT_PERIOD,
   PERIOD_PRESETS,
+  TIME_PARTS,
+  TIME_PART_COLOR,
+  signalView,
+  timeView,
+  type SignalKind,
   dayLabel,
   daysBetween,
   isPeriodWeeks,
@@ -32,7 +38,15 @@ import {
 import { MetricsStore } from '../../data-access/metrics.store';
 
 /** Qué gráfico se ve como tabla. */
-type TableKey = 'time' | 'closed' | 'wip';
+type TableKey = 'time' | 'closed' | 'wip' | 'flow';
+
+/** Insignia de cada veredicto (siempre con su texto, nunca solo color). */
+const SIGNAL_BADGE: Record<SignalKind, string> = {
+  insufficient: 'vrb-badge--neutral',
+  none: 'vrb-badge--neutral',
+  needsPeople: 'vrb-badge--warning',
+  reduceWip: 'vrb-badge--info',
+};
 
 /**
  * Página «Métricas» de un proyecto (issue 036, `proyectos/:projectId/metricas`):
@@ -52,7 +66,7 @@ type TableKey = 'time' | 'closed' | 'wip';
  */
 @Component({
   selector: 'app-metrics',
-  imports: [RouterLink, TranslatePipe, Icon, WeekChart, Sparkline],
+  imports: [RouterLink, TranslatePipe, Icon, WeekChart, Sparkline, SegmentedBar],
   templateUrl: './metrics.html',
   styleUrl: './metrics.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -101,6 +115,11 @@ export class Metrics {
       'metrics.wip.series',
       'metrics.started.series',
       'metrics.unit.daysShort',
+      'metrics.flow.part.working',
+      'metrics.flow.part.waitingHuman',
+      'metrics.flow.part.blocked',
+      'metrics.flow.part.inReview',
+      'metrics.unit.hours',
     ]),
     { initialValue: {} },
   );
@@ -171,6 +190,38 @@ export class Metrics {
           },
         ]
       : [];
+  });
+
+  /** Parte 3: dónde se va el tiempo y la señal (null sin historia de sesiones). */
+  protected readonly time = computed(() => {
+    const m = this.store.metrics();
+    return m ? timeView(m) : null;
+  });
+  protected readonly hiring = computed(() => {
+    const m = this.store.metrics();
+    return m ? signalView(m) : null;
+  });
+  protected readonly signalBadge = SIGNAL_BADGE;
+
+  protected readonly timeParts = computed<BarPart[]>(() =>
+    (this.time()?.parts ?? []).map((p) => ({
+      name: this.t(`metrics.flow.part.${p.part}`),
+      color: TIME_PART_COLOR[p.part],
+      // El tamaño sale de la parte exacta, no de las horas redondeadas: un
+      // tramo corto no desaparece.
+      value: p.pct,
+      valueText: this.t('metrics.unit.hours').replace('{{n}}', String(p.hours)),
+    })),
+  );
+
+  protected readonly flowSeries = computed<ChartSeries[]>(() => {
+    const tv = this.time();
+    if (!tv) return [];
+    return TIME_PARTS.map((part, k) => ({
+      name: this.t(`metrics.flow.part.${part}`),
+      color: TIME_PART_COLOR[part],
+      values: tv.weekly.map((w) => w.values[k] ?? 0),
+    }));
   });
 
   protected readonly labelsOf = (points: readonly (BandPoint | StackPoint)[]) =>

@@ -142,6 +142,7 @@ function toSessionBrief(raw: Partial<SessionBrief>): SessionBrief {
     waitingOn: raw.waitingOn ?? 'WAITING_ON_UNSPECIFIED',
     waitingTarget: raw.waitingTarget ?? '',
     statusChangedAt: raw.statusChangedAt ?? '',
+    waitingReason: raw.waitingReason ?? 'WAITING_REASON_UNSPECIFIED',
   };
 }
 

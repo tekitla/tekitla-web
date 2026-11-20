@@ -95,6 +95,7 @@ const session = (id: string, issueNumber: number, patch: Record<string, unknown>
 const SESSIONS = [
   session('a', 2, {
     waitingOn: 'WAITING_ON_PERSON',
+    waitingReason: 'WAITING_REASON_DECISION',
     statusChangedAt: minutesAgo(25),
     waitingText: '🙋 ¿Publico la versión nueva?',
   }),
@@ -130,12 +131,53 @@ const ISSUES: FakeIssue[] = [1, 2, 3, 4].map((number) => ({
   updatedAt: minutesAgo(100),
 }));
 
-async function open(page: Page, path: string) {
+const H = 3600;
+const sec = (s: number) => `${s}s`;
+
+/** Parte 3: 3 h trabajando y 5 h esperando (4 h por una revisión), y la señal. */
+function withSessions() {
+  const m = fakeFlowMetrics();
+  const efficiency = {
+    working: sec(3 * H),
+    waitingHuman: sec(5 * H),
+    blocked: sec(H),
+    idle: sec(2 * H),
+    efficiencyBp: 3333,
+    issues: 2,
+    waitingHumanByReason: [
+      { reason: 'WAITING_REASON_REVIEW', duration: sec(4 * H) },
+      { reason: 'WAITING_REASON_UNSPECIFIED', duration: sec(H) },
+    ],
+  };
+  const last = m.weeks.length - 1;
+  return {
+    ...m,
+    sessionsRecordedSince: m.weeks[last].start,
+    weeks: m.weeks.map((w, i) => (i === last ? { ...w, efficiency } : w)),
+    summary: {
+      ...m.summary,
+      efficiency,
+      humanQueue: {
+        pending: 1,
+        oldestPending: sec(90 * 60),
+        responseTime: { count: 2, median: sec(2 * H), p85: sec(4 * H) },
+      },
+    },
+    hiringSignal: {
+      verdict: 'HIRING_VERDICT_INSUFFICIENT_DATA',
+      liveWeeks: 0,
+      weeksNeeded: 8,
+      weeksNeededPreliminary: 4,
+    },
+  };
+}
+
+async function open(page: Page, path: string, flowMetrics: unknown = fakeFlowMetrics()) {
   await signIn(page);
   const api = await fakeApi(page, {
     issues: ISSUES,
     labels: [{ id: 'l-feat', projectId: 'p-tk', name: 'feature' }],
-    flowMetrics: fakeFlowMetrics(),
+    flowMetrics,
     agentSessions: SESSIONS,
   });
   await page.goto(`/proyectos/${PROJECT.id}/${path}`);
@@ -154,7 +196,8 @@ test.describe('Métricas (036)', () => {
     await expect(page.getByText('Migrar el importador').first()).toBeVisible();
     await expect(page.getByText(/41 días sin actividad/)).toBeVisible();
     // Parte 3: dice desde cuándo se mide, sin inventar números.
-    await expect(page.getByText(/necesita 8 semanas de datos en vivo/)).toBeVisible();
+    await expect(page.getByText(/Todavía no hay historia de sesiones/)).toBeVisible();
+    await expect(page.getByText(/faltan 4\./)).toBeVisible();
     // CU-036-9: ningún nombre de persona ni de agente en la página.
     await expect(page.getByText('Claude Code PC-01')).toHaveCount(0);
 
@@ -181,6 +224,22 @@ test.describe('Métricas (036)', () => {
     await expect(page).toHaveURL(/semanas=4/);
   });
 
+  test('@CU-036-6 dónde se va el tiempo, la cola humana y la señal', async ({ page }) => {
+    await page.setViewportSize(DESKTOP);
+    await open(page, 'metricas', withSessions());
+
+    await expect(page.getByText('33.33 %')).toBeVisible();
+    await expect(page.getByRole('img', { name: /Barra del tiempo medido/ })).toBeVisible();
+    await expect(page.getByText(/Espera a una persona · 5 h/)).toBeVisible();
+    await expect(page.getByText('Revisión de código')).toBeVisible();
+    await expect(page.getByText('4 h · 80 %')).toBeVisible();
+    await expect(page.getByText('1.5 h', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Registrado en vivo desde/)).toBeVisible();
+    await expect(page.getByText('Datos insuficientes')).toBeVisible();
+    await expect(page.getByText(/faltan 4\./)).toBeVisible();
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/metricas-tiempo.png`, fullPage: true });
+  });
+
   test('móvil', async ({ page }) => {
     await page.setViewportSize(MOBILE);
     await open(page, 'metricas');
@@ -200,6 +259,7 @@ test.describe('Agentes (026 y 036)', () => {
     await expect(page.getByText('TK-2')).toBeVisible();
     await expect(page.getByText('Vista de agentes')).toBeVisible();
     await expect(page.getByText(/esperando hace 2\d min/)).toBeVisible();
+    await expect(page.getByText(/motivo: Decisión de producto/)).toBeVisible();
     await expect(page.getByText('espera a «CI de protos»', { exact: false })).toBeVisible();
     // En reposo va plegado.
     await expect(page.getByText(/en reposo hace/)).toHaveCount(0);

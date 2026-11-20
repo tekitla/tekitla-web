@@ -22,6 +22,39 @@ export type DurationStats = Json<fm.DurationStats, { median: number | null; p85:
 
 export type MetricSource = Json<fm.MetricSource, { confidence: MetricConfidence }>;
 
+/**
+ * Para qué espera una sesión a su persona (token `espera_motivo`, issue 036).
+ * UNSPECIFIED = sin motivo.
+ */
+export type WaitingReason = `WAITING_REASON_${keyof typeof sp.WaitingReason}`;
+
+/** Tiempo de espera a una persona con un motivo (segundos). */
+export type ReasonTime = Json<fm.ReasonTime, { reason: WaitingReason; duration: number }>;
+
+/**
+ * Dónde se va el tiempo según las sesiones de agentes (parte 3, CU-036-6).
+ * Duraciones en segundos; `efficiencyBp` en puntos base, `null` sin tiempo
+ * medido.
+ */
+export type FlowEfficiency = Json<
+  fm.FlowEfficiency,
+  {
+    working: number;
+    waitingHuman: number;
+    blocked: number;
+    inReview: number;
+    idle: number;
+    efficiencyBp: number | null;
+    waitingHumanByReason: ReasonTime[];
+  }
+>;
+
+/** Esperas a una persona: pendientes, la más vieja y cuánto tardan. */
+export type HumanQueue = Json<
+  fm.HumanQueue,
+  { responseTime: DurationStats; oldestPending: number | null }
+>;
+
 /** Una semana `[start, end)`; la primera y la última pueden venir recortadas. */
 export type FlowWeek = Json<
   fm.FlowWeek,
@@ -31,12 +64,42 @@ export type FlowWeek = Json<
     leadTime: DurationStats;
     cycleTime: DurationStats;
     source: MetricSource;
+    /** `null`: la semana termina antes de que hubiera historia de sesiones. */
+    efficiency: FlowEfficiency | null;
+    humanQueue: HumanQueue | null;
   }
 >;
 
 export type FlowSummary = Json<
   fm.FlowSummary,
-  { leadTime: DurationStats; cycleTime: DurationStats; source: MetricSource }
+  {
+    leadTime: DurationStats;
+    cycleTime: DurationStats;
+    source: MetricSource;
+    efficiency: FlowEfficiency | null;
+    humanQueue: HumanQueue | null;
+  }
+>;
+
+export type HiringVerdict = `HIRING_VERDICT_${keyof typeof fm.HiringVerdict}`;
+
+export type ProfileShare = Json<fm.ProfileShare, { reason: WaitingReason }>;
+
+/** Los números de 4 semanas que sostienen la señal. */
+export type SignalWindow = Json<
+  fm.SignalWindow,
+  { start: string; end: string; efficiency: FlowEfficiency; humanResponse: DurationStats }
+>;
+
+/** Señal de contratación (CU-036-7 y 8): una señal, no una decisión. */
+export type HiringSignal = Json<
+  fm.HiringSignal,
+  {
+    verdict: HiringVerdict;
+    profiles: ProfileShare[];
+    current: SignalWindow | null;
+    previous: SignalWindow | null;
+  }
 >;
 
 /** En curso y sin actividad hace `stale_after_days` o más. */
@@ -56,6 +119,9 @@ export type FlowMetrics = Json<
     summary: FlowSummary;
     stale: StaleIssue[];
     coverage: FlowCoverage;
+    /** Desde cuándo hay historia de sesiones; vacío: ninguna. */
+    sessionsRecordedSince: string;
+    hiringSignal: HiringSignal | null;
   }
 >;
 
@@ -91,6 +157,7 @@ export type AgentSession = Json<
     lastSeenAt: string;
     startedAt: string;
     endedAt: string;
+    waitingReason: WaitingReason;
   }
 >;
 
@@ -118,17 +185,65 @@ export interface RawDurationStats {
 
 export type RawMetricSource = Partial<MetricSource>;
 
-export type RawFlowWeek = Partial<Omit<FlowWeek, 'leadTime' | 'cycleTime' | 'source'>> & {
+export interface RawFlowEfficiency {
+  working?: string;
+  waitingHuman?: string;
+  blocked?: string;
+  inReview?: string;
+  idle?: string;
+  efficiencyBp?: number;
+  issues?: number;
+  waitingHumanByReason?: { reason?: WaitingReason; duration?: string }[];
+}
+
+export interface RawHumanQueue {
+  pending?: number;
+  responseTime?: RawDurationStats;
+  oldestPending?: string;
+}
+
+type SessionParts = 'efficiency' | 'humanQueue';
+
+export type RawFlowWeek = Partial<
+  Omit<FlowWeek, 'leadTime' | 'cycleTime' | 'source' | SessionParts>
+> & {
   leadTime?: RawDurationStats;
   cycleTime?: RawDurationStats;
   source?: RawMetricSource;
+  efficiency?: RawFlowEfficiency;
+  humanQueue?: RawHumanQueue;
 };
 
-export type RawFlowSummary = Partial<Omit<FlowSummary, 'leadTime' | 'cycleTime' | 'source'>> & {
+export type RawFlowSummary = Partial<
+  Omit<FlowSummary, 'leadTime' | 'cycleTime' | 'source' | SessionParts>
+> & {
   leadTime?: RawDurationStats;
   cycleTime?: RawDurationStats;
   source?: RawMetricSource;
+  efficiency?: RawFlowEfficiency;
+  humanQueue?: RawHumanQueue;
 };
+
+export interface RawSignalWindow {
+  start?: string;
+  end?: string;
+  efficiency?: RawFlowEfficiency;
+  humanResponse?: RawDurationStats;
+  wipMedian?: number;
+  closed?: number;
+}
+
+export interface RawHiringSignal {
+  verdict?: HiringVerdict;
+  liveWeeks?: number;
+  weeksNeeded?: number;
+  weeksNeededPreliminary?: number;
+  preliminary?: boolean;
+  wipHigh?: boolean;
+  profiles?: { reason?: WaitingReason; shareBp?: number }[];
+  current?: RawSignalWindow;
+  previous?: RawSignalWindow;
+}
 
 export type RawStaleIssue = Partial<Omit<StaleIssue, 'number'>> & { number?: number | string };
 
@@ -142,6 +257,8 @@ export interface RawFlowMetrics {
   staleTotal?: number;
   valueLabelIds?: string[];
   coverage?: Partial<FlowCoverage>;
+  sessionsRecordedSince?: string;
+  hiringSignal?: RawHiringSignal;
 }
 
 export type RawAgentSession = Partial<Omit<AgentSession, 'issueNumber'>> & {
