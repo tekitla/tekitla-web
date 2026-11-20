@@ -15,7 +15,16 @@ import { parseGithubSetup } from '../../data-access/repos.logic';
   selector: 'app-github-setup',
   imports: [RouterLink, TranslatePipe],
   template: `
-    @if (invalid()) {
+    @if (requested()) {
+      <div class="vrb-stack">
+        <p class="vrb-alert vrb-alert--info" role="status">
+          {{ 'repos.setup.requested' | translate }}
+        </p>
+        <a class="vrb-button vrb-button--outline" routerLink="/proyectos">{{
+          'repos.setup.back' | translate
+        }}</a>
+      </div>
+    } @else if (invalid()) {
       <div class="vrb-stack">
         <p class="vrb-alert vrb-alert--warning" role="alert">
           {{ 'repos.setup.invalid' | translate }}
@@ -36,6 +45,7 @@ import { parseGithubSetup } from '../../data-access/repos.logic';
 })
 export class GithubSetup {
   protected readonly invalid = signal(false);
+  protected readonly requested = signal(false);
 
   constructor() {
     const route = inject(ActivatedRoute);
@@ -45,8 +55,14 @@ export class GithubSetup {
       this.invalid.set(true);
       return;
     }
+    if (setup.kind === 'request') {
+      this.requested.set(true);
+      return;
+    }
+    // update: la org ya está conectada (cambió qué repos ve la App): a
+    // Ajustes sin el formulario de conectar.
     void router.navigate(['/proyectos', setup.projectId, 'ajustes', 'repositorios'], {
-      queryParams: { installation_id: setup.installationId },
+      queryParams: setup.kind === 'install' ? { installation_id: setup.installationId } : {},
       replaceUrl: true,
     });
   }

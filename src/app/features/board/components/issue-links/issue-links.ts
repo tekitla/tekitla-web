@@ -71,13 +71,20 @@ export class IssueLinks {
     effect(() => {
       const projectId = this.projectId();
       const number = this.number();
-      untracked(() => this.store.loadIssueLinks(projectId, number));
+      untracked(() => {
+        // El panel reutiliza el componente al pasar de un issue a otro.
+        this.adding.set(false);
+        this.branch.set('');
+        this.branchMissing.set(false);
+        this.store.loadIssueLinks(projectId, number);
+      });
     });
   }
 
   protected openAdd(): void {
     this.adding.set(true);
-    if (!this.repoId()) this.repoId.set(this.store.repositories()[0]?.id ?? '');
+    const repos = this.store.repositories();
+    if (!repos.some((r) => r.id === this.repoId())) this.repoId.set(repos[0]?.id ?? '');
   }
 
   protected add(): void {

@@ -40,6 +40,10 @@ describe('summarizeLinks', () => {
     expect(s?.ci).toBe('CI_STATUS_NONE');
   });
 
+  it('todas borradas: cuenta las borradas, nunca 0', () => {
+    expect(summarizeLinks([link({ branchDeleted: true })])?.branches).toBe(1);
+  });
+
   it('las ramas borradas no se cuentan si hay otras', () => {
     const s = summarizeLinks([link({ branchDeleted: true }), link({ id: 'l2' })]);
     expect(s?.branches).toBe(1);
@@ -82,7 +86,22 @@ describe('parseGithubSetup', () => {
           'installation_id=77&setup_action=install&state=11111111-2222-4333-8444-555555555555',
         ),
       ),
-    ).toEqual({ installationId: '77', projectId: '11111111-2222-4333-8444-555555555555' });
+    ).toEqual({
+      kind: 'install',
+      installationId: '77',
+      projectId: '11111111-2222-4333-8444-555555555555',
+    });
+  });
+
+  it('request (falta un admin) y update', () => {
+    const p = '11111111-2222-4333-8444-555555555555';
+    expect(parseGithubSetup(params('setup_action=request&state=' + p))).toEqual({
+      kind: 'request',
+      projectId: p,
+    });
+    expect(
+      parseGithubSetup(params('installation_id=77&setup_action=update&state=' + p))?.kind,
+    ).toBe('update');
   });
 
   it('valores sin forma: null', () => {

@@ -85,10 +85,20 @@ export class RepoSettings {
     }
   }
 
+  /** El topic o la selección no tienen forma (el servicio también lo valida). */
+  protected readonly scopeInvalid = signal(false);
+
   protected connect(): void {
     if (this.connecting() || !this.pendingInstall()) return;
+    const spec = this.scopeSpec();
+    const bad =
+      (spec.scope === 'CONNECTION_SCOPE_TOPIC' &&
+        !/^[a-z0-9][a-z0-9-]{0,49}$/.test(spec.topic ?? '')) ||
+      (spec.scope === 'CONNECTION_SCOPE_SELECTED' && !spec.selected?.length);
+    this.scopeInvalid.set(bad);
+    if (bad) return;
     this.connecting.set(true);
-    this.store.connectGithub(this.installationId(), this.scopeSpec()).subscribe({
+    this.store.connectGithub(this.installationId(), spec).subscribe({
       next: () => {
         this.connecting.set(false);
         void this.dropInstallation();

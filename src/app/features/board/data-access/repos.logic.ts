@@ -7,7 +7,7 @@ import type { CiStatus, IssueLink, PrState } from '@/app/api';
 
 /** Resumen de las ramas de un issue para la tarjeta. */
 export interface LinkSummary {
-  /** Ramas ligadas (sin las borradas). */
+  /** Ramas ligadas (sin las borradas, salvo que estén todas borradas). */
   branches: number;
   /** El PR más relevante: abierto > borrador > fusionado > cerrado > ninguno. */
   pr: PrState;
@@ -51,7 +51,7 @@ export function summarizeLinks(links: readonly IssueLink[]): LinkSummary | null 
     review ||= l.reviewRequested && l.prState === 'PR_STATE_OPEN';
   }
   return {
-    branches: live.length,
+    branches: all.length,
     pr: pr === 'PR_STATE_UNSPECIFIED' ? 'PR_STATE_NONE' : pr,
     ci: ci === 'CI_STATUS_UNSPECIFIED' ? 'CI_STATUS_NONE' : ci,
     review,
@@ -82,10 +82,11 @@ export function githubInstallUrl(base: string, projectId: string): string {
 }
 
 /** Lo que GitHub manda a la Setup URL. */
-export interface GithubSetup {
-  installationId: string;
-  projectId: string;
-}
+export type GithubSetup =
+  /** Instalada (o reconfigurada): conectar o, si ya está, volver a Ajustes. */
+  | { kind: 'install' | 'update'; installationId: string; projectId: string }
+  /** Un miembro sin permisos pidió instalarla: falta que un admin la apruebe. */
+  | { kind: 'request'; projectId: string };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -96,6 +97,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function parseGithubSetup(params: { get(name: string): string | null }): GithubSetup | null {
   const installationId = params.get('installation_id') ?? '';
   const projectId = params.get('state') ?? '';
-  if (!/^[1-9][0-9]{0,18}$/.test(installationId) || !UUID.test(projectId)) return null;
-  return { installationId, projectId };
+  const action = params.get('setup_action') ?? 'install';
+  if (!UUID.test(projectId)) return null;
+  if (action === 'request') return { kind: 'request', projectId };
+  if (!/^[1-9][0-9]{0,18}$/.test(installationId)) return null;
+  return { kind: action === 'update' ? 'update' : 'install', installationId, projectId };
 }

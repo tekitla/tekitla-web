@@ -551,6 +551,7 @@
       "installation": "GitHub no reconoce esa instalación de la App. Vuelve a intentarlo desde «Conectar GitHub».",
       "exists": "Esa organización ya está conectada.",
       "disabled": "Ese proveedor no está habilitado en este ambiente.",
+      "scope": "Revisa el alcance: el topic va en minúsculas, números y guiones, y la selección necesita al menos un repo.",
       "update": "No pudimos cambiar el alcance.",
       "sync": "No pudimos sincronizar.",
       "disconnect": "No pudimos desconectar la organización.",
@@ -559,6 +560,7 @@
     },
     "setup": {
       "invalid": "El enlace de GitHub no trae los datos esperados. Vuelve a conectar desde Ajustes › Repositorios.",
+      "requested": "Pediste instalar la App de Tekitla. Cuando un admin de la organización la apruebe, vuelve a Ajustes › Repositorios y conecta.",
       "back": "Ir a proyectos",
       "loading": "Volviendo a Tekitla…"
     }

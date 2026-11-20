@@ -13,6 +13,7 @@ export type ReposError =
   | 'installation'
   | 'exists'
   | 'disabled'
+  | 'scope'
   | 'update'
   | 'sync'
   | 'disconnect'
@@ -48,9 +49,17 @@ export class ReposStore {
 
   private settingsRequest = 0;
   private linksRequest = 0;
+  /** Último pedido de links por issue: una respuesta vieja no pisa una nueva. */
+  private readonly issueRequests = new Map<number, number>();
+  private issueSeq = 0;
 
   private switchProject(projectId: string): void {
     if (projectId === this._projectId()) return;
+    // Las respuestas en vuelo del proyecto anterior se descartan.
+    this.settingsRequest++;
+    this.linksRequest++;
+    this.issueRequests.clear();
+    this._error.set(null);
     this._projectId.set(projectId);
     this._connections.set([]);
     this._repositories.set([]);
@@ -70,13 +79,13 @@ export class ReposStore {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (view) => {
-          if (id !== this.settingsRequest) return;
+          if (id !== this.settingsRequest || projectId !== this._projectId()) return;
           this._connections.set(view.connections);
           this._installUrl.set(view.githubInstallUrl);
           this._loaded.set(true);
         },
         error: () => {
-          if (id !== this.settingsRequest) return;
+          if (id !== this.settingsRequest || projectId !== this._projectId()) return;
           this._error.set('load');
           this._loaded.set(true);
         },
@@ -109,7 +118,7 @@ export class ReposStore {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (links) => {
-          if (id === this.linksRequest) this._links.set(links);
+          if (id === this.linksRequest && projectId === this._projectId()) this._links.set(links);
         },
         error: () => undefined,
       });
@@ -119,12 +128,17 @@ export class ReposStore {
   loadIssueLinks(projectId: string, number: number): void {
     if (!projectId || number <= 0) return;
     this.switchProject(projectId);
+    if (this._error() === 'link' || this._error() === 'unlink') this._error.set(null);
+    const id = ++this.issueSeq;
+    this.issueRequests.set(number, id);
+    // Una lista del proyecto pedida antes no pisa esta.
+    this.linksRequest++;
     this.client
       .listIssueLinks(projectId, number)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (links) => {
-          if (projectId !== this._projectId()) return;
+          if (projectId !== this._projectId() || this.issueRequests.get(number) !== id) return;
           this._links.update((all) => [...all.filter((l) => l.issueNumber !== number), ...links]);
         },
         error: () => undefined,
@@ -159,7 +173,9 @@ export class ReposStore {
   sync(connectionId: string): Observable<Connection> {
     const projectId = this._projectId();
     return this.replaceConnection(this.client.sync(projectId, connectionId), 'sync').pipe(
-      tap(() => this.loadLinks(projectId)),
+      tap(() => {
+        if (projectId === this._projectId()) this.loadLinks(projectId);
+      }),
     );
   }
 
@@ -202,6 +218,9 @@ export class ReposStore {
   link(number: number, repositoryId: string, branch: string): Observable<IssueLink> {
     const projectId = this._projectId();
     this._error.set(null);
+    // Una lista del proyecto en vuelo (pedida antes) no pisa este cambio.
+    this.linksRequest++;
+    this.issueRequests.delete(number);
     return this.client.linkIssue(projectId, number, { repositoryId, branch }).pipe(
       tap({
         next: (link) => {
@@ -217,6 +236,8 @@ export class ReposStore {
   unlink(number: number, linkId: string): Observable<void> {
     const projectId = this._projectId();
     this._error.set(null);
+    this.linksRequest++;
+    this.issueRequests.delete(number);
     return this.client.unlinkIssue(projectId, number, linkId).pipe(
       tap({
         next: () => {
@@ -231,6 +252,7 @@ export class ReposStore {
 
 function connectError(err: unknown): ReposError {
   if (!isDomainError(err)) return 'connect';
+  if (err.api.code === 'INVALID_ARGUMENT') return 'scope';
   switch (err.api.reason) {
     case 'GITHUB_INSTALLATION_NOT_FOUND':
       return 'installation';

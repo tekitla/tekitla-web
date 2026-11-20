@@ -74,11 +74,16 @@
           store.error() === 'connect' ||
           store.error() === 'installation' ||
           store.error() === 'exists' ||
-          store.error() === 'disabled'
+          store.error() === 'disabled' ||
+          store.error() === 'scope'
         ) {
           <p class="vrb-field__error" role="alert">
             {{ 'repos.error.' + store.error() | translate }}
           </p>
+        }
+
+        @if (scopeInvalid()) {
+          <p class="vrb-field__error" role="alert">{{ 'repos.error.scope' | translate }}</p>
         }
 
         <div class="vrb-cluster vrb-cluster--sm">
