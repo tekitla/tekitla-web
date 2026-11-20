@@ -28,6 +28,9 @@ const PATHS = {
   code: 'm16 18 6-6-6-6M8 6l-6 6 6 6',
   cloud: 'M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.6 12.3 3.5 3.5 0 0 0 6.5 19z',
   rows: 'M3 5h18M3 10h18M3 15h18M3 20h18',
+  // Rama de git (issue 016).
+  branch:
+    'M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9a9 9 0 0 1-9 9',
 } as const;
 
 export type IconName = keyof typeof PATHS;

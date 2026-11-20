@@ -1,0 +1,138 @@
+<article class="vrb-card" aria-labelledby="issue-links-title">
+  <header class="vrb-card__header issue-links__header">
+    <h2 id="issue-links-title" class="vrb-card__title">{{ 'links.title' | translate }}</h2>
+    @if (store.repositories().length && !adding()) {
+      <button type="button" class="vrb-button vrb-button--ghost vrb-button--sm" (click)="openAdd()">
+        {{ 'links.add' | translate }}
+      </button>
+    }
+  </header>
+  <div class="vrb-card__body vrb-stack vrb-stack--sm">
+    @if (store.error() === 'link' || store.error() === 'unlink') {
+      <p class="vrb-field__error" role="alert">{{ 'repos.error.' + store.error() | translate }}</p>
+    }
+
+    @if (links().length) {
+      <ul class="issue-links__list">
+        @for (link of links(); track link.id) {
+          <li class="issue-links__item" [attr.aria-busy]="removing() === link.id || null">
+            <div class="issue-links__main">
+              <span class="issue-links__repo">{{ link.repo.owner }}/{{ link.repo.name }}</span>
+              @if (link.webUrl) {
+                <a
+                  class="issue-links__branch"
+                  [attr.href]="link.webUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >{{ link.branch }}</a
+                >
+              } @else {
+                <span class="issue-links__branch">{{ link.branch }}</span>
+              }
+              @if (link.headTitle) {
+                <span class="issue-links__commit">{{ link.headTitle }}</span>
+              }
+            </div>
+            <div class="vrb-cluster vrb-cluster--sm issue-links__badges">
+              <span [class]="'vrb-badge vrb-badge--sm vrb-badge--' + prTone[link.prState]">
+                {{ 'links.pr.' + link.prState | translate }}
+                @if (link.prNumber) {
+                  #{{ link.prNumber }}
+                }
+              </span>
+              <span [class]="'vrb-badge vrb-badge--sm vrb-badge--' + ciTone[link.ciStatus]">
+                {{ 'links.ci.' + link.ciStatus | translate }}
+              </span>
+              @if (link.reviewRequested) {
+                <span class="vrb-badge vrb-badge--sm vrb-badge--warning">{{
+                  'links.review' | translate
+                }}</span>
+              }
+              @if (link.branchDeleted) {
+                <span class="vrb-badge vrb-badge--sm vrb-badge--neutral">{{
+                  'links.deleted' | translate
+                }}</span>
+              }
+            </div>
+            <div class="issue-links__foot">
+              @if (link.updatedAt) {
+                <span class="issue-links__meta">
+                  @if (link.updatedBy) {
+                    {{ link.updatedBy }} ·
+                  }
+                  <time [attr.datetime]="link.updatedAt">{{ link.updatedAt | date: 'short' }}</time>
+                </span>
+              }
+              <button
+                type="button"
+                class="vrb-button vrb-button--ghost vrb-button--sm"
+                [disabled]="!!removing()"
+                [attr.aria-label]="'links.unlinkLabel' | translate: { branch: link.branch }"
+                (click)="remove(link)"
+              >
+                {{ 'links.unlink' | translate }}
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+    } @else if (store.repositories().length) {
+      <p class="issue-links__empty">
+        {{ 'links.empty' | translate: { key: issueKey().toLowerCase() } }}
+      </p>
+    } @else {
+      <p class="issue-links__empty">{{ 'links.noRepos' | translate }}</p>
+    }
+
+    @if (adding()) {
+      <form class="vrb-stack vrb-stack--sm" (submit)="$event.preventDefault(); add()" novalidate>
+        <div class="vrb-field">
+          <label class="vrb-field__label" for="issue-links-repo">{{
+            'links.repo' | translate
+          }}</label>
+          <span class="vrb-select">
+            <select
+              id="issue-links-repo"
+              class="vrb-input"
+              (change)="repoId.set($any($event.target).value)"
+            >
+              @for (r of store.repositories(); track r.id) {
+                <option [value]="r.id" [selected]="repoId() === r.id">
+                  {{ r.owner }}/{{ r.name }}
+                </option>
+              }
+            </select>
+          </span>
+        </div>
+        <div class="vrb-field">
+          <label class="vrb-field__label" for="issue-links-branch">{{
+            'links.branch' | translate
+          }}</label>
+          <input
+            id="issue-links-branch"
+            class="vrb-input"
+            autocomplete="off"
+            maxlength="255"
+            [value]="branch()"
+            [attr.aria-invalid]="branchMissing() || null"
+            aria-describedby="issue-links-branch-error"
+            (input)="branch.set($any($event.target).value); branchMissing.set(false)"
+          />
+          <p id="issue-links-branch-error" class="vrb-field__error" aria-live="polite">
+            @if (branchMissing()) {
+              {{ 'links.branchRequired' | translate }}
+            }
+          </p>
+        </div>
+        <div class="vrb-cluster vrb-cluster--sm">
+          <ui-button type="submit" size="sm" [loading]="saving()">{{
+            'links.addSubmit' | translate
+          }}</ui-button>
+          <ui-button variant="ghost" size="sm" (pressed)="adding.set(false)">{{
+            'common.cancel' | translate
+          }}</ui-button>
+        </div>
+      </form>
+    }
+  </div>
+</article>

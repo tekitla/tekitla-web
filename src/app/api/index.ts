@@ -44,6 +44,23 @@ export type {
   UpdateStatusRequest,
 } from './clients/issues/issues.contracts';
 
+// Repos de GitHub y GitLab y ramas ligadas (issue 016).
+export { ReposClient } from './clients/issues/repos.client';
+export { CONNECTION_SCOPES, DEFAULT_TOPIC } from './clients/issues/repos.contracts';
+export type {
+  CiStatus,
+  ConnectGithubRequest,
+  Connection,
+  ConnectionScope,
+  ConnectionWithRepos,
+  ConnectionsView,
+  IssueLink,
+  LinkIssueRequest,
+  PrState,
+  Repository,
+  ScopeSpec,
+} from './clients/issues/repos.contracts';
+
 // Enlaces de solo lectura (issue 009): gestión con sesión y lectura pública.
 export { ShareLinksClient, SharedClient } from './clients/issues/share.client';
 export {

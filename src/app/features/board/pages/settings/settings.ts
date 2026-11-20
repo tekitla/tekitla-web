@@ -35,6 +35,7 @@ export class Settings {
     { path: 'estados', label: 'settings.tabs.statuses' },
     { path: 'etiquetas', label: 'settings.tabs.labels' },
     { path: 'compartir', label: 'settings.tabs.share' },
+    { path: 'repositorios', label: 'settings.tabs.repos' },
   ] as const;
 
   constructor() {

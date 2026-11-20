@@ -195,3 +195,20 @@
     min-height: var(--touch-target);
   }
 }
+
+// Ramas ligadas (issue 016): ícono y cantidad; rojo con CI fallido.
+.issue-card__links {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-small);
+
+  &--merged {
+    color: var(--vrb-success, var(--text-muted));
+  }
+
+  &--failed {
+    color: var(--vrb-danger, var(--text-muted));
+  }
+}

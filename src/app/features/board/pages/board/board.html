@@ -220,6 +220,7 @@
                     [current]="panelNumber() === issue.number"
                     [assignee]="actors.view(issue.assigneeActorId)"
                     [density]="view.density()"
+                    [links]="repos.linksByIssue().get(issue.number) ?? null"
                     (move)="onMove($event)"
                     (opened)="openPanel($event)"
                   />

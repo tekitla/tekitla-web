@@ -4,11 +4,12 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
-import type { Issue, Label, Status } from '@/app/api';
+import type { Issue, IssueLink, Label, Status } from '@/app/api';
 import { Icon } from '@/app/ui/components/icon/icon';
 import type { ActorView } from '../../data-access/actors.logic';
 import { LABEL_TONE, issueKey, statusTone } from '../../data-access/board.logic';
 import { DEFAULT_VIEW, type ViewDensity } from '../../data-access/board-view';
+import { summarizeLinks } from '../../data-access/repos.logic';
 import { ActorAvatar } from '../actor-avatar/actor-avatar';
 import { KANBAN_PRIORITY, PRIORITY_LEVEL } from '../priority-badge/priority-badge';
 
@@ -74,6 +75,9 @@ export class IssueCard {
   readonly density = input<ViewDensity>(DEFAULT_VIEW.density);
   /** Solo lectura (enlace del 009): sin «Mover» ni atajos de teclado. */
   readonly readOnly = input(false);
+  /** Ramas ligadas del issue (016); null en las vistas que no las tienen. */
+  readonly links = input<readonly IssueLink[] | null>(null);
+  protected readonly linkSummary = computed(() => summarizeLinks(this.links() ?? []));
   /**
    * Adónde lleva la tarjeta (enlace del 009). Sin valor, el panel o la
    * página del issue en el proyecto.

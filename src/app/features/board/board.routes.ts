@@ -5,6 +5,7 @@ import { BoardStore } from './data-access/board.store';
 import { BoardViewStore } from './data-access/board-view.store';
 import { PlanPrefixStore } from './data-access/plan-prefix.store';
 import { ProjectConfigStore } from './data-access/project-config.store';
+import { ReposStore } from './data-access/repos.store';
 import { ShareLinksStore } from './data-access/share-links.store';
 
 /** Montado en `proyectos/:projectId`. */
@@ -20,6 +21,7 @@ export const BOARD_ROUTES: Routes = [
       BoardViewStore,
       PlanPrefixStore,
       ShareLinksStore,
+      ReposStore,
     ],
     children: [
       {
@@ -64,6 +66,12 @@ export const BOARD_ROUTES: Routes = [
             path: 'compartir',
             loadComponent: () =>
               import('./pages/settings/share-settings/share-settings').then((m) => m.ShareSettings),
+          },
+          {
+            // Repos de GitHub y GitLab (016): solo el dueño (lo verifica el servicio).
+            path: 'repositorios',
+            loadComponent: () =>
+              import('./pages/settings/repo-settings/repo-settings').then((m) => m.RepoSettings),
           },
         ],
       },

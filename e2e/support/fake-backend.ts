@@ -85,7 +85,31 @@ export interface FakeBackendOptions {
    * paginación de `ListIssueEvents`).
    */
   oldComments?: number;
+  /** Repos de GitHub (issue 016): conexiones, repos y ramas ligadas. */
+  repos?: FakeRepos;
 }
+
+/** Estado inicial del fake de `RepositoryService` (issue 016). Datos inventados. */
+export interface FakeRepos {
+  /** Vacía: GitHub no habilitado en el ambiente. */
+  installUrl?: string;
+  connections?: Record<string, unknown>[];
+  repositories?: Record<string, unknown>[];
+  links?: (Record<string, unknown> & { id: string; issueNumber: number })[];
+}
+
+export const REPO_API = {
+  id: 'r-api',
+  projectId: 'p-tk',
+  connectionId: 'c-acme',
+  provider: 'REPO_PROVIDER_GITHUB',
+  owner: 'acme',
+  name: 'api',
+  defaultBranch: 'main',
+  source: 'REPO_SOURCE_ORG',
+  kind: 'REPO_KIND_CODE',
+  webUrl: 'https://github.com/acme/api',
+};
 
 export const PROJECT: FakeProject = {
   id: 'p-tk',
@@ -310,6 +334,12 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
     })),
   ]);
   const calls: { method: string; path: string; body: Body; auth: string | null }[] = [];
+  const repoState = {
+    installUrl: options.repos?.installUrl ?? '',
+    connections: structuredClone(options.repos?.connections ?? []),
+    repositories: structuredClone(options.repos?.repositories ?? []),
+    links: structuredClone(options.repos?.links ?? []),
+  };
   const base = new URL(environment.apiBaseUrl);
   let seq = 100;
   const nextId = (prefix: string) => `${prefix}-${++seq}`;
@@ -429,6 +459,77 @@ export async function fakeApi(page: Page, options: FakeBackendOptions = {}) {
         reply(status, { error: { code, message, reason, request_id: 'e2e' } });
 
       if (options.forbidden) return fail(403, 'PERMISSION_DENIED', 'forbidden');
+
+      // Issue 016: RepositoryService.
+      const repoPath = url.pathname.match(
+        /^\/v1\/projects\/[^/]+\/(connections|repositories|issueLinks)(?:\/([^/:]+))?(?::(\w+))?$/,
+      );
+      if (repoPath) {
+        const [, kind, , action] = repoPath;
+        if (kind === 'repositories') return reply(200, { repositories: repoState.repositories });
+        if (kind === 'issueLinks') {
+          const n = Number(url.searchParams.get('issueNumber') ?? '0');
+          return reply(200, { links: repoState.links.filter((l) => !n || l.issueNumber === n) });
+        }
+        if (method === 'GET') {
+          return reply(200, {
+            connections: repoState.connections,
+            githubInstallUrl: repoState.installUrl,
+          });
+        }
+        if (method === 'POST' && !action) {
+          const github = body?.['github'] as { installationId?: string } | undefined;
+          if (github?.installationId !== '77') {
+            return fail(400, 'FAILED_PRECONDITION', 'no', 'GITHUB_INSTALLATION_NOT_FOUND');
+          }
+          const connection = {
+            id: 'c-acme',
+            projectId: 'p-tk',
+            provider: 'REPO_PROVIDER_GITHUB',
+            host: 'github.com',
+            owner: 'acme',
+            scope: body?.['scope'],
+            topic: body?.['topic'] ?? '',
+            repositoryCount: 1,
+            createdAt: now(),
+          };
+          repoState.connections.push(connection);
+          repoState.repositories = [REPO_API];
+          return reply(200, { connection, repositories: repoState.repositories });
+        }
+        if (method === 'POST' && action === 'disconnect') {
+          repoState.connections = [];
+          repoState.repositories = [];
+          repoState.links = [];
+          return reply(200, {});
+        }
+        return reply(200, {
+          connection: repoState.connections[0],
+          repositories: repoState.repositories,
+        });
+      }
+      const linkPath = url.pathname.match(
+        /^\/v1\/projects\/[^/]+\/issues\/(\d+)\/links(?:\/([^/:]+):unlink)?$/,
+      );
+      if (linkPath && method === 'POST') {
+        const n = Number(linkPath[1]);
+        if (linkPath[2]) {
+          repoState.links = repoState.links.filter((l) => l.id !== linkPath[2]);
+          return reply(200, {});
+        }
+        const link = {
+          id: nextId('l'),
+          issueNumber: n,
+          repo: REPO_API,
+          branch: body?.['branch'],
+          prState: 'PR_STATE_NONE',
+          ciStatus: 'CI_STATUS_NONE',
+          origin: 'LINK_ORIGIN_MANUAL',
+          updatedAt: now(),
+        };
+        repoState.links.push(link);
+        return reply(200, { link });
+      }
 
       const path = url.pathname;
       if (path === '/v1/actors' && method === 'GET') {

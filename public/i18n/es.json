@@ -289,7 +289,8 @@
     "tabs": {
       "statuses": "Estados",
       "labels": "Etiquetas",
-      "share": "Compartir"
+      "share": "Compartir",
+      "repos": "Repositorios"
     },
     "fields": {
       "name": "Nombre",
@@ -499,6 +500,100 @@
       "noAccount": "{{name}} · responsable sin cuenta",
       "waitingFor": "Qué espera"
     }
+  },
+  "repos": {
+    "lead": "Conecta la organización de GitHub del proyecto para ver en cada issue sus ramas, PRs y el estado del CI. Las ramas se ligan solas por el nombre (feat/tk-9-login o feat/issue-9-login) o por la clave en el título del PR.",
+    "providers": {
+      "title": "Conectar",
+      "github": "Conectar GitHub",
+      "githubHint": "Te lleva a GitHub para instalar la App de Tekitla en la organización. Al volver eliges qué repos entran.",
+      "githubDisabled": "GitHub no está habilitado en este ambiente.",
+      "gitlab": "GitLab: pronto."
+    },
+    "connect": {
+      "title": "Elegir los repos",
+      "text": "La App de Tekitla ya está instalada. Elige qué repos de la organización entran al proyecto.",
+      "submit": "Conectar"
+    },
+    "scope": {
+      "label": "Repos",
+      "CONNECTION_SCOPE_UNSPECIFIED": "Sin alcance",
+      "CONNECTION_SCOPE_TOPIC": "Los de un topic",
+      "CONNECTION_SCOPE_ALL": "Todos",
+      "CONNECTION_SCOPE_SELECTED": "Una selección"
+    },
+    "topic": {
+      "label": "Topic",
+      "hint": "Solo los repos con este topic en GitHub (minúsculas, números y guiones)."
+    },
+    "selected": {
+      "label": "Nombres de los repos",
+      "hint": "Separados por coma o salto de línea, sin la organización."
+    },
+    "list": {
+      "title": "Organizaciones conectadas",
+      "empty": "Todavía no hay ninguna organización conectada.",
+      "owner": "Organización",
+      "scope": "Repos",
+      "repos": "Cantidad",
+      "lastDelivery": "Último evento",
+      "noDelivery": "Ninguno todavía"
+    },
+    "repositories": "Repos conectados",
+    "sync": "Sincronizar",
+    "syncLabel": "Sincronizar {{owner}}",
+    "disconnect": "Desconectar",
+    "disconnectLabel": "Desconectar {{owner}}",
+    "disconnectConfirm": "¿Desconectar {{owner}}? Se quitan sus repos y las ramas ligadas a los issues. La App sigue instalada en GitHub.",
+    "error": {
+      "load": "No pudimos cargar los repos.",
+      "connect": "No pudimos conectar la organización.",
+      "installation": "GitHub no reconoce esa instalación de la App. Vuelve a intentarlo desde «Conectar GitHub».",
+      "exists": "Esa organización ya está conectada.",
+      "disabled": "Ese proveedor no está habilitado en este ambiente.",
+      "update": "No pudimos cambiar el alcance.",
+      "sync": "No pudimos sincronizar.",
+      "disconnect": "No pudimos desconectar la organización.",
+      "link": "No pudimos ligar la rama.",
+      "unlink": "No pudimos quitar la rama."
+    },
+    "setup": {
+      "invalid": "El enlace de GitHub no trae los datos esperados. Vuelve a conectar desde Ajustes › Repositorios.",
+      "back": "Ir a proyectos",
+      "loading": "Volviendo a Tekitla…"
+    }
+  },
+  "links": {
+    "title": "Ramas vinculadas",
+    "empty": "Sin ramas vinculadas. Una rama que nombra el issue (feat/{{key}}) se liga sola.",
+    "noRepos": "Conecta un repo en Ajustes › Repositorios para ver las ramas.",
+    "pr": {
+      "PR_STATE_UNSPECIFIED": "Sin PR",
+      "PR_STATE_NONE": "Sin PR",
+      "PR_STATE_DRAFT": "Borrador",
+      "PR_STATE_OPEN": "PR abierto",
+      "PR_STATE_MERGED": "Fusionado",
+      "PR_STATE_CLOSED": "Cerrado"
+    },
+    "ci": {
+      "CI_STATUS_UNSPECIFIED": "Sin CI",
+      "CI_STATUS_NONE": "Sin CI",
+      "CI_STATUS_PENDING": "CI en curso",
+      "CI_STATUS_SUCCESS": "CI en verde",
+      "CI_STATUS_FAILED": "CI fallido",
+      "CI_STATUS_CANCELED": "CI cancelado"
+    },
+    "review": "Revisión pedida",
+    "deleted": "Rama borrada",
+    "updated": "{{who}}, {{when}}",
+    "unlink": "Quitar",
+    "unlinkLabel": "Quitar la rama {{branch}}",
+    "add": "Vincular una rama",
+    "repo": "Repo",
+    "branch": "Rama",
+    "addSubmit": "Vincular",
+    "branchRequired": "Escribe el nombre de la rama.",
+    "card": "{{count}} rama(s): {{pr}}, {{ci}}"
   },
   "share": {
     "lead": "Enlaces para que alguien sin cuenta vea el proyecto en solo lectura. Solo tú los creas y los revocas.",
