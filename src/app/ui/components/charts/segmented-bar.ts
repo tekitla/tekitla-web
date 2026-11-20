@@ -11,7 +11,20 @@ export interface BarPart {
 }
 
 /** Ancho mínimo (en %) para imprimir el porcentaje dentro del bloque. */
-const LABEL_MIN_PCT = 9;
+export const LABEL_MIN_PCT = 9;
+
+/** Cada parte con su porcentaje entero del total (0 si el total es 0). */
+export function barShares(
+  parts: readonly BarPart[],
+): (BarPart & { pct: number; darkText: boolean })[] {
+  const total = parts.reduce((sum, p) => sum + Math.max(0, p.value), 0);
+  return parts.map((p) => ({
+    ...p,
+    pct: total ? Math.round((Math.max(0, p.value) / total) * 100) : 0,
+    // En el amarillo (slot 4) el texto va oscuro (skill dataviz).
+    darkText: p.color.includes('--chart-4'),
+  }));
+}
 
 /**
  * Barra segmentada alta (skill dataviz): un total partido en hasta 6 partes,
@@ -69,11 +82,11 @@ const LABEL_MIN_PCT = 9;
     .segbar__pct {
       font-size: 12px;
       font-weight: 600;
-      color: #ffffff;
+      color: var(--chart-on);
       font-variant-numeric: tabular-nums;
 
       &--dark {
-        color: #0b0b0b;
+        color: var(--chart-on-yellow);
       }
     }
     .segbar__legend {
@@ -106,15 +119,7 @@ export class SegmentedBar {
 
   protected readonly labelMin = LABEL_MIN_PCT;
 
-  protected readonly withPct = computed(() => {
-    const total = this.parts().reduce((sum, p) => sum + p.value, 0);
-    return this.parts().map((p) => ({
-      ...p,
-      pct: total ? Math.round((p.value / total) * 100) : 0,
-      // En el amarillo (slot 4) el texto va oscuro (skill dataviz).
-      darkText: p.color.includes('--chart-4'),
-    }));
-  });
+  protected readonly withPct = computed(() => barShares(this.parts()));
 
   protected readonly shown = computed(() => this.withPct().filter((p) => p.value > 0));
 }

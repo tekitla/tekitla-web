@@ -700,7 +700,9 @@
         "pending": "Esperan ahora",
         "oldest": "La más vieja",
         "response": "Respuesta (mediana)"
-      }
+      },
+      "pct": "{{n}} %",
+      "reasonValue": "{{h}} h · {{pct}} %"
     },
     "signal": {
       "title": "Señal de contratación",
@@ -730,6 +732,10 @@
         "response": "Respuesta a una espera (mediana)",
         "wip": "Trabajo en curso (mediana)",
         "closed": "Cerrados"
+      },
+      "cell": {
+        "waiting": "{{pct}} % · {{h}} h",
+        "count": "{{n}}"
       }
     },
     "stale": {

@@ -74,6 +74,9 @@
   --chart-muted: #898781; // serie de contexto («otros»)
   --chart-grid: #e1e0d9;
   --chart-axis: #c3c2b7;
+  // Texto dentro de un bloque de color (blanco; oscuro sobre el amarillo).
+  --chart-on: #ffffff;
+  --chart-on-yellow: #0b0b0b;
 }
 
 :root[data-theme='dark'],

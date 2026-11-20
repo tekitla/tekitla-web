@@ -376,7 +376,7 @@ export function timeView(m: FlowMetrics, locale = 'es-MX'): TimeView | null {
     idleHours: hoursOf(e.idle),
     issues: e.issues,
     pending: q?.pending ?? 0,
-    oldest: q?.oldestPending ? durationText(q.oldestPending) : null,
+    oldest: q && q.pending > 0 && q.oldestPending !== null ? durationText(q.oldestPending) : null,
     response: {
       count: q?.responseTime.count ?? 0,
       median: median === null ? null : durationText(median),
@@ -405,16 +405,25 @@ export function timeView(m: FlowMetrics, locale = 'es-MX'): TimeView | null {
 
 export type SignalKind = 'insufficient' | 'none' | 'needsPeople' | 'reduceWip';
 
+/** Una celda de la tabla de la señal: clave de i18n y sus valores. */
+export interface SignalCell {
+  key: string;
+  params: Record<string, string | number>;
+}
+
 export interface SignalRow {
   /** Sufijo de la clave de i18n de la fila (`metrics.signal.row.*`). */
   key: 'waiting' | 'response' | 'wip' | 'closed';
-  current: string;
-  previous: string;
+  /** `null`: sin dato (se muestra «—»). */
+  current: SignalCell | null;
+  previous: SignalCell | null;
 }
 
 export interface SignalView {
   kind: SignalKind;
   liveWeeks: number;
+  /** liveWeeks con tope en weeksNeeded (para la barra y su texto). */
+  liveShown: number;
   weeksNeeded: number;
   weeksNeededPreliminary: number;
   /** Semanas que faltan para la próxima lectura (preliminar o completa). */
@@ -427,23 +436,20 @@ export interface SignalView {
   rows: SignalRow[];
 }
 
-/** Duración corta para la tabla de la señal («5.2 h», «1.5 d»). */
-function shortDuration(seconds: number): string {
-  const d = durationText(seconds);
-  const unit = d.key === 'metrics.unit.days' ? 'd' : d.key === 'metrics.unit.hours' ? 'h' : 'min';
-  return `${d.value} ${unit}`;
-}
-
-function windowNumbers(w: SignalWindow | null): Record<SignalRow['key'], string> {
-  if (!w) return { waiting: '—', response: '—', wip: '—', closed: '—' };
+function windowCells(w: SignalWindow | null): Record<SignalRow['key'], SignalCell | null> {
+  if (!w) return { waiting: null, response: null, wip: null, closed: null };
   const measured = measuredOf(w.efficiency);
   const pct = measured ? Math.round((w.efficiency.waitingHuman / measured) * 100) : 0;
   const median = w.humanResponse.median;
+  const d = median === null ? null : durationText(median);
   return {
-    waiting: `${pct} % · ${hoursOf(w.efficiency.waitingHuman)} h`,
-    response: median === null ? '—' : shortDuration(median),
-    wip: String(w.wipMedian),
-    closed: String(w.closed),
+    waiting: {
+      key: 'metrics.signal.cell.waiting',
+      params: { pct, h: hoursOf(w.efficiency.waitingHuman) },
+    },
+    response: d ? { key: d.key, params: { n: d.value } } : null,
+    wip: { key: 'metrics.signal.cell.count', params: { n: w.wipMedian } },
+    closed: { key: 'metrics.signal.cell.count', params: { n: w.closed } },
   };
 }
 
@@ -461,12 +467,13 @@ export function signalView(m: FlowMetrics): SignalView {
   const live = s?.liveWeeks ?? 0;
   const needed = s?.weeksNeeded || 8;
   const prelim = s?.weeksNeededPreliminary || 4;
-  const cur = windowNumbers(s?.current ?? null);
-  const prev = windowNumbers(s?.previous ?? null);
+  const cur = windowCells(s?.current ?? null);
+  const prev = windowCells(s?.previous ?? null);
   const keys = ['waiting', 'response', 'wip', 'closed'] as const;
   return {
     kind: s ? (VERDICT_KIND[s.verdict] ?? 'insufficient') : 'insufficient',
     liveWeeks: live,
+    liveShown: Math.min(live, needed),
     weeksNeeded: needed,
     weeksNeededPreliminary: prelim,
     missing: Math.max(0, (live < prelim ? prelim : needed) - live),

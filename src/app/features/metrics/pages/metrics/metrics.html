@@ -360,7 +360,11 @@
             <div class="metrics__flow-head">
               <p class="metrics__flow-figure">
                 <strong class="metrics__kpi-value">
-                  {{ tv.efficiencyPct === null ? '—' : tv.efficiencyPct + ' %' }}
+                  @if (tv.efficiencyPct === null) {
+                    —
+                  } @else {
+                    {{ 'metrics.flow.pct' | translate: { n: tv.efficiencyPct } }}
+                  }
                 </strong>
                 <span class="metrics__muted">{{ 'metrics.flow.efficiency' | translate }}</span>
               </p>
@@ -408,13 +412,15 @@
             @if (tv.reasons.length) {
               <h3 class="metrics__subtitle">{{ 'metrics.flow.byReason' | translate }}</h3>
               <ul class="metrics__meters">
-                @for (r of tv.reasons; track r.reason) {
+                @for (r of tv.reasons; track $index) {
                   <li class="metrics__meter-row">
                     <span>{{ 'metrics.reason.' + r.reason | translate }}</span>
                     <span class="metrics__meter" aria-hidden="true">
                       <span class="metrics__meter-fill" [style.width.%]="r.pct"></span>
                     </span>
-                    <span class="metrics__meter-value">{{ r.hours }} h · {{ r.pct }} %</span>
+                    <span class="metrics__meter-value">{{
+                      'metrics.flow.reasonValue' | translate: { h: r.hours, pct: r.pct }
+                    }}</span>
                   </li>
                 }
               </ul>
@@ -518,12 +524,12 @@
               <span class="metrics__meter metrics__meter--wide" aria-hidden="true">
                 <span
                   class="metrics__meter-fill"
-                  [style.width.%]="(h.liveWeeks / h.weeksNeeded) * 100"
+                  [style.width.%]="(h.liveShown / h.weeksNeeded) * 100"
                 ></span>
               </span>
               <span class="metrics__muted">
                 {{
-                  'metrics.signal.weeks' | translate: { live: h.liveWeeks, needed: h.weeksNeeded }
+                  'metrics.signal.weeks' | translate: { live: h.liveShown, needed: h.weeksNeeded }
                 }}
               </span>
             </div>
@@ -543,8 +549,20 @@
                   @for (r of h.rows; track r.key) {
                     <tr>
                       <th scope="row">{{ 'metrics.signal.row.' + r.key | translate }}</th>
-                      <td>{{ r.current }}</td>
-                      <td>{{ r.previous }}</td>
+                      <td>
+                        @if (r.current; as c) {
+                          {{ c.key | translate: c.params }}
+                        } @else {
+                          —
+                        }
+                      </td>
+                      <td>
+                        @if (r.previous; as c) {
+                          {{ c.key | translate: c.params }}
+                        } @else {
+                          —
+                        }
+                      </td>
                     </tr>
                   }
                 </tbody>

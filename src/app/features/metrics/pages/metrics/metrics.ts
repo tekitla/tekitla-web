@@ -119,6 +119,7 @@ export class Metrics {
       'metrics.flow.part.waitingHuman',
       'metrics.flow.part.blocked',
       'metrics.flow.part.inReview',
+      'metrics.unit.hours',
     ]),
     { initialValue: {} },
   );
@@ -206,8 +207,10 @@ export class Metrics {
     (this.time()?.parts ?? []).map((p) => ({
       name: this.t(`metrics.flow.part.${p.part}`),
       color: TIME_PART_COLOR[p.part],
-      value: p.hours,
-      valueText: `${p.hours} h`,
+      // El tamaño sale de la parte exacta, no de las horas redondeadas: un
+      // tramo corto no desaparece.
+      value: p.pct,
+      valueText: this.t('metrics.unit.hours').replace('{{n}}', String(p.hours)),
     })),
   );
 

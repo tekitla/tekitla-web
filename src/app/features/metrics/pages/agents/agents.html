@@ -108,7 +108,10 @@
                     @if (s.waitingTarget) {
                       · {{ 'agents.waitingFor' | translate: { target: s.waitingTarget } }}
                     }
-                    @if (s.waitingReason !== 'WAITING_REASON_UNSPECIFIED') {
+                    @if (
+                      (g.group === 'person' || g.group === 'other') &&
+                      s.waitingReason !== 'WAITING_REASON_UNSPECIFIED'
+                    ) {
                       ·
                       {{
                         'agents.reason'
